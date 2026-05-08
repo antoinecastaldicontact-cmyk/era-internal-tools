@@ -1642,15 +1642,41 @@ async function doLogin(){
   btn.disabled = true;
   btn.textContent = 'Connexion...';
   errEl.classList.remove('visible');
-  const { error } = await db.auth.signInWithPassword({ email, password: pwd });
-  if(error){
-    errEl.textContent = error.message === 'Invalid login credentials'
-      ? 'Email ou mot de passe incorrect.' : error.message;
+
+  try {
+    console.log('[ERA] doLogin: signInWithPassword start');
+    const { data, error } = await db.auth.signInWithPassword({ email, password: pwd });
+    console.log('[ERA] doLogin: signInWithPassword done', { hasError: !!error, hasUser: !!data?.user });
+
+    if(error){
+      errEl.textContent = error.message === 'Invalid login credentials'
+        ? 'Email ou mot de passe incorrect.' : ('Auth: ' + error.message);
+      errEl.classList.add('visible');
+      btn.disabled = false; btn.textContent = 'Se connecter';
+      return;
+    }
+
+    if(!data?.user){
+      errEl.textContent = 'Auth a réussi mais pas de user retourné.';
+      errEl.classList.add('visible');
+      btn.disabled = false; btn.textContent = 'Se connecter';
+      return;
+    }
+
+    // Auth OK — proceed directly without waiting for onAuthStateChange (which sometimes hangs)
+    _currentUser = data.user;
+    console.log('[ERA] doLogin: starting initApp');
+    await initApp();
+    console.log('[ERA] doLogin: initApp done');
+  } catch(e){
+    console.error('[ERA] doLogin error:', e);
+    errEl.textContent = 'Erreur: ' + (e?.message || String(e)).slice(0,200);
     errEl.classList.add('visible');
+  } finally {
+    // ALWAYS reset button so it never stays stuck on "Connexion..."
     btn.disabled = false;
     btn.textContent = 'Se connecter';
   }
-  // onAuthStateChange handles the rest
 }
 
 async function doLogout(){
@@ -1797,29 +1823,45 @@ async function loadAll(){
 }
 
 async function initApp(){
-  const ok = await loadAll();
-  if(!ok) return; // setup banner shown handles its own UI
-  document.getElementById('loginScreen').classList.remove('visible');
-  // Reset login button state for future logouts
-  const lb = document.getElementById('loginBtn');
-  if(lb){ lb.disabled = false; lb.textContent = 'Se connecter'; }
-  renderComps();
-  renderKb();
+  const errEl = document.getElementById('loginErr');
+  try {
+    console.log('[ERA] initApp: loadAll start');
+    const ok = await loadAll();
+    console.log('[ERA] initApp: loadAll done, ok=', ok);
+    if(!ok){
+      // Setup banner shown — login screen is hidden inside _showSetupBanner
+      return;
+    }
+    document.getElementById('loginScreen').classList.remove('visible');
+    renderComps();
+    renderKb();
+    console.log('[ERA] initApp: render complete');
+  } catch(e){
+    console.error('[ERA] initApp fatal error:', e);
+    if(errEl){
+      errEl.textContent = 'Erreur init: ' + (e?.message || String(e)).slice(0,200);
+      errEl.classList.add('visible');
+    }
+    // Make sure login screen is visible so user can retry
+    document.getElementById('loginScreen').classList.add('visible');
+  }
 }
 
-// Auth state listener — single source of truth
+// Auth state listener — fires for INITIAL_SESSION on page load + signed_out events
+// Note: doLogin orchestrates SIGNED_IN itself (more reliable), so we skip it here
 db.auth.onAuthStateChange(async (event, session) => {
-  if(event === 'SIGNED_IN' || event === 'INITIAL_SESSION'){
-    if(session?.user){
+  console.log('[ERA] auth event:', event, { hasSession: !!session });
+  if(event === 'INITIAL_SESSION'){
+    if(session?.user && !_currentUser){
       _currentUser = session.user;
-      await initApp();
-    } else {
-      // No session
+      try { await initApp(); } catch(e){ console.error('[ERA] init from INITIAL_SESSION failed:', e); }
+    } else if(!session?.user){
       document.getElementById('loginScreen').classList.add('visible');
     }
   } else if(event === 'SIGNED_OUT'){
     document.getElementById('loginScreen').classList.add('visible');
   }
+  // SIGNED_IN is intentionally not handled here — doLogin handles it directly
 });
 
 </script>
