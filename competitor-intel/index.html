@@ -1668,6 +1668,11 @@ async function doLogout(){
 
 function _showSetupBanner(){
   setSyncStatus('error', '⚠ Setup requis');
+  // Hide login screen (user IS logged in — they just need to run the schema)
+  document.getElementById('loginScreen')?.classList.remove('visible');
+  // Reset login button in case it was stuck on "Connexion..."
+  const lb = document.getElementById('loginBtn');
+  if(lb){ lb.disabled = false; lb.textContent = 'Se connecter'; }
   if(document.getElementById('setupBanner')) return;
   const SQL = `-- ERA Competitor Intel · V9 schema (Run dans Supabase → SQL Editor)
 create table if not exists public.competitors (
@@ -1721,7 +1726,7 @@ create policy "users own kv" on public.kv_store for all
   banner.id = 'setupBanner';
   banner.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
     width:min(640px,calc(100vw - 32px));background:#13131a;border:1px solid rgba(255,68,102,.4);
-    border-radius:12px;padding:20px 22px;z-index:999;box-shadow:0 8px 40px rgba(0,0,0,.6)`;
+    border-radius:12px;padding:20px 22px;z-index:1100;box-shadow:0 8px 40px rgba(0,0,0,.6)`;
   banner.innerHTML = `
     <div style="font-size:13px;font-weight:600;color:#ff4466;margin-bottom:8px">⚠ Table Supabase manquante</div>
     <div style="font-size:12px;color:#7878a0;line-height:1.6;margin-bottom:14px">
@@ -1793,8 +1798,11 @@ async function loadAll(){
 
 async function initApp(){
   const ok = await loadAll();
-  if(!ok) return; // setup banner shown, stay on login
+  if(!ok) return; // setup banner shown handles its own UI
   document.getElementById('loginScreen').classList.remove('visible');
+  // Reset login button state for future logouts
+  const lb = document.getElementById('loginBtn');
+  if(lb){ lb.disabled = false; lb.textContent = 'Se connecter'; }
   renderComps();
   renderKb();
 }
