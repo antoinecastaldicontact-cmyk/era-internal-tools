@@ -2036,11 +2036,16 @@ async function loadAll(){
     const { data: tags, error: tErr } = await db.from('angle_tags').select('*').order('name');
     if(tErr){ if(tErr.code === '42P01'){ _showSetupBanner(); return false; } throw tErr; }
     S.angleTags = tags || [];
-    // Seed defaults if empty
+    // Seed defaults if empty — non-blocking: if it fails, continue with empty list
     if(S.angleTags.length === 0){
-      const DEFAULT_ANGLES = ['Lyrics','Snapchat','IRL','POV','BTS','Performance live','Mood','Workout','Cinematic','Phone farm'];
-      const { data: seeded } = await db.from('angle_tags').insert(DEFAULT_ANGLES.map(name => ({ name }))).select();
-      S.angleTags = seeded || [];
+      try {
+        const DEFAULT_ANGLES = ['Lyrics','Snapchat','IRL','POV','BTS','Performance live','Mood','Workout','Cinematic','Phone farm'];
+        const { data: seeded, error: sErr } = await db.from('angle_tags').insert(DEFAULT_ANGLES.map(name => ({ name }))).select();
+        if(sErr){ console.warn('[ERA] angle_tags seed failed (non-fatal):', sErr); }
+        else { S.angleTags = seeded || []; }
+      } catch(seedErr){
+        console.warn('[ERA] angle_tags seed exception (non-fatal):', seedErr);
+      }
     }
 
     setSyncStatus('synced');
@@ -2048,6 +2053,14 @@ async function loadAll(){
   } catch(e){
     console.error('[ERA] loadAll error:', e);
     setSyncStatus('error', '⚠ ' + (e.message||'').slice(0,30));
+    // Also surface in the login error box so user can SEE what's wrong
+    const errEl = document.getElementById('loginErr');
+    if(errEl){
+      const code = e.code ? `[${e.code}] ` : '';
+      const detail = e.details || e.hint || '';
+      errEl.textContent = 'loadAll: ' + code + (e.message||String(e)) + (detail?' — '+detail:'');
+      errEl.classList.add('visible');
+    }
     return false;
   }
 }
