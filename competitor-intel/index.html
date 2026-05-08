@@ -400,6 +400,74 @@ header{
 }
 .kb-save-note:hover{background:rgba(108,99,255,.25)}
 
+/* V7: TAG PILLS ON KB CARDS */
+.kb-tags-row{
+  display:flex;gap:6px;padding:8px 12px;border-top:1px solid var(--border);
+  align-items:center;flex-wrap:wrap;
+}
+.kb-tag-pill{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text3);padding:3px 9px;border-radius:12px;
+  font-size:10px;font-weight:500;cursor:pointer;transition:all .12s;
+  font-family:'Space Grotesk',sans-serif;letter-spacing:.02em;
+}
+.kb-tag-pill:hover{border-color:var(--text3);color:var(--text2)}
+.kb-tag-pill.on{
+  background:rgba(108,99,255,.18);border-color:var(--accent);color:var(--accent2);
+}
+.kb-tag-pill.on.tag-hook{background:rgba(244,114,182,.15);border-color:#f472b6;color:#f472b6}
+.kb-tag-pill.on.tag-caption{background:rgba(56,189,248,.15);border-color:var(--blue);color:var(--blue)}
+.kb-tag-pill.on.tag-concept{background:rgba(0,229,160,.15);border-color:var(--green);color:var(--green)}
+.kb-untagged-badge{
+  background:rgba(255,184,48,.12);border:1px solid rgba(255,184,48,.3);
+  color:var(--yellow);font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.04em;
+  margin-left:auto;
+}
+
+/* V7: SECONDARY FILTER ROW */
+.kb-filter-row2{
+  display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;
+  padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+}
+.kb-filter-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.kb-filter-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);
+  letter-spacing:.06em;text-transform:uppercase;margin-right:2px;
+}
+.kb-filter-pill{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text2);
+  padding:4px 11px;border-radius:14px;font-size:11px;font-weight:500;cursor:pointer;
+  transition:all .12s;font-family:'Space Grotesk',sans-serif;
+}
+.kb-filter-pill:hover{border-color:var(--text3)}
+.kb-filter-pill.on{background:rgba(108,99,255,.15);border-color:var(--accent);color:var(--accent2)}
+.kb-filter-pill.on.tag-hook{background:rgba(244,114,182,.15);border-color:#f472b6;color:#f472b6}
+.kb-filter-pill.on.tag-caption{background:rgba(56,189,248,.15);border-color:var(--blue);color:var(--blue)}
+.kb-filter-pill.on.tag-concept{background:rgba(0,229,160,.15);border-color:var(--green);color:var(--green)}
+.kb-filter-pill.on.tag-untagged{background:rgba(255,184,48,.15);border-color:var(--yellow);color:var(--yellow)}
+.kb-slug-select{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+  padding:5px 10px;border-radius:6px;font-size:11px;
+  font-family:'JetBrains Mono',monospace;cursor:pointer;
+  max-width:200px;
+}
+.kb-slug-select:focus{outline:none;border-color:var(--accent)}
+.kb-search-input{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+  padding:5px 12px;border-radius:6px;font-size:11px;
+  font-family:'Space Grotesk',sans-serif;outline:none;
+  flex:1;min-width:140px;max-width:240px;
+}
+.kb-search-input:focus{border-color:var(--accent)}
+.kb-search-input::placeholder{color:var(--text3)}
+.kb-clear-filters{
+  background:none;border:1px solid var(--border2);color:var(--text3);
+  padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.04em;
+}
+.kb-clear-filters:hover{border-color:var(--red);color:var(--red)}
+
 /* STATS PANEL */
 .global-stats{
   display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
@@ -537,6 +605,32 @@ a{color:inherit;text-decoration:none}
       </div>
     </div>
 
+    <!-- V7: Secondary filter row (tags, media, slug, search) -->
+    <div class="kb-filter-row2" id="kbFilterRow2">
+      <div class="kb-filter-group">
+        <span class="kb-filter-label">Ce que j'aime</span>
+        <button class="kb-filter-pill tag-hook" id="kbtag-hook" onclick="toggleKbTagFilter('hook')">🎯 Hook</button>
+        <button class="kb-filter-pill tag-caption" id="kbtag-caption" onclick="toggleKbTagFilter('caption')">📝 Caption</button>
+        <button class="kb-filter-pill tag-concept" id="kbtag-concept" onclick="toggleKbTagFilter('concept')">💡 Concept</button>
+        <button class="kb-filter-pill tag-untagged" id="kbtag-untagged" onclick="toggleKbTagFilter('untagged')">⚠ À tagger</button>
+      </div>
+      <div class="kb-filter-group">
+        <span class="kb-filter-label">Média</span>
+        <button class="kb-filter-pill on" id="kbmedia-all" onclick="setKbMediaFilter('all')">Tout</button>
+        <button class="kb-filter-pill" id="kbmedia-video" onclick="setKbMediaFilter('video')">🎬 Vidéo</button>
+        <button class="kb-filter-pill" id="kbmedia-image" onclick="setKbMediaFilter('image')">🖼 Image</button>
+        <button class="kb-filter-pill" id="kbmedia-carousel" onclick="setKbMediaFilter('carousel')">⬚ Carousel</button>
+      </div>
+      <div class="kb-filter-group">
+        <span class="kb-filter-label">Slug</span>
+        <select class="kb-slug-select" id="kbSlugSelect" onchange="setKbSlugFilter(this.value)">
+          <option value="all">Tous</option>
+        </select>
+      </div>
+      <input type="text" class="kb-search-input" id="kbSearchInput" placeholder="🔍 Rechercher (texte, notes, marque)..." oninput="setKbSearch(this.value)"/>
+      <button class="kb-clear-filters" onclick="clearKbFilters()">Reset</button>
+    </div>
+
     <div class="kb-grid" id="kbGrid"></div>
 
   </div>
@@ -584,6 +678,10 @@ const S = {
   limit: parseInt(localStorage.getItem('ci_limit') || '150'),
   kbFilter: 'all',
   kbSort: 'date',  // date | imp | cta
+  kbTagFilter: [],  // V7: ['hook'|'caption'|'concept'|'untagged'], multi-select
+  kbMediaFilter: 'all',  // V7: all | video | image | carousel
+  kbSlugFilter: 'all',  // V7: 'all' or specific slug
+  kbSearch: '',  // V7: free-text search
   adFilters: {}, // compIdx → { sort, type }
 };
 
@@ -1116,7 +1214,50 @@ function extractSlug(url){
 
 function renderKb(){
   const items = Object.values(S.kb);
-  const filtered = S.kbFilter==='all' ? items : items.filter(it=>it.label===S.kbFilter);
+
+  // V7: build slug dropdown options from unique slugs in KB
+  const allSlugs = [...new Set(items.map(it => extractSlug(it.ad?.ctaUrl)).filter(s => s && s !== '—'))].sort();
+  const slugSel = document.getElementById('kbSlugSelect');
+  if(slugSel){
+    const currentVal = S.kbSlugFilter;
+    slugSel.innerHTML = `<option value="all">Tous (${allSlugs.length})</option>` +
+      allSlugs.map(s=>`<option value="${esc(s)}" ${currentVal===s?'selected':''}>${esc(s)}</option>`).join('');
+  }
+
+  // Apply filters in cascade
+  let filtered = items;
+  // 1. Label filter (ERA / Inspo / All)
+  if(S.kbFilter !== 'all') filtered = filtered.filter(it => it.label === S.kbFilter);
+  // 2. Tag filter (Hook / Caption / Concept / Untagged) — multi-select OR
+  if(S.kbTagFilter.length > 0){
+    filtered = filtered.filter(it => {
+      const tags = it.tags || [];
+      return S.kbTagFilter.some(f => {
+        if(f === 'untagged') return tags.length === 0;
+        return tags.includes(f);
+      });
+    });
+  }
+  // 3. Media filter
+  if(S.kbMediaFilter !== 'all'){
+    filtered = filtered.filter(it => (it.ad?.type || '').toLowerCase() === S.kbMediaFilter);
+  }
+  // 4. Slug filter
+  if(S.kbSlugFilter !== 'all'){
+    filtered = filtered.filter(it => extractSlug(it.ad?.ctaUrl) === S.kbSlugFilter);
+  }
+  // 5. Search
+  if(S.kbSearch.trim()){
+    const q = S.kbSearch.toLowerCase().trim();
+    filtered = filtered.filter(it =>
+      (it.ad?.text || '').toLowerCase().includes(q) ||
+      (it.notes || '').toLowerCase().includes(q) ||
+      (it.compName || '').toLowerCase().includes(q) ||
+      (extractSlug(it.ad?.ctaUrl) || '').toLowerCase().includes(q)
+    );
+  }
+
+  // Sort
   if(S.kbSort==='imp'){
     filtered.sort((a,b)=>(b.ad?.imp?.mid||0)-(a.ad?.imp?.mid||0));
   } else if(S.kbSort==='cta'){
@@ -1131,20 +1272,20 @@ function renderKb(){
 
   const totalEra = items.filter(i=>i.label==='era').length;
   const totalInspo = items.filter(i=>i.label==='inspo').length;
+  const totalUntagged = items.filter(i => !i.tags || i.tags.length === 0).length;
   const totalImp = items.reduce((s,i)=>s+(i.ad?.imp?.mid||0),0);
-  const avgDuration = items.filter(i=>i.ad?.duration).reduce((s,i,_,a)=>s+i.ad.duration/a.length,0);
 
   document.getElementById('kbStats').innerHTML = `
     <div class="gstat"><div class="gstat-val" style="color:var(--accent2)">${items.length}</div><div class="gstat-lbl">Ads sauvegardées</div></div>
     <div class="gstat"><div class="gstat-val" style="color:var(--green)">${totalEra}</div><div class="gstat-lbl">À runner ERA</div></div>
-    <div class="gstat"><div class="gstat-val" style="color:var(--yellow)">${totalInspo}</div><div class="gstat-lbl">Inspiration</div></div>
+    <div class="gstat"><div class="gstat-val" style="color:var(--yellow)">${totalUntagged}</div><div class="gstat-lbl">À tagger</div></div>
     <div class="gstat"><div class="gstat-val" style="color:var(--blue)">${totalImp>0?fmt_n(Math.round(totalImp/1000))+'k':'—'}</div><div class="gstat-lbl">Imp. totales (proxy)</div></div>
   `;
 
   if(!filtered.length){
     document.getElementById('kbGrid').innerHTML=`<div class="ads-empty" style="grid-column:1/-1">
-      Aucune ad sauvegardée${S.kbFilter!=='all'?' dans cette catégorie':''}.<br>
-      Va dans Scout et clique <b>+ ERA</b> ou <b>☆ Inspo</b> sur les ads intéressantes.
+      Aucune ad ne matche tes filtres.<br>
+      ${items.length === 0 ? 'Va dans Scout et clique <b>+ ERA</b> ou <b>☆ Inspo</b> sur les ads intéressantes.' : 'Essaie de relâcher un filtre, ou clique <b>Reset</b>.'}
     </div>`;
     return;
   }
@@ -1158,6 +1299,8 @@ function kbCard(item){
   const proxyS = proxySpend(imp.mid, S.refCpm);
   const slug = extractSlug(ad.ctaUrl);
   const isNew = item.isNew || false;
+  const tags = item.tags || [];  // V7
+  const isUntagged = tags.length === 0;  // V7
 
   let mediaHtml = '';
   if(ad.media){
@@ -1181,6 +1324,12 @@ function kbCard(item){
     <div class="kb-media" style="position:relative">
       ${mediaHtml||'🎨'}
       ${ad.type==='video'?'<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 6px;border-radius:3px">▶ VIDEO</div>':''}
+    </div>
+    <div class="kb-tags-row">
+      <button class="kb-tag-pill tag-hook ${tags.includes('hook')?'on':''}" onclick="toggleKbTag('${item.id}','hook')" title="Hook = les 3 premières secondes / accroche visuelle">🎯 Hook</button>
+      <button class="kb-tag-pill tag-caption ${tags.includes('caption')?'on':''}" onclick="toggleKbTag('${item.id}','caption')" title="Caption = le texte écrit, le copywriting">📝 Caption</button>
+      <button class="kb-tag-pill tag-concept ${tags.includes('concept')?'on':''}" onclick="toggleKbTag('${item.id}','concept')" title="Concept = l'angle marketing global, l'idée">💡 Concept</button>
+      ${isUntagged?'<span class="kb-untagged-badge">À TAGGER</span>':''}
     </div>
     <div class="kb-body">
       ${ad.text?`<div class="kb-text">${esc(ad.text)}</div>`:''}
@@ -1215,6 +1364,67 @@ function saveKbNote(id){
 function deleteKb(id){
   delete S.kb[id];
   save('ci_kb', S.kb);
+  renderKb();
+}
+
+// ══════════════════════════════════════════
+// V7: KB TAGGING + FILTERS
+// ══════════════════════════════════════════
+function toggleKbTag(id, tag){
+  if(!S.kb[id]) return;
+  const tags = S.kb[id].tags || [];
+  const idx = tags.indexOf(tag);
+  if(idx >= 0) tags.splice(idx, 1);
+  else tags.push(tag);
+  S.kb[id].tags = tags;
+  save('ci_kb', S.kb);
+  renderKb();
+}
+
+function toggleKbTagFilter(tag){
+  const idx = S.kbTagFilter.indexOf(tag);
+  if(idx >= 0) S.kbTagFilter.splice(idx, 1);
+  else S.kbTagFilter.push(tag);
+  // Update pill UI
+  document.getElementById(`kbtag-${tag}`)?.classList.toggle('on');
+  renderKb();
+}
+
+function setKbMediaFilter(type){
+  S.kbMediaFilter = type;
+  document.querySelectorAll('[id^="kbmedia-"]').forEach(b => b.classList.remove('on'));
+  document.getElementById(`kbmedia-${type}`)?.classList.add('on');
+  renderKb();
+}
+
+function setKbSlugFilter(slug){
+  S.kbSlugFilter = slug;
+  renderKb();
+}
+
+let _kbSearchTimer = null;
+function setKbSearch(text){
+  S.kbSearch = text;
+  clearTimeout(_kbSearchTimer);
+  _kbSearchTimer = setTimeout(() => renderKb(), 200);  // Debounce
+}
+
+function clearKbFilters(){
+  S.kbFilter = 'all';
+  S.kbTagFilter = [];
+  S.kbMediaFilter = 'all';
+  S.kbSlugFilter = 'all';
+  S.kbSearch = '';
+  // Reset UI
+  document.querySelectorAll('.kb-pill').forEach(p => p.classList.remove('on'));
+  document.getElementById('kbpill-all')?.classList.add('on');
+  document.querySelectorAll('[id^="kbtag-"]').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('[id^="kbmedia-"]').forEach(b => b.classList.remove('on'));
+  document.getElementById('kbmedia-all')?.classList.add('on');
+  const sel = document.getElementById('kbSlugSelect');
+  if(sel) sel.value = 'all';
+  const inp = document.getElementById('kbSearchInput');
+  if(inp) inp.value = '';
   renderKb();
 }
 
