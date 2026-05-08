@@ -677,24 +677,21 @@ a{color:inherit;text-decoration:none}
     <div class="global-stats" id="kbStats"></div>
 
     <div class="kb-filters" id="kbFilters">
-      <button class="kb-pill on" id="kbpill-all" onclick="setKbFilter('all')">Tout</button>
-      <button class="kb-pill" id="kbpill-era" onclick="setKbFilter('era')">🟢 ERA</button>
-      <button class="kb-pill" id="kbpill-inspo" onclick="setKbFilter('inspo')">🟡 Inspo</button>
+      <button class="kb-pill on" id="kbpill-all" onclick="setKbFilter('all')">Toute la library</button>
       <div class="kb-sort-bar">
         <span style="font-size:11px;color:var(--text3)">Trier par</span>
-        <button class="kb-sort-btn" id="kbsort-date" onclick="setKbSort('date')">📅 Date</button>
-        <button class="kb-sort-btn on" id="kbsort-cta" onclick="setKbSort('cta')">🔗 CTA Slug</button>
-        <button class="kb-sort-btn" id="kbsort-imp" onclick="setKbSort('imp')">👁 Impressions</button>
+        <button class="kb-sort-btn on" id="kbsort-date" onclick="setKbSort('date')">📅 Date</button>
+        <button class="kb-sort-btn" id="kbsort-cta" onclick="setKbSort('cta')">🔗 CTA Slug</button>
       </div>
     </div>
 
-    <!-- V7: Secondary filter row (tags, media, slug, search) -->
+    <!-- V9: Secondary filter row (tags, media, slug, search) -->
     <div class="kb-filter-row2" id="kbFilterRow2">
       <div class="kb-filter-group">
         <span class="kb-filter-label">Ce que j'aime</span>
         <button class="kb-filter-pill tag-hook" id="kbtag-hook" onclick="toggleKbTagFilter('hook')">🎯 Hook</button>
         <button class="kb-filter-pill tag-caption" id="kbtag-caption" onclick="toggleKbTagFilter('caption')">📝 Caption</button>
-        <button class="kb-filter-pill tag-concept" id="kbtag-concept" onclick="toggleKbTagFilter('concept')">💡 Concept</button>
+        <button class="kb-filter-pill tag-concept" id="kbtag-concept" onclick="toggleKbTagFilter('concept')">💡 Avec angle</button>
         <button class="kb-filter-pill tag-untagged" id="kbtag-untagged" onclick="toggleKbTagFilter('untagged')">⚠ À tagger</button>
       </div>
       <div class="kb-filter-group">
@@ -771,28 +768,34 @@ function setSyncStatus(state, label){
 // STATE
 // ══════════════════════════════════════════
 const S = {
-  competitors: [],
-  kb: {},
+  // Persisted (Supabase)
+  competitors: [],   // [{id,name,url,country,created_at}]  — NO ads attached
+  library: [],       // [{ad_id,ad_data,is_hook,is_caption,angle_tag,notes,competitor_name,saved_at}]
   apifyKey: '',
   refCpm: 4.5,
   limit: 150,
+  // Volatile (in-memory, cleared on refresh)
+  scrapedAds: {},    // {compId: [ads...]}
+  lastScrape: {},    // {compId: ISO timestamp}
+  // UI
   kbFilter: 'all',
-  kbSort: 'date',  // date | imp | cta
-  kbTagFilter: [],  // V7: ['hook'|'caption'|'concept'|'untagged'], multi-select
-  kbMediaFilter: 'all',  // V7: all | video | image | carousel
-  kbSlugFilter: 'all',  // V7: 'all' or specific slug
-  kbSearch: '',  // V7: free-text search
-  adFilters: {}, // compIdx → { sort, type }
+  kbSort: 'date',
+  kbTagFilter: [],
+  kbMediaFilter: 'all',
+  kbSlugFilter: 'all',
+  kbSearch: '',
+  adFilters: {},
 };
 
+// LocalStorage cache for settings only (Apify key, limit, CPM)
 function save(k,v){
-  // Sync local immediately
   localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v));
-  // Fire-and-forget to cloud
-  if(_currentUser) _cloudSave(k, v);
+  if(_currentUser && (k==='ci_apify' || k==='ci_cpm' || k==='ci_limit')){
+    _kvUpsert(k, v);
+  }
 }
 
-async function _cloudSave(k, v){
+async function _kvUpsert(k, v){
   setSyncStatus('syncing');
   try {
     let val = v;
@@ -804,18 +807,56 @@ async function _cloudSave(k, v){
       { onConflict: 'user_id,key' }
     );
     if(error){
-      console.error('[ERA] Cloud save error:', error);
-      if(error.code === '42P01' || (error.message||'').includes('does not exist')){
-        _showSetupBanner();
-      } else {
-        setSyncStatus('error', '⚠ ' + (error.message||'').slice(0,35));
-      }
+      console.error('[ERA] kv upsert error:', error);
+      setSyncStatus('error', '⚠ ' + (error.message||'').slice(0,30));
     } else {
       setSyncStatus('synced');
     }
   } catch(e){
-    console.error('[ERA] Cloud save exception:', e);
+    console.error('[ERA] kv upsert exception:', e);
     setSyncStatus('offline');
+  }
+}
+
+// Generic cloud helpers for the new tables
+async function cloudInsert(table, payload){
+  setSyncStatus('syncing');
+  try {
+    const { data, error } = await db.from(table).insert(payload).select().single();
+    if(error) throw error;
+    setSyncStatus('synced');
+    return data;
+  } catch(e){
+    console.error(`[ERA] insert ${table} error:`, e);
+    setSyncStatus('error', '⚠ ' + (e.message||'').slice(0,30));
+    if(e.code === '42P01') _showSetupBanner();
+    return null;
+  }
+}
+async function cloudUpdate(table, match, patch){
+  setSyncStatus('syncing');
+  try {
+    const { error } = await db.from(table).update(patch).match(match);
+    if(error) throw error;
+    setSyncStatus('synced');
+    return true;
+  } catch(e){
+    console.error(`[ERA] update ${table} error:`, e);
+    setSyncStatus('error', '⚠ ' + (e.message||'').slice(0,30));
+    return false;
+  }
+}
+async function cloudDelete(table, match){
+  setSyncStatus('syncing');
+  try {
+    const { error } = await db.from(table).delete().match(match);
+    if(error) throw error;
+    setSyncStatus('synced');
+    return true;
+  } catch(e){
+    console.error(`[ERA] delete ${table} error:`, e);
+    setSyncStatus('error', '⚠ ' + (e.message||'').slice(0,30));
+    return false;
   }
 }
 
@@ -961,22 +1002,30 @@ function saveSettings(){
 // ══════════════════════════════════════════
 // COMPETITORS
 // ══════════════════════════════════════════
-function addComp(){
+async function addComp(){
   const name = document.getElementById('cName').value.trim();
   const url  = document.getElementById('cUrl').value.trim();
   const country = document.getElementById('cCountry').value;
   if(!name||!url) return alert('Nom et URL requis');
-  S.competitors.push({name, url, country, ads:[], lastScrape:null});
-  save('ci_comps', S.competitors);
-  document.getElementById('cName').value='';
-  document.getElementById('cUrl').value='';
-  renderComps();
+  const row = await cloudInsert('competitors', { name, url, country });
+  if(row){
+    S.competitors.push(row);
+    document.getElementById('cName').value='';
+    document.getElementById('cUrl').value='';
+    renderComps();
+  }
 }
-function removeComp(i){
-  if(!confirm(`Supprimer ${S.competitors[i].name} ?`)) return;
-  S.competitors.splice(i,1);
-  save('ci_comps', S.competitors);
-  renderComps();
+async function removeComp(i){
+  const c = S.competitors[i];
+  if(!c) return;
+  if(!confirm(`Supprimer ${c.name} ?`)) return;
+  const ok = await cloudDelete('competitors', { id: c.id });
+  if(ok){
+    S.competitors.splice(i,1);
+    delete S.scrapedAds[c.id];
+    delete S.lastScrape[c.id];
+    renderComps();
+  }
 }
 
 function renderComps(){
@@ -989,9 +1038,12 @@ function renderComps(){
 }
 
 function compCard(c, i){
-  const totalImp = c.ads.reduce((s,a)=>s+getImpressions(a).mid,0);
-  const active = c.ads.filter(a=>a.isActive!==false).length;
-  const lastStr = c.lastScrape ? new Date(c.lastScrape).toLocaleDateString('fr-FR') : 'jamais';
+  // Ads come from volatile session memory now
+  const ads = S.scrapedAds[c.id] || [];
+  const lastScrape = S.lastScrape[c.id] || null;
+  const totalImp = ads.reduce((s,a)=>s+getImpressions(a).mid,0);
+  const active = ads.filter(a=>a.isActive!==false).length;
+  const lastStr = lastScrape ? new Date(lastScrape).toLocaleDateString('fr-FR') : 'jamais';
   return `<div class="comp-card" id="comp-${i}">
     <div class="comp-card-head">
       <div class="comp-card-left">
@@ -1004,7 +1056,7 @@ function compCard(c, i){
       <div class="comp-card-right">
         <div class="comp-stats">
           <div class="stat-item">
-            <div class="stat-val">${c.ads.length}</div>
+            <div class="stat-val">${ads.length}</div>
             <div class="stat-lbl">ads</div>
           </div>
           <div class="stat-item">
@@ -1021,7 +1073,7 @@ function compCard(c, i){
       </div>
     </div>
     <div class="ads-container" id="ads-container-${i}">
-      ${c.ads.length ? renderAdsSection(c.ads, i, lastStr) : `<div class="ads-empty">Clique <b>Scrape</b> pour charger les pubs de ${esc(c.name)}</div>`}
+      ${ads.length ? renderAdsSection(ads, i, lastStr) : `<div class="ads-empty">Clique <b>Scrape</b> pour charger les pubs de ${esc(c.name)}</div>`}
     </div>
   </div>`;
 }
@@ -1062,8 +1114,10 @@ function setAdFilter(compIdx, key, val){
   if(!S.adFilters[compIdx]) S.adFilters[compIdx]={sort:'imp',type:'all'};
   S.adFilters[compIdx][key]=val;
   const c = S.competitors[compIdx];
-  const lastStr = c.lastScrape ? new Date(c.lastScrape).toLocaleDateString('fr-FR') : 'jamais';
-  document.getElementById(`ads-container-${compIdx}`).innerHTML = renderAdsSection(c.ads, compIdx, lastStr);
+  const ads = S.scrapedAds[c.id] || [];
+  const lastScrape = S.lastScrape[c.id] || null;
+  const lastStr = lastScrape ? new Date(lastScrape).toLocaleDateString('fr-FR') : 'jamais';
+  document.getElementById(`ads-container-${compIdx}`).innerHTML = renderAdsSection(ads, compIdx, lastStr);
 }
 
 // ══════════════════════════════════════════
@@ -1080,7 +1134,7 @@ function adCard(ad, compIdx, j){
   const duration = startDate ? daysSince(startDate) : null;
   const isActive = ad.is_active !== false;
   const adId = ad.ad_archive_id || ad.id || ad.adArchiveID || `${compIdx}-${j}`;
-  const inKb = S.kb[adId];
+  const inLib = S.library.find(it => it.ad_id === adId);
   const snapshotUrl = ad.ad_library_url
     || ad.snapshotUrl
     || (ad.ad_archive_id ? `https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}` : null);
@@ -1127,11 +1181,10 @@ function adCard(ad, compIdx, j){
     ${startDate?`<span class="meta-tag">Depuis ${startDate.toLocaleDateString('fr-FR')}</span>`:''}
   </div>`;
 
-  const kbEra = inKb?.label==='era';
-  const kbInspo = inKb?.label==='inspo';
+  const isSaved = !!inLib;
   const adData = JSON.stringify({id:adId, compIdx, adIdx:j, compName: S.competitors[compIdx]?.name||''}).replace(/'/g,"&#39;");
 
-  return `<div class="ad-card ${kbEra?'saved-era':kbInspo?'saved-inspo':''}" id="adcard-${adId}">
+  return `<div class="ad-card ${isSaved?'saved-era':''}" id="adcard-${adId}">
     <div class="ad-media">
       ${mediaHtml}
       ${typeBadge}
@@ -1145,11 +1198,8 @@ function adCard(ad, compIdx, j){
       ${metaRow}
     </div>
     <div class="ad-actions">
-      <button class="ad-act ${kbEra?'active-era':''}" onclick='saveToKb(${adData},"era")'>
-        ${kbEra?'✓ ERA':'＋ ERA'}
-      </button>
-      <button class="ad-act ${kbInspo?'active-inspo':''}" onclick='saveToKb(${adData},"inspo")'>
-        ${kbInspo?'★ Inspo':'☆ Inspo'}
+      <button class="ad-act ${isSaved?'active-era':''}" onclick='saveToLibrary(${adData})'>
+        ${isSaved?'✓ Saved':'＋ Save to Library'}
       </button>
       ${text&&text.length>120?`<button class="ad-act expand-btn" onclick="toggleText('${adId}')">+ voir</button>`:''}
       ${snapshotUrl?`<a class="ad-act" href="${esc(snapshotUrl)}" target="_blank">Library →</a>`:''}
@@ -1164,40 +1214,53 @@ function toggleText(adId){
 }
 
 // ══════════════════════════════════════════
-// SAVE TO KB
+// SAVE TO LIBRARY
 // ══════════════════════════════════════════
-function saveToKb(adData, label){
+async function saveToLibrary(adData){
   const {id, compIdx, adIdx, compName} = adData;
-  const ad = S.competitors[compIdx]?.ads[adIdx];
-  if(!ad) return;
-  if(S.kb[id]?.label===label){
-    delete S.kb[id];
-  } else {
-    S.kb[id] = {
-      id, label, compName,
-      ad: {
-        text: getAdText(ad),
-        media: getMediaUrl(ad),
-        ctaUrl: getCtaUrl(ad),
-        ctaText: getCtaText(ad),
-        imp: getImpressions(ad),
-        isActive: ad.isActive!==false,
-        startDate: getStartDate(ad)?.toISOString()||null,
-        type: getAdType(ad),
-        snapshotUrl: ad.ad_library_url||ad.snapshotUrl||ad.snapshot_url||(ad.ad_archive_id?`https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}`:null),
-        duration: getStartDate(ad)?daysSince(getStartDate(ad)):null,
-      },
-      notes: S.kb[id]?.notes || '',
-      isNew: false,
-      savedAt: new Date().toISOString()
-    };
-  }
-  save('ci_kb', S.kb);
-  // Refresh card
   const comp = S.competitors[compIdx];
-  const lastStr = comp.lastScrape ? new Date(comp.lastScrape).toLocaleDateString('fr-FR') : 'jamais';
+  if(!comp) return;
+  const ad = (S.scrapedAds[comp.id]||[])[adIdx];
+  if(!ad) return;
+
+  const existing = S.library.find(it => it.ad_id === id);
+  if(existing){
+    // Toggle off → delete from library
+    const ok = await cloudDelete('library', { user_id: _currentUser.id, ad_id: id });
+    if(ok){
+      S.library = S.library.filter(it => it.ad_id !== id);
+    }
+  } else {
+    // Insert into library table
+    const ad_data = {
+      text: getAdText(ad),
+      media: getMediaUrl(ad),
+      ctaUrl: getCtaUrl(ad),
+      ctaText: getCtaText(ad),
+      imp: getImpressions(ad),
+      isActive: ad.isActive!==false,
+      startDate: getStartDate(ad)?.toISOString()||null,
+      type: getAdType(ad),
+      snapshotUrl: ad.ad_library_url||ad.snapshotUrl||ad.snapshot_url||(ad.ad_archive_id?`https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}`:null),
+      duration: getStartDate(ad)?daysSince(getStartDate(ad)):null,
+    };
+    const row = await cloudInsert('library', {
+      ad_id: id,
+      competitor_name: compName,
+      ad_data,
+      is_hook: false,
+      is_caption: false,
+      angle_tag: null,
+      notes: ''
+    });
+    if(row) S.library.unshift(row);
+  }
+  // Refresh card
+  const ads = S.scrapedAds[comp.id] || [];
+  const lastScrape = S.lastScrape[comp.id] || null;
+  const lastStr = lastScrape ? new Date(lastScrape).toLocaleDateString('fr-FR') : 'jamais';
   const container = document.getElementById(`ads-container-${compIdx}`);
-  if(container) container.innerHTML = renderAdsSection(comp.ads, compIdx, lastStr);
+  if(container) container.innerHTML = renderAdsSection(ads, compIdx, lastStr);
 }
 
 // ══════════════════════════════════════════
@@ -1278,8 +1341,10 @@ async function scrapeComp(i){
     if(!Array.isArray(ads)) ads = ads.items || ads.data || [];
     console.log('Ads array length:', ads.length);
 
-    // Detect new ads vs previously seen
-    const prevIds = new Set((S.competitors[i].ads||[]).map(a=>a.ad_archive_id).filter(Boolean));
+    // Detect new ads vs previously seen (within session memory)
+    const compId = S.competitors[i].id;
+    const prevAds = S.scrapedAds[compId] || [];
+    const prevIds = new Set(prevAds.map(a=>a.ad_archive_id).filter(Boolean));
     const newIds = new Set(ads.map(a=>a.ad_archive_id).filter(Boolean));
     const newCount = [...newIds].filter(id=>!prevIds.has(id)).length;
 
@@ -1289,10 +1354,9 @@ async function scrapeComp(i){
       _isNew: a.ad_archive_id && !prevIds.has(a.ad_archive_id) && prevIds.size > 0
     }));
 
-    S.competitors[i].ads = ads;
-    S.competitors[i].lastScrape = new Date().toISOString();
-    S.competitors[i].prevCount = prevIds.size;
-    save('ci_comps', S.competitors);
+    // Volatile: in-memory only, NOT persisted (per V9 architecture)
+    S.scrapedAds[compId] = ads;
+    S.lastScrape[compId] = new Date().toISOString();
 
     const lastStr = new Date().toLocaleDateString('fr-FR');
     if(ads.length) {
@@ -1345,10 +1409,10 @@ function extractSlug(url){
 }
 
 function renderKb(){
-  const items = Object.values(S.kb);
+  const items = S.library || [];
 
-  // V7: build slug dropdown options from unique slugs in KB
-  const allSlugs = [...new Set(items.map(it => extractSlug(it.ad?.ctaUrl)).filter(s => s && s !== '—'))].sort();
+  // Build slug dropdown options from unique slugs in library
+  const allSlugs = [...new Set(items.map(it => extractSlug(it.ad_data?.ctaUrl)).filter(s => s && s !== '—'))].sort();
   const slugSel = document.getElementById('kbSlugSelect');
   if(slugSel){
     const currentVal = S.kbSlugFilter;
@@ -1357,67 +1421,69 @@ function renderKb(){
   }
 
   // Apply filters in cascade
-  let filtered = items;
-  // 1. Label filter (ERA / Inspo / All)
-  if(S.kbFilter !== 'all') filtered = filtered.filter(it => it.label === S.kbFilter);
-  // 2. Tag filter (Hook / Caption / Concept / Untagged) — multi-select OR
+  let filtered = [...items];
+
+  // V9 simplified: era/inspo split is gone (single library). kbFilter ignored unless 'all'.
+
+  // Tag filter: hook / caption / concept(=has angle) / untagged — multi-select OR
   if(S.kbTagFilter.length > 0){
     filtered = filtered.filter(it => {
-      const tags = it.tags || [];
       return S.kbTagFilter.some(f => {
-        if(f === 'untagged') return tags.length === 0;
-        return tags.includes(f);
+        if(f === 'hook')     return it.is_hook;
+        if(f === 'caption')  return it.is_caption;
+        if(f === 'concept')  return !!it.angle_tag;
+        if(f === 'untagged') return !it.is_hook && !it.is_caption && !it.angle_tag;
+        return false;
       });
     });
   }
-  // 3. Media filter
+  // Media filter
   if(S.kbMediaFilter !== 'all'){
-    filtered = filtered.filter(it => (it.ad?.type || '').toLowerCase() === S.kbMediaFilter);
+    filtered = filtered.filter(it => (it.ad_data?.type || '').toLowerCase() === S.kbMediaFilter);
   }
-  // 4. Slug filter
+  // Slug filter
   if(S.kbSlugFilter !== 'all'){
-    filtered = filtered.filter(it => extractSlug(it.ad?.ctaUrl) === S.kbSlugFilter);
+    filtered = filtered.filter(it => extractSlug(it.ad_data?.ctaUrl) === S.kbSlugFilter);
   }
-  // 5. Search
+  // Search
   if(S.kbSearch.trim()){
     const q = S.kbSearch.toLowerCase().trim();
     filtered = filtered.filter(it =>
-      (it.ad?.text || '').toLowerCase().includes(q) ||
+      (it.ad_data?.text || '').toLowerCase().includes(q) ||
       (it.notes || '').toLowerCase().includes(q) ||
-      (it.compName || '').toLowerCase().includes(q) ||
-      (extractSlug(it.ad?.ctaUrl) || '').toLowerCase().includes(q)
+      (it.competitor_name || '').toLowerCase().includes(q) ||
+      (extractSlug(it.ad_data?.ctaUrl) || '').toLowerCase().includes(q)
     );
   }
 
   // Sort
-  if(S.kbSort==='imp'){
-    filtered.sort((a,b)=>(b.ad?.imp?.mid||0)-(a.ad?.imp?.mid||0));
-  } else if(S.kbSort==='cta'){
+  if(S.kbSort==='cta'){
     filtered.sort((a,b)=>{
-      const sa=extractSlug(a.ad?.ctaUrl)||'zzz';
-      const sb=extractSlug(b.ad?.ctaUrl)||'zzz';
+      const sa=extractSlug(a.ad_data?.ctaUrl)||'zzz';
+      const sb=extractSlug(b.ad_data?.ctaUrl)||'zzz';
       return sa.localeCompare(sb);
     });
   } else {
-    filtered.sort((a,b)=>new Date(b.savedAt)-new Date(a.savedAt));
+    // Default: by saved date desc
+    filtered.sort((a,b)=>new Date(b.saved_at||0)-new Date(a.saved_at||0));
   }
 
-  const totalEra = items.filter(i=>i.label==='era').length;
-  const totalInspo = items.filter(i=>i.label==='inspo').length;
-  const totalUntagged = items.filter(i => !i.tags || i.tags.length === 0).length;
-  const totalImp = items.reduce((s,i)=>s+(i.ad?.imp?.mid||0),0);
+  // Stats
+  const totalHooks    = items.filter(i => i.is_hook).length;
+  const totalCaptions = items.filter(i => i.is_caption).length;
+  const totalUntagged = items.filter(i => !i.is_hook && !i.is_caption && !i.angle_tag).length;
+  const uniqueComps   = new Set(items.map(i => i.competitor_name).filter(Boolean)).size;
 
   document.getElementById('kbStats').innerHTML = `
     <div class="gstat"><div class="gstat-val" style="color:var(--accent2)">${items.length}</div><div class="gstat-lbl">Ads sauvegardées</div></div>
-    <div class="gstat"><div class="gstat-val" style="color:var(--green)">${totalEra}</div><div class="gstat-lbl">À runner ERA</div></div>
+    <div class="gstat"><div class="gstat-val" style="color:#f472b6">${totalHooks}</div><div class="gstat-lbl">🎯 Hooks taggés</div></div>
     <div class="gstat"><div class="gstat-val" style="color:var(--yellow)">${totalUntagged}</div><div class="gstat-lbl">À tagger</div></div>
-    <div class="gstat"><div class="gstat-val" style="color:var(--blue)">${totalImp>0?fmt_n(Math.round(totalImp/1000))+'k':'—'}</div><div class="gstat-lbl">Imp. totales (proxy)</div></div>
+    <div class="gstat"><div class="gstat-val" style="color:var(--green)">${uniqueComps}</div><div class="gstat-lbl">Concurrents</div></div>
   `;
 
   if(!filtered.length){
     document.getElementById('kbGrid').innerHTML=`<div class="ads-empty" style="grid-column:1/-1">
-      Aucune ad ne matche tes filtres.<br>
-      ${items.length === 0 ? 'Va dans Scout et clique <b>+ ERA</b> ou <b>☆ Inspo</b> sur les ads intéressantes.' : 'Essaie de relâcher un filtre, ou clique <b>Reset</b>.'}
+      ${items.length === 0 ? 'Library vide. Va dans Scout, scrape un concurrent, et clique <b>+ Save to Library</b> sur les ads intéressantes.' : 'Aucune ad ne matche tes filtres. Essaie de relâcher un filtre ou clique <b>Reset</b>.'}
     </div>`;
     return;
   }
@@ -1426,13 +1492,11 @@ function renderKb(){
 }
 
 function kbCard(item){
-  const ad = item.ad;
-  const imp = ad.imp || {lo:0,hi:0,mid:0};
-  const proxyS = proxySpend(imp.mid, S.refCpm);
+  const ad = item.ad_data || {};
   const slug = extractSlug(ad.ctaUrl);
-  const isNew = item.isNew || false;
-  const tags = item.tags || [];  // V7
-  const isUntagged = tags.length === 0;  // V7
+  const isUntagged = !item.is_hook && !item.is_caption && !item.angle_tag;
+  const adId = item.ad_id;
+  const savedDate = item.saved_at ? new Date(item.saved_at).toLocaleDateString('fr-FR') : '';
 
   let mediaHtml = '';
   if(ad.media){
@@ -1441,76 +1505,82 @@ function kbCard(item){
     else if(ad.media.src) mediaHtml=`<img src="${esc(ad.media.src)}" alt="" style="width:100%;height:100%;object-fit:cover"/>`;
   }
 
-  // Video download: prefer hd url stored in media
   const dlUrl = ad.media?.src || ad.media?.thumb || ad.snapshotUrl || '';
   const adLibUrl = ad.snapshotUrl || '';
 
   return `<div class="kb-card">
     <div class="kb-card-head">
-      <span class="kb-competitor">${esc(item.compName)}</span>
-      <div style="display:flex;gap:6px;align-items:center">
-        ${isNew?'<span class="new-badge">NEW</span>':''}
-        <span class="kb-saved-label ${item.label==='era'?'kb-label-era':'kb-label-inspo'}">${item.label==='era'?'ERA':'INSPO'}</span>
-      </div>
+      <span class="kb-competitor">${esc(item.competitor_name||'')}</span>
+      <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">${esc(savedDate)}</span>
     </div>
     <div class="kb-media" style="position:relative">
       ${mediaHtml||'🎨'}
       ${ad.type==='video'?'<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 6px;border-radius:3px">▶ VIDEO</div>':''}
     </div>
     <div class="kb-tags-row">
-      <button class="kb-tag-pill tag-hook ${tags.includes('hook')?'on':''}" onclick="toggleKbTag('${item.id}','hook')" title="Hook = les 3 premières secondes / accroche visuelle">🎯 Hook</button>
-      <button class="kb-tag-pill tag-caption ${tags.includes('caption')?'on':''}" onclick="toggleKbTag('${item.id}','caption')" title="Caption = le texte écrit, le copywriting">📝 Caption</button>
-      <button class="kb-tag-pill tag-concept ${tags.includes('concept')?'on':''}" onclick="toggleKbTag('${item.id}','concept')" title="Concept = l'angle marketing global, l'idée">💡 Concept</button>
+      <button class="kb-tag-pill tag-hook ${item.is_hook?'on':''}" onclick="toggleKbTag('${esc(adId)}','hook')" title="Hook = les 3 premières secondes / accroche visuelle">🎯 Hook</button>
+      <button class="kb-tag-pill tag-caption ${item.is_caption?'on':''}" onclick="toggleKbTag('${esc(adId)}','caption')" title="Caption = le texte écrit, le copywriting">📝 Caption</button>
+      ${item.angle_tag?`<span class="kb-tag-pill tag-concept on" title="Angle marketing">💡 ${esc(item.angle_tag)}</span>`:''}
       ${isUntagged?'<span class="kb-untagged-badge">À TAGGER</span>':''}
     </div>
     <div class="kb-body">
       ${ad.text?`<div class="kb-text">${esc(ad.text)}</div>`:''}
       ${ad.ctaUrl?`<div class="cta-slug-badge" title="${esc(ad.ctaUrl)}">🔗 ${esc(slug)} · <span style="color:var(--text3)">${esc(ad.ctaUrl)}</span></div>`:''}
       <div class="kb-metrics" style="margin-top:8px">
-        <div class="kb-m"><span class="kb-ml">Imp. </span><span class="kb-mv">${imp.label||'—'}</span></div>
-        ${proxyS?`<div class="kb-m"><span class="kb-ml">Spend proxy </span><span class="kb-mv" style="color:var(--yellow)">~${fmt_n(proxyS)}€</span></div>`:''}
         ${ad.duration?`<div class="kb-m"><span class="kb-ml">Durée </span><span class="kb-mv" style="color:var(--green)">${ad.duration}j</span></div>`:''}
+        ${ad.isActive===false?`<div class="kb-m"><span class="kb-ml" style="color:var(--red)">○ Inactive</span></div>`:`<div class="kb-m"><span class="kb-ml" style="color:var(--green)">● Active</span></div>`}
       </div>
     </div>
     <div class="kb-notes-section">
-      <textarea class="kb-notes-area" id="kbnotes-${item.id}" placeholder="Hook / Angle / Pourquoi ça marche / Idées d'adaptation...">${esc(item.notes||'')}</textarea>
+      <textarea class="kb-notes-area" id="kbnotes-${esc(adId)}" placeholder="Pourquoi ça marche / Idées d'adaptation...">${esc(item.notes||'')}</textarea>
     </div>
     <div class="kb-footer" style="flex-wrap:wrap;gap:6px">
-      <button class="kb-save-note" onclick="saveKbNote('${item.id}')">💾 Sauvegarder</button>
-      <button class="kb-del-btn" onclick="deleteKb('${item.id}')">✕</button>
+      <button class="kb-save-note" onclick="saveKbNote('${esc(adId)}')">💾 Sauvegarder note</button>
+      <button class="kb-del-btn" onclick="deleteKb('${esc(adId)}')">✕</button>
       ${adLibUrl?`<a class="kb-dl-btn" href="${esc(adLibUrl)}" target="_blank">🔍 Ad Library</a>`:''}
       ${dlUrl && ad.type==='video'?`<a class="kb-dl-btn" href="${esc(dlUrl)}" download target="_blank" style="background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.3);color:var(--blue)">⬇ DL Vidéo</a>`:''}
     </div>
   </div>`;
 }
 
-function saveKbNote(id){
-  if(!S.kb[id]) return;
-  S.kb[id].notes = document.getElementById(`kbnotes-${id}`)?.value || '';
-  save('ci_kb', S.kb);
-  // Flash feedback
-  const btn = event.target;
-  btn.textContent='✓ Sauvegardé';
-  setTimeout(()=>btn.textContent='Sauvegarder note', 1500);
+async function saveKbNote(id){
+  const item = S.library.find(it => it.ad_id === id);
+  if(!item) return;
+  const notes = document.getElementById(`kbnotes-${id}`)?.value || '';
+  const ok = await cloudUpdate('library', { user_id: _currentUser.id, ad_id: id }, { notes });
+  if(ok){
+    item.notes = notes;
+    // Flash feedback
+    const btn = event.target;
+    btn.textContent='✓ Sauvegardé';
+    setTimeout(()=>btn.textContent='💾 Sauvegarder note', 1500);
+  }
 }
-function deleteKb(id){
-  delete S.kb[id];
-  save('ci_kb', S.kb);
-  renderKb();
+async function deleteKb(id){
+  if(!confirm('Retirer cette ad de la library ?')) return;
+  const ok = await cloudDelete('library', { user_id: _currentUser.id, ad_id: id });
+  if(ok){
+    S.library = S.library.filter(it => it.ad_id !== id);
+    renderKb();
+    // Refresh scout cards too in case the ad is visible
+    renderComps();
+  }
 }
 
 // ══════════════════════════════════════════
-// V7: KB TAGGING + FILTERS
+// V9: TAGGING (Hook/Caption only — Concept replaced by angle_tag in commits 3+4)
 // ══════════════════════════════════════════
-function toggleKbTag(id, tag){
-  if(!S.kb[id]) return;
-  const tags = S.kb[id].tags || [];
-  const idx = tags.indexOf(tag);
-  if(idx >= 0) tags.splice(idx, 1);
-  else tags.push(tag);
-  S.kb[id].tags = tags;
-  save('ci_kb', S.kb);
-  renderKb();
+async function toggleKbTag(id, tag){
+  const item = S.library.find(it => it.ad_id === id);
+  if(!item) return;
+  if(tag !== 'hook' && tag !== 'caption') return; // angle handled differently in V9
+  const col = tag === 'hook' ? 'is_hook' : 'is_caption';
+  const newVal = !item[col];
+  const ok = await cloudUpdate('library', { user_id: _currentUser.id, ad_id: id }, { [col]: newVal });
+  if(ok){
+    item[col] = newVal;
+    renderKb();
+  }
 }
 
 function toggleKbTagFilter(tag){
@@ -1587,7 +1657,7 @@ async function doLogout(){
   closeSettings();
   await db.auth.signOut();
   // Reset state
-  S.competitors = []; S.kb = {}; S.apifyKey = '';
+  S.competitors = []; S.library = []; S.scrapedAds = {}; S.lastScrape = {}; S.apifyKey = '';
   _currentUser = null;
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginPwd').value = '';
@@ -1596,29 +1666,56 @@ async function doLogout(){
   document.getElementById('loginScreen').classList.add('visible');
 }
 
-function _reinitState(){
-  S.competitors = JSON.parse(localStorage.getItem('ci_comps') || '[]');
-  S.kb          = JSON.parse(localStorage.getItem('ci_kb')    || '{}');
-  S.apifyKey    = localStorage.getItem('ci_apify') || '';
-  S.refCpm      = parseFloat(localStorage.getItem('ci_cpm')   || '4.5');
-  S.limit       = parseInt(  localStorage.getItem('ci_limit') || '150');
-}
-
 function _showSetupBanner(){
   setSyncStatus('error', '⚠ Setup requis');
   if(document.getElementById('setupBanner')) return;
-  const SQL = `create table public.kv_store (
+  const SQL = `-- ERA Competitor Intel · V9 schema (Run dans Supabase → SQL Editor)
+create table if not exists public.competitors (
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade default auth.uid(),
-  key text not null,
-  value jsonb,
+  name text not null, url text not null, country text default 'FR',
+  created_at timestamptz default now()
+);
+alter table public.competitors enable row level security;
+drop policy if exists "users own competitors" on public.competitors;
+create policy "users own competitors" on public.competitors for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists public.library (
+  ad_id text not null,
+  user_id uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  competitor_name text, ad_data jsonb not null,
+  is_hook boolean default false, is_caption boolean default false,
+  angle_tag text, notes text default '',
+  saved_at timestamptz default now(),
+  primary key (user_id, ad_id)
+);
+alter table public.library enable row level security;
+drop policy if exists "users own library" on public.library;
+create policy "users own library" on public.library for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists public.angle_tags (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  name text not null, created_at timestamptz default now(),
+  unique(user_id, name)
+);
+alter table public.angle_tags enable row level security;
+drop policy if exists "users own angle_tags" on public.angle_tags;
+create policy "users own angle_tags" on public.angle_tags for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create table if not exists public.kv_store (
+  user_id uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  key text not null, value jsonb,
   updated_at timestamptz default now(),
   primary key (user_id, key)
 );
 alter table public.kv_store enable row level security;
-create policy "users manage own kv"
-  on public.kv_store for all
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);`;
+drop policy if exists "users own kv" on public.kv_store;
+create policy "users own kv" on public.kv_store for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);`;
 
   const banner = document.createElement('div');
   banner.id = 'setupBanner';
@@ -1634,7 +1731,7 @@ create policy "users manage own kv"
     </div>
     <textarea readonly onclick="this.select()" style="width:100%;background:#0c0c10;border:1px solid #252535;
       color:#e8e8f0;padding:10px 12px;border-radius:7px;font-family:'JetBrains Mono',monospace;
-      font-size:11px;line-height:1.6;resize:none;outline:none;height:140px;cursor:pointer">${SQL}</textarea>
+      font-size:11px;line-height:1.6;resize:none;outline:none;height:200px;cursor:pointer">${SQL}</textarea>
     <div style="display:flex;gap:10px;margin-top:12px">
       <button onclick="navigator.clipboard.writeText(document.querySelector('#setupBanner textarea').value);this.textContent='✓ Copié !';setTimeout(()=>this.textContent='Copier le SQL',1500)" 
         style="background:rgba(108,99,255,.2);border:1px solid rgba(108,99,255,.4);color:#8b85ff;
@@ -1650,66 +1747,53 @@ create policy "users manage own kv"
   document.body.appendChild(banner);
 }
 
-async function _loadAndMigrate(){
+async function loadAll(){
   setSyncStatus('syncing');
   try {
-    const { data, error } = await db.from('kv_store').select('key, value');
-
-    if(error){
-      console.error('[ERA] kv_store error:', error);
-      if(error.code === '42P01' || (error.message||'').includes('does not exist')){
+    // 1. Settings from kv_store
+    const { data: kvData, error: kvErr } = await db.from('kv_store').select('key, value');
+    if(kvErr){
+      console.error('[ERA] kv_store error:', kvErr);
+      if(kvErr.code === '42P01' || (kvErr.message||'').includes('does not exist')){
         _showSetupBanner();
-      } else {
-        setSyncStatus('error', '⚠ ' + (error.message||'').slice(0,35));
+        return false;
       }
-      // Fall back to localStorage so app is still usable
-      _reinitState();
-      return;
+      throw kvErr;
     }
+    (kvData||[]).forEach(r => {
+      if(r.key === 'ci_apify') S.apifyKey = typeof r.value === 'string' ? r.value : '';
+      if(r.key === 'ci_limit') S.limit = parseInt(r.value) || 150;
+      if(r.key === 'ci_cpm')   S.refCpm = parseFloat(r.value) || 4.5;
+    });
 
-    const cloudKeys = new Set((data||[]).map(r=>r.key));
-    const cloudHasData = cloudKeys.has('ci_kb') || cloudKeys.has('ci_comps');
-
-    // Check local data for migration
-    const localKb    = JSON.parse(localStorage.getItem('ci_kb')    || '{}');
-    const localComps = JSON.parse(localStorage.getItem('ci_comps') || '[]');
-    const hasLocalData = Object.keys(localKb).length > 0 || localComps.length > 0;
-
-    if(hasLocalData && !cloudHasData){
-      // Migrate local → cloud
-      setSyncStatus('syncing', '⬆ Migration...');
-      const toMigrate = [
-        { key:'ci_kb',    value: localKb },
-        { key:'ci_comps', value: localComps },
-        { key:'ci_apify', value: localStorage.getItem('ci_apify') || '' },
-        { key:'ci_cpm',   value: parseFloat(localStorage.getItem('ci_cpm') || '4.5') },
-        { key:'ci_limit', value: parseInt(  localStorage.getItem('ci_limit') || '150') },
-      ];
-      for(const row of toMigrate){
-        await db.from('kv_store').upsert(
-          { user_id: _currentUser.id, key: row.key, value: row.value },
-          { onConflict: 'user_id,key' }
-        );
-      }
-    } else if(cloudHasData){
-      // Load cloud → local cache
-      (data||[]).forEach(row => {
-        const v = row.value;
-        localStorage.setItem(row.key, typeof v === 'string' ? v : JSON.stringify(v));
-      });
+    // 2. Competitors
+    const { data: comps, error: cErr } = await db.from('competitors').select('*').order('created_at');
+    if(cErr){
+      if(cErr.code === '42P01'){ _showSetupBanner(); return false; }
+      throw cErr;
     }
+    S.competitors = comps || [];
 
-    _reinitState();
+    // 3. Library
+    const { data: lib, error: lErr } = await db.from('library').select('*').order('saved_at',{ascending:false});
+    if(lErr){
+      if(lErr.code === '42P01'){ _showSetupBanner(); return false; }
+      throw lErr;
+    }
+    S.library = lib || [];
+
     setSyncStatus('synced');
+    return true;
   } catch(e){
-    // Fallback: load from localStorage
-    _reinitState();
-    setSyncStatus('offline');
+    console.error('[ERA] loadAll error:', e);
+    setSyncStatus('error', '⚠ ' + (e.message||'').slice(0,30));
+    return false;
   }
 }
 
 async function initApp(){
-  await _loadAndMigrate();
+  const ok = await loadAll();
+  if(!ok) return; // setup banner shown, stay on login
   document.getElementById('loginScreen').classList.remove('visible');
   renderComps();
   renderKb();
