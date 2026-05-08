@@ -795,7 +795,6 @@ function save(k,v){
 async function _cloudSave(k, v){
   setSyncStatus('syncing');
   try {
-    // Normalize: always store as native JS value in jsonb
     let val = v;
     if(typeof v === 'string'){
       try { val = JSON.parse(v); } catch(e){ val = v; }
@@ -804,8 +803,18 @@ async function _cloudSave(k, v){
       { user_id: _currentUser.id, key: k, value: val },
       { onConflict: 'user_id,key' }
     );
-    setSyncStatus(error ? 'error' : 'synced');
+    if(error){
+      console.error('[ERA] Cloud save error:', error);
+      if(error.code === '42P01' || (error.message||'').includes('does not exist')){
+        _showSetupBanner();
+      } else {
+        setSyncStatus('error', '⚠ ' + (error.message||'').slice(0,35));
+      }
+    } else {
+      setSyncStatus('synced');
+    }
   } catch(e){
+    console.error('[ERA] Cloud save exception:', e);
     setSyncStatus('offline');
   }
 }
@@ -1595,11 +1604,68 @@ function _reinitState(){
   S.limit       = parseInt(  localStorage.getItem('ci_limit') || '150');
 }
 
+function _showSetupBanner(){
+  setSyncStatus('error', '⚠ Setup requis');
+  if(document.getElementById('setupBanner')) return;
+  const SQL = `create table public.kv_store (
+  user_id uuid not null references auth.users(id) on delete cascade default auth.uid(),
+  key text not null,
+  value jsonb,
+  updated_at timestamptz default now(),
+  primary key (user_id, key)
+);
+alter table public.kv_store enable row level security;
+create policy "users manage own kv"
+  on public.kv_store for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);`;
+
+  const banner = document.createElement('div');
+  banner.id = 'setupBanner';
+  banner.style.cssText = `position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    width:min(640px,calc(100vw - 32px));background:#13131a;border:1px solid rgba(255,68,102,.4);
+    border-radius:12px;padding:20px 22px;z-index:999;box-shadow:0 8px 40px rgba(0,0,0,.6)`;
+  banner.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:#ff4466;margin-bottom:8px">⚠ Table Supabase manquante</div>
+    <div style="font-size:12px;color:#7878a0;line-height:1.6;margin-bottom:14px">
+      La table <code style="color:#e8e8f0;background:#1a1a24;padding:1px 5px;border-radius:3px">kv_store</code> 
+      n'existe pas encore. Va dans <b style="color:#e8e8f0">Supabase → SQL Editor → New query</b>, 
+      colle le SQL ci-dessous et clique <b style="color:#e8e8f0">Run</b>.
+    </div>
+    <textarea readonly onclick="this.select()" style="width:100%;background:#0c0c10;border:1px solid #252535;
+      color:#e8e8f0;padding:10px 12px;border-radius:7px;font-family:'JetBrains Mono',monospace;
+      font-size:11px;line-height:1.6;resize:none;outline:none;height:140px;cursor:pointer">${SQL}</textarea>
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button onclick="navigator.clipboard.writeText(document.querySelector('#setupBanner textarea').value);this.textContent='✓ Copié !';setTimeout(()=>this.textContent='Copier le SQL',1500)" 
+        style="background:rgba(108,99,255,.2);border:1px solid rgba(108,99,255,.4);color:#8b85ff;
+        padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif">
+        Copier le SQL
+      </button>
+      <button onclick="document.getElementById('setupBanner').remove();window.location.reload()" 
+        style="background:none;border:1px solid #252535;color:#7878a0;padding:8px 16px;
+        border-radius:6px;font-size:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif">
+        J'ai exécuté → Recharger
+      </button>
+    </div>`;
+  document.body.appendChild(banner);
+}
+
 async function _loadAndMigrate(){
   setSyncStatus('syncing');
   try {
     const { data, error } = await db.from('kv_store').select('key, value');
-    if(error) throw error;
+
+    if(error){
+      console.error('[ERA] kv_store error:', error);
+      if(error.code === '42P01' || (error.message||'').includes('does not exist')){
+        _showSetupBanner();
+      } else {
+        setSyncStatus('error', '⚠ ' + (error.message||'').slice(0,35));
+      }
+      // Fall back to localStorage so app is still usable
+      _reinitState();
+      return;
+    }
 
     const cloudKeys = new Set((data||[]).map(r=>r.key));
     const cloudHasData = cloudKeys.has('ci_kb') || cloudKeys.has('ci_comps');
