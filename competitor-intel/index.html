@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ERA · Competitor Intel</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -528,9 +529,88 @@ header{
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 ::-webkit-scrollbar-thumb:hover{background:var(--text3)}
 a{color:inherit;text-decoration:none}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:var(--bg);align-items:center;justify-content:center;
+}
+#loginScreen.visible{display:flex}
+.login-wrap{
+  width:100%;max-width:400px;padding:40px 32px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:16px;
+  display:flex;flex-direction:column;gap:20px;
+}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.login-logo .logo-mark{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;color:#fff;
+}
+.login-title{font-size:20px;font-weight:600;letter-spacing:-.02em}
+.login-sub{font-size:12px;color:var(--text3);line-height:1.6}
+.login-field{display:flex;flex-direction:column;gap:6px}
+.login-field label{font-size:12px;font-weight:500;color:var(--text2)}
+.login-field input{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+  padding:10px 13px;border-radius:8px;font-family:'Space Grotesk',sans-serif;
+  font-size:13px;outline:none;
+}
+.login-field input:focus{border-color:var(--accent)}
+.login-field input::placeholder{color:var(--text3)}
+.login-btn{
+  background:var(--accent);color:#fff;border:none;
+  padding:12px;border-radius:8px;font-family:'Space Grotesk',sans-serif;
+  font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;
+}
+.login-btn:hover{background:var(--accent2)}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-err{
+  background:rgba(255,68,102,.08);border:1px solid rgba(255,68,102,.25);
+  border-radius:6px;padding:10px 12px;font-size:12px;color:var(--red);
+  display:none;
+}
+.login-err.visible{display:block}
+
+/* ── SYNC STATUS ── */
+#syncStatus{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:3px 9px;border-radius:10px;transition:all .3s;
+  letter-spacing:.04em;cursor:default;
+}
+#syncStatus.synced{background:rgba(0,229,160,.1);color:var(--green);border:1px solid rgba(0,229,160,.2)}
+#syncStatus.syncing{background:rgba(108,99,255,.1);color:var(--accent2);border:1px solid rgba(108,99,255,.2)}
+#syncStatus.error{background:rgba(255,68,102,.1);color:var(--red);border:1px solid rgba(255,68,102,.2)}
+#syncStatus.offline{background:rgba(255,184,48,.1);color:var(--yellow);border:1px solid rgba(255,184,48,.2)}
 </style>
 </head>
+</head>
 <body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="loginScreen" class="visible">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="logo-mark">E</div>
+      <div style="font-size:13px;font-weight:600;letter-spacing:.04em">ERA · Competitor Intel</div>
+    </div>
+    <div>
+      <div class="login-title">Connexion</div>
+      <div class="login-sub" style="margin-top:6px">Tes données sont synchronisées entre tous tes devices.</div>
+    </div>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="ton@email.com" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="loginPwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Se connecter</button>
+  </div>
+</div>
 
 <header>
   <div class="wrap">
@@ -543,7 +623,10 @@ a{color:inherit;text-decoration:none}
         <button class="hbtn active" id="btn-scout" onclick="switchView('scout')">Scout</button>
         <button class="hbtn" id="btn-kb" onclick="switchView('kb')">Knowledge Base</button>
       </nav>
-      <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="syncStatus" class="synced">☁ Synced</span>
+        <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
+      </div>
     </div>
   </div>
 </header>
@@ -662,20 +745,37 @@ a{color:inherit;text-decoration:none}
         <input type="number" id="setLimit" placeholder="150" min="10" max="500"/>
       </div>
       <button class="modal-save" onclick="saveSettings()">Enregistrer</button>
+      <button onclick="doLogout()" style="background:none;border:1px solid rgba(255,68,102,.3);color:var(--red);padding:10px;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:4px">Se déconnecter</button>
     </div>
   </div>
 </div>
 
 <script>
 // ══════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════
+const SB_URL  = 'https://xnknidtybscnyovggrvw.supabase.co';
+const SB_ANON = 'sb_publishable_5cUGf2z4uTNWzkgtfPk5wQ_hOY8MSEZ';
+const db = window.supabase.createClient(SB_URL, SB_ANON);
+let _currentUser = null;
+
+function setSyncStatus(state, label){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.className = state;
+  const labels = {synced:'☁ Synced', syncing:'⏳ Sync...', error:'⚠ Erreur', offline:'📴 Offline'};
+  el.textContent = label || labels[state] || state;
+}
+
+// ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
 const S = {
-  competitors: JSON.parse(localStorage.getItem('ci_comps') || '[]'),
-  kb: JSON.parse(localStorage.getItem('ci_kb') || '{}'),
-  apifyKey: localStorage.getItem('ci_apify') || '',
-  refCpm: parseFloat(localStorage.getItem('ci_cpm') || '4.5'),
-  limit: parseInt(localStorage.getItem('ci_limit') || '150'),
+  competitors: [],
+  kb: {},
+  apifyKey: '',
+  refCpm: 4.5,
+  limit: 150,
   kbFilter: 'all',
   kbSort: 'date',  // date | imp | cta
   kbTagFilter: [],  // V7: ['hook'|'caption'|'concept'|'untagged'], multi-select
@@ -685,7 +785,30 @@ const S = {
   adFilters: {}, // compIdx → { sort, type }
 };
 
-function save(k,v){localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v))}
+function save(k,v){
+  // Sync local immediately
+  localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v));
+  // Fire-and-forget to cloud
+  if(_currentUser) _cloudSave(k, v);
+}
+
+async function _cloudSave(k, v){
+  setSyncStatus('syncing');
+  try {
+    // Normalize: always store as native JS value in jsonb
+    let val = v;
+    if(typeof v === 'string'){
+      try { val = JSON.parse(v); } catch(e){ val = v; }
+    }
+    const { error } = await db.from('kv_store').upsert(
+      { user_id: _currentUser.id, key: k, value: val },
+      { onConflict: 'user_id,key' }
+    );
+    setSyncStatus(error ? 'error' : 'synced');
+  } catch(e){
+    setSyncStatus('offline');
+  }
+}
 
 // ══════════════════════════════════════════
 // UTILS
@@ -1429,9 +1552,118 @@ function clearKbFilters(){
 }
 
 // ══════════════════════════════════════════
-// INIT
+// AUTH + CLOUD INIT
 // ══════════════════════════════════════════
-renderComps();
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pwd   = document.getElementById('loginPwd').value;
+  const btn   = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginErr');
+  if(!email || !pwd) return;
+  btn.disabled = true;
+  btn.textContent = 'Connexion...';
+  errEl.classList.remove('visible');
+  const { error } = await db.auth.signInWithPassword({ email, password: pwd });
+  if(error){
+    errEl.textContent = error.message === 'Invalid login credentials'
+      ? 'Email ou mot de passe incorrect.' : error.message;
+    errEl.classList.add('visible');
+    btn.disabled = false;
+    btn.textContent = 'Se connecter';
+  }
+  // onAuthStateChange handles the rest
+}
+
+async function doLogout(){
+  closeSettings();
+  await db.auth.signOut();
+  // Reset state
+  S.competitors = []; S.kb = {}; S.apifyKey = '';
+  _currentUser = null;
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPwd').value = '';
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginBtn').textContent = 'Se connecter';
+  document.getElementById('loginScreen').classList.add('visible');
+}
+
+function _reinitState(){
+  S.competitors = JSON.parse(localStorage.getItem('ci_comps') || '[]');
+  S.kb          = JSON.parse(localStorage.getItem('ci_kb')    || '{}');
+  S.apifyKey    = localStorage.getItem('ci_apify') || '';
+  S.refCpm      = parseFloat(localStorage.getItem('ci_cpm')   || '4.5');
+  S.limit       = parseInt(  localStorage.getItem('ci_limit') || '150');
+}
+
+async function _loadAndMigrate(){
+  setSyncStatus('syncing');
+  try {
+    const { data, error } = await db.from('kv_store').select('key, value');
+    if(error) throw error;
+
+    const cloudKeys = new Set((data||[]).map(r=>r.key));
+    const cloudHasData = cloudKeys.has('ci_kb') || cloudKeys.has('ci_comps');
+
+    // Check local data for migration
+    const localKb    = JSON.parse(localStorage.getItem('ci_kb')    || '{}');
+    const localComps = JSON.parse(localStorage.getItem('ci_comps') || '[]');
+    const hasLocalData = Object.keys(localKb).length > 0 || localComps.length > 0;
+
+    if(hasLocalData && !cloudHasData){
+      // Migrate local → cloud
+      setSyncStatus('syncing', '⬆ Migration...');
+      const toMigrate = [
+        { key:'ci_kb',    value: localKb },
+        { key:'ci_comps', value: localComps },
+        { key:'ci_apify', value: localStorage.getItem('ci_apify') || '' },
+        { key:'ci_cpm',   value: parseFloat(localStorage.getItem('ci_cpm') || '4.5') },
+        { key:'ci_limit', value: parseInt(  localStorage.getItem('ci_limit') || '150') },
+      ];
+      for(const row of toMigrate){
+        await db.from('kv_store').upsert(
+          { user_id: _currentUser.id, key: row.key, value: row.value },
+          { onConflict: 'user_id,key' }
+        );
+      }
+    } else if(cloudHasData){
+      // Load cloud → local cache
+      (data||[]).forEach(row => {
+        const v = row.value;
+        localStorage.setItem(row.key, typeof v === 'string' ? v : JSON.stringify(v));
+      });
+    }
+
+    _reinitState();
+    setSyncStatus('synced');
+  } catch(e){
+    // Fallback: load from localStorage
+    _reinitState();
+    setSyncStatus('offline');
+  }
+}
+
+async function initApp(){
+  await _loadAndMigrate();
+  document.getElementById('loginScreen').classList.remove('visible');
+  renderComps();
+  renderKb();
+}
+
+// Auth state listener — single source of truth
+db.auth.onAuthStateChange(async (event, session) => {
+  if(event === 'SIGNED_IN' || event === 'INITIAL_SESSION'){
+    if(session?.user){
+      _currentUser = session.user;
+      await initApp();
+    } else {
+      // No session
+      document.getElementById('loginScreen').classList.add('visible');
+    }
+  } else if(event === 'SIGNED_OUT'){
+    document.getElementById('loginScreen').classList.add('visible');
+  }
+});
+
 </script>
 </body>
 </html>
