@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERA · Internal Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050507;--bg2:#0c0c10;--bg3:#13131a;
+  --border:#1e1e2a;--border2:#252535;
+  --text:#e8e8f0;--text2:#7878a0;--text3:#3a3a55;
+  --accent:#6c63ff;--accent2:#8b85ff;
+  --green:#00e5a0;--yellow:#ffb830;
+}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:.4;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none;z-index:0;
+}
+.wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:80px 32px 60px}
+.brand{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:20px}
+h1{font-size:42px;font-weight:300;line-height:1.05;letter-spacing:-.02em;margin-bottom:14px}
+h1 b{font-weight:600;color:var(--accent2)}
+.lead{font-size:15px;color:var(--text2);max-width:640px;line-height:1.6;margin-bottom:50px}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.16em;text-transform:uppercase;margin:40px 0 16px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:'';flex:1;height:.5px;background:var(--border)}
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.tool-card{
+  display:block;text-decoration:none;color:inherit;
+  background:var(--bg2);border:.5px solid var(--border);border-radius:12px;
+  padding:20px 22px;transition:all .15s ease;position:relative;overflow:hidden;
+}
+.tool-card:hover{border-color:var(--border2);background:var(--bg3);transform:translateY(-1px)}
+.tool-card.soon{opacity:.45;cursor:not-allowed}
+.tool-card.soon:hover{transform:none;border-color:var(--border)}
+.tool-name{font-size:15px;font-weight:500;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.tool-desc{font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:14px}
+.tool-meta{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+.dot.dev{background:var(--yellow)}
+.dot.idea{background:var(--text3)}
+.tag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);background:var(--bg3);padding:2px 7px;border-radius:4px;border:.5px solid var(--border)}
+.footer{margin-top:80px;padding-top:24px;border-top:.5px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.06em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.footer a{color:var(--text2);text-decoration:none}
+.footer a:hover{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">ERA Music · Internal</div>
+  <h1>Tools<br><b>for the people who build ERA.</b></h1>
+  <p class="lead">Hub des outils internes. Chaque outil est conçu pour un workflow précis, pas pour être générique. Itéré en continu — la version que tu vois est toujours la plus récente.</p>
+
+  <div class="section-label">Live</div>
+  <div class="tool-grid">
+
+    <a class="tool-card" href="/competitor-intel/">
+      <div class="tool-name">🎯 Competitor Intel</div>
+      <div class="tool-desc">Scrape les Meta Ads de la concurrence via Apify. Sauvegarde les meilleures dans une KB perso, taggable par hook / caption / concept. Filtres par slug CTA, type média, label.</div>
+      <div class="tool-meta"><span class="dot"></span>Live<span class="tag">Apify</span><span class="tag">Meta Ads</span></div>
+    </a>
+
+  </div>
+
+  <div class="section-label">Roadmap</div>
+  <div class="tool-grid">
+
+    <div class="tool-card soon">
+      <div class="tool-name">📅 Release Tracker</div>
+      <div class="tool-desc">Calendrier des sorties ERA. Pour chaque track : phase (pre-release / release / catalog), KPIs (saves, streams, ROAS), ads associées.</div>
+      <div class="tool-meta"><span class="dot idea"></span>Idea</div>
+    </div>
+
+    <div class="tool-card soon">
+      <div class="tool-name">🎵 Playlist Tracker</div>
+      <div class="tool-desc">Tracking des playlists ERA + concurrents. Followers, position des tracks, taux de rotation, alerte sur retraits.</div>
+      <div class="tool-meta"><span class="dot idea"></span>Idea</div>
+    </div>
+
+    <div class="tool-card soon">
+      <div class="tool-name">📱 Phone Farm Scheduler</div>
+      <div class="tool-desc">Planifie les posts par compte TikTok / IG. Marque le top performer de la semaine = candidat créatif paid Campagne 1.</div>
+      <div class="tool-meta"><span class="dot idea"></span>Idea</div>
+    </div>
+
+    <div class="tool-card soon">
+      <div class="tool-name">📊 Ads Performance Dashboard</div>
+      <div class="tool-desc">Pull Meta Ads API. Vue par campagne / creative / track. CPM, CTR, CPC, ROAS estimé. Comparaison entre tracks.</div>
+      <div class="tool-meta"><span class="dot idea"></span>Idea</div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span>ERA · Internal Tools · v0.1</span>
+    <span><a href="https://github.com/antoinecastaldicontact-cmyk/era-internal-tools" target="_blank">github →</a></span>
+  </div>
+
+</div>
+</body>
+</html>

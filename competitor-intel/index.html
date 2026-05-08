@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERA · Competitor Intel</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050507;
+  --bg2:#0c0c10;
+  --bg3:#13131a;
+  --bg4:#1a1a24;
+  --border:#1e1e2a;
+  --border2:#252535;
+  --text:#e8e8f0;
+  --text2:#7878a0;
+  --text3:#3a3a55;
+  --accent:#6c63ff;
+  --accent2:#8b85ff;
+  --green:#00e5a0;
+  --yellow:#ffb830;
+  --red:#ff4466;
+  --blue:#38bdf8;
+  --pink:#f472b6;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:14px;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* NOISE OVERLAY */
+body::before{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+  opacity:.4;
+}
+
+/* GRID BG */
+body::after{
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(108,99,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,.03) 1px, transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
+
+.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:0 24px}
+
+/* HEADER */
+header{
+  padding:20px 0 0;
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  background:rgba(5,5,7,.9);
+  backdrop-filter:blur(20px);
+  z-index:50;
+}
+.header-inner{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{
+  width:32px;height:32px;
+  background:var(--accent);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;color:#fff;letter-spacing:-.5px;
+}
+.logo-text{font-weight:700;font-size:15px;letter-spacing:-.3px}
+.logo-text span{color:var(--text2);font-weight:400}
+.header-nav{display:flex;gap:2px}
+.hbtn{
+  background:none;border:none;color:var(--text2);
+  padding:6px 14px;border-radius:6px;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:500;
+  transition:all .15s;
+}
+.hbtn:hover{color:var(--text);background:var(--bg3)}
+.hbtn.active{color:var(--accent2);background:rgba(108,99,255,.1)}
+.settings-btn{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text2);padding:7px 14px;border-radius:6px;
+  cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:500;
+  transition:all .15s;
+}
+.settings-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* VIEWS */
+.view{display:none;padding:28px 0 60px}
+.view.active{display:block}
+
+/* SECTION LABEL */
+.section-label{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text3);margin-bottom:16px;
+}
+
+/* ADD COMPETITOR */
+.add-panel{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-radius:12px;padding:20px;
+  margin-bottom:24px;
+}
+.add-form{display:grid;grid-template-columns:1fr 2fr 100px auto;gap:10px;margin-top:14px;align-items:end}
+.field label{
+  font-size:11px;color:var(--text3);letter-spacing:.06em;
+  text-transform:uppercase;font-family:'JetBrains Mono',monospace;
+  display:block;margin-bottom:6px;
+}
+.field input,.field select{
+  width:100%;
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text);padding:9px 13px;border-radius:7px;
+  font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;
+  transition:border-color .15s;
+}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--text3)}
+.add-btn{
+  background:var(--accent);color:#fff;border:none;
+  padding:9px 20px;border-radius:7px;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;
+  transition:all .2s;white-space:nowrap;height:39px;
+}
+.add-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+
+/* COMPETITOR CARDS */
+.comp-grid{display:flex;flex-direction:column;gap:20px}
+.comp-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;
+}
+.comp-card-head{
+  padding:16px 20px;display:flex;align-items:center;
+  justify-content:space-between;border-bottom:1px solid var(--border);
+}
+.comp-card-left{display:flex;align-items:center;gap:14px}
+.comp-avatar{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--pink));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:16px;color:#fff;flex-shrink:0;
+}
+.comp-name{font-weight:700;font-size:15px}
+.comp-url{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px}
+.comp-card-right{display:flex;gap:8px;align-items:center}
+.comp-stats{display:flex;gap:16px;font-size:12px;color:var(--text2)}
+.stat-item{text-align:right}
+.stat-val{font-weight:700;color:var(--text);font-size:14px;font-family:'JetBrains Mono',monospace}
+.stat-lbl{font-size:10px;color:var(--text3);letter-spacing:.04em;margin-top:1px}
+.scrape-btn{
+  background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);
+  color:var(--accent2);padding:7px 16px;border-radius:6px;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;
+  transition:all .15s;white-space:nowrap;
+}
+.scrape-btn:hover{background:rgba(108,99,255,.25);border-color:var(--accent)}
+.scrape-btn:disabled{opacity:.4;cursor:not-allowed}
+.rm-btn{
+  background:none;border:1px solid var(--border2);
+  color:var(--text3);padding:7px 10px;border-radius:6px;cursor:pointer;
+  font-size:12px;transition:all .15s;
+}
+.rm-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* ADS GRID */
+.ads-container{padding:16px 20px}
+.ads-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-chip{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text2);padding:5px 12px;border-radius:20px;
+  cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.04em;
+  transition:all .15s;
+}
+.filter-chip.on{background:rgba(108,99,255,.15);border-color:rgba(108,99,255,.5);color:var(--accent2)}
+.sort-select{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text2);padding:5px 12px;border-radius:6px;
+  font-family:'Space Grotesk',sans-serif;font-size:11px;outline:none;
+  margin-left:auto;cursor:pointer;
+}
+.ads-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:14px;
+}
+.ads-empty{
+  padding:40px;text-align:center;color:var(--text3);font-size:13px;
+  border:1px dashed var(--border2);border-radius:8px;
+}
+
+/* AD CARD */
+.ad-card{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:10px;overflow:hidden;
+  display:flex;flex-direction:column;
+  transition:border-color .2s,transform .2s;
+  position:relative;
+}
+.ad-card:hover{border-color:rgba(108,99,255,.4);transform:translateY(-2px)}
+.ad-card.saved-era{border-color:rgba(0,229,160,.3)!important}
+.ad-card.saved-inspo{border-color:rgba(255,184,48,.3)!important}
+
+.ad-media{
+  aspect-ratio:1;background:#000;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;
+}
+.ad-media img,.ad-media video{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.ad-media-placeholder{
+  font-size:36px;opacity:.3;
+}
+.ad-type-badge{
+  position:absolute;top:8px;left:8px;
+  padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.04em;
+  backdrop-filter:blur(8px);
+}
+.badge-video{background:rgba(244,114,182,.2);color:var(--pink);border:1px solid rgba(244,114,182,.3)}
+.badge-image{background:rgba(56,189,248,.2);color:var(--blue);border:1px solid rgba(56,189,248,.3)}
+.badge-carousel{background:rgba(108,99,255,.2);color:var(--accent2);border:1px solid rgba(108,99,255,.3)}
+
+.ad-duration-badge{
+  position:absolute;top:8px;right:8px;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  color:var(--green);font-family:'JetBrains Mono',monospace;
+  font-size:10px;font-weight:500;
+  padding:3px 8px;border-radius:4px;
+  border:1px solid rgba(0,229,160,.2);
+}
+
+.ad-body{padding:12px}
+.ad-text{
+  font-size:12px;line-height:1.5;color:var(--text2);
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+  overflow:hidden;margin-bottom:10px;
+}
+.ad-text.expanded{-webkit-line-clamp:unset}
+
+/* IMPRESSION METER */
+.imp-meter{
+  background:var(--bg4);border-radius:6px;padding:8px 10px;
+  margin-bottom:10px;
+}
+.imp-meter-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.imp-label{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+.imp-range{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500}
+.imp-bar-bg{height:3px;background:var(--border);border-radius:2px}
+.imp-bar-fill{height:3px;border-radius:2px;transition:width .6s ease}
+.imp-proxy{display:flex;gap:12px;margin-top:6px}
+.proxy-item{font-size:10px}
+.proxy-lbl{color:var(--text3)}
+.proxy-val{font-family:'JetBrains Mono',monospace;font-weight:500}
+
+.ad-cta{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:var(--text3);margin-bottom:10px;
+  padding:6px 8px;background:var(--bg4);border-radius:5px;
+  word-break:break-all;line-height:1.4;
+}
+.ad-cta-icon{flex-shrink:0;font-size:12px}
+
+.ad-meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.meta-tag{
+  font-size:10px;padding:2px 7px;border-radius:3px;
+  font-family:'JetBrains Mono',monospace;font-weight:500;
+  background:var(--bg4);color:var(--text3);border:1px solid var(--border);
+}
+.meta-tag.active{background:rgba(0,229,160,.08);color:var(--green);border-color:rgba(0,229,160,.2)}
+.meta-tag.inactive{color:var(--text3)}
+
+.ad-actions{
+  display:flex;border-top:1px solid var(--border);
+  margin-top:auto;
+}
+.ad-act{
+  flex:1;padding:8px 4px;text-align:center;
+  font-size:11px;font-weight:600;cursor:pointer;
+  background:none;border:none;color:var(--text3);
+  transition:all .15s;text-decoration:none;display:block;
+  font-family:'Space Grotesk',sans-serif;
+}
+.ad-act:hover{background:var(--bg2);color:var(--accent2)}
+.ad-act.active-era{color:var(--green)!important}
+.ad-act.active-inspo{color:var(--yellow)!important}
+.ad-act+.ad-act{border-left:1px solid var(--border)}
+.ad-act.expand-btn{color:var(--text3)}
+
+/* KNOWLEDGE BASE */
+.kb-filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.kb-pill{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text2);padding:6px 14px;border-radius:20px;
+  cursor:pointer;font-size:12px;font-weight:600;transition:all .15s;
+}
+.kb-pill.on{background:rgba(108,99,255,.15);border-color:var(--accent);color:var(--accent2)}
+
+.kb-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:16px;
+}
+.kb-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+.kb-card-head{
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.kb-competitor{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.kb-saved-label{
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.04em;
+}
+.kb-label-era{background:rgba(0,229,160,.1);color:var(--green);border:1px solid rgba(0,229,160,.2)}
+.kb-label-inspo{background:rgba(255,184,48,.1);color:var(--yellow);border:1px solid rgba(255,184,48,.2)}
+.kb-media{aspect-ratio:16/9;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:28px;opacity:.4}
+.kb-media img,.kb-media video{width:100%;height:100%;object-fit:cover}
+.kb-body{padding:12px;flex:1}
+.kb-text{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.kb-metrics{display:flex;gap:12px;font-size:11px}
+.kb-m{font-family:'JetBrains Mono',monospace}
+.kb-ml{color:var(--text3)}
+.kb-mv{font-weight:500}
+.kb-notes-section{padding:0 12px 12px}
+.kb-notes-area{
+  width:100%;background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text);padding:8px 10px;border-radius:6px;
+  font-family:'Space Grotesk',sans-serif;font-size:12px;
+  outline:none;resize:none;min-height:60px;line-height:1.5;
+}
+.kb-notes-area:focus{border-color:var(--accent)}
+.kb-footer{
+  padding:8px 12px;border-top:1px solid var(--border);
+  display:flex;gap:8px;align-items:center;
+}
+.kb-del-btn{
+  background:none;border:1px solid var(--border2);color:var(--text3);
+  padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;
+}
+.kb-del-btn:hover{border-color:var(--red);color:var(--red)}
+.kb-link{
+  margin-left:auto;font-size:11px;color:var(--text3);text-decoration:none;
+  font-family:'JetBrains Mono',monospace;
+}
+.kb-link:hover{color:var(--accent2)}
+.kb-dl-btn{
+  background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.25);
+  color:var(--green);padding:4px 10px;border-radius:4px;
+  font-size:11px;font-weight:600;cursor:pointer;text-decoration:none;
+  font-family:'Space Grotesk',sans-serif;transition:all .15s;
+}
+.kb-dl-btn:hover{background:rgba(0,229,160,.2)}
+.new-badge{
+  background:rgba(108,99,255,.2);color:var(--accent2);
+  border:1px solid rgba(108,99,255,.4);
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.06em;
+  animation:pulse-badge 2s infinite;
+}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.6}}
+.kb-sort-bar{display:flex;gap:6px;margin-left:auto;align-items:center}
+.kb-sort-btn{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text2);padding:5px 12px;border-radius:6px;
+  font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;
+  font-family:'Space Grotesk',sans-serif;
+}
+.kb-sort-btn.on{background:rgba(108,99,255,.15);border-color:var(--accent);color:var(--accent2)}
+.cta-slug-badge{
+  display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;background:var(--bg4);border:1px solid var(--border2);
+  color:var(--blue);font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:3px 8px;border-radius:4px;margin-top:6px;
+}
+.kb-save-note{
+  background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);
+  color:var(--accent2);padding:4px 10px;border-radius:4px;
+  font-size:11px;font-weight:600;cursor:pointer;
+}
+.kb-save-note:hover{background:rgba(108,99,255,.25)}
+
+/* STATS PANEL */
+.global-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  margin-bottom:24px;
+}
+.gstat{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:10px;padding:16px 18px;
+}
+.gstat-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;margin-bottom:4px}
+.gstat-lbl{font-size:11px;color:var(--text3);letter-spacing:.04em}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:14px;max-width:500px;width:100%;
+  max-height:90vh;overflow-y:auto;
+}
+.modal-head{
+  padding:18px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-title{font-weight:700;font-size:15px}
+.modal-x{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0;line-height:1}
+.modal-x:hover{color:var(--text)}
+.modal-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+.modal-save{
+  background:var(--accent);color:#fff;border:none;
+  padding:11px;border-radius:7px;font-family:'Space Grotesk',sans-serif;
+  font-weight:700;font-size:13px;cursor:pointer;width:100%;
+}
+.modal-save:hover{background:var(--accent2)}
+
+/* UTILS */
+.spinner{
+  width:14px;height:14px;
+  border:2px solid rgba(108,99,255,.2);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-box{
+  background:rgba(255,68,102,.05);border:1px solid rgba(255,68,102,.2);
+  border-radius:7px;padding:12px 16px;color:var(--red);font-size:12px;line-height:1.6;
+}
+.info-box{
+  background:rgba(108,99,255,.05);border:1px solid rgba(108,99,255,.2);
+  border-radius:7px;padding:12px 16px;color:var(--accent2);font-size:12px;line-height:1.6;
+}
+.loading-state{
+  padding:40px;text-align:center;color:var(--text3);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.loading-state .spinner{width:24px;height:24px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+a{color:inherit;text-decoration:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-mark">E</div>
+        <div class="logo-text">COMPETITOR <span>INTEL</span></div>
+      </div>
+      <nav class="header-nav">
+        <button class="hbtn active" id="btn-scout" onclick="switchView('scout')">Scout</button>
+        <button class="hbtn" id="btn-kb" onclick="switchView('kb')">Knowledge Base</button>
+      </nav>
+      <button class="settings-btn" onclick="openSettings()">⚙ Settings</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ SCOUT ═══════════════ -->
+<div id="v-scout" class="view active">
+  <div class="wrap">
+
+    <div class="add-panel">
+      <div class="section-label">Ajouter un concurrent</div>
+      <div class="add-form">
+        <div class="field">
+          <label>Nom</label>
+          <input type="text" id="cName" placeholder="DistroKid"/>
+        </div>
+        <div class="field">
+          <label>Page Facebook URL ou ID</label>
+          <input type="text" id="cUrl" placeholder="https://www.facebook.com/distrokid OU 340565305811499"/>
+        </div>
+        <div class="field">
+          <label>Pays</label>
+          <select id="cCountry">
+            <option value="ALL">ALL</option>
+            <option value="FR" selected>FR</option>
+            <option value="US">US</option>
+            <option value="GB">GB</option>
+            <option value="DE">DE</option>
+            <option value="ES">ES</option>
+            <option value="BE">BE</option>
+            <option value="CA">CA</option>
+          </select>
+        </div>
+        <button class="add-btn" onclick="addComp()">+ Ajouter</button>
+      </div>
+    </div>
+
+    <div class="comp-grid" id="compGrid">
+      <div class="ads-empty" style="border-style:dashed">Aucun concurrent ajouté. Rentre le nom et l'URL d'une page Facebook ci-dessus.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════ KNOWLEDGE BASE ═══════════════ -->
+<div id="v-kb" class="view">
+  <div class="wrap">
+
+    <div class="global-stats" id="kbStats"></div>
+
+    <div class="kb-filters" id="kbFilters">
+      <button class="kb-pill on" id="kbpill-all" onclick="setKbFilter('all')">Tout</button>
+      <button class="kb-pill" id="kbpill-era" onclick="setKbFilter('era')">🟢 ERA</button>
+      <button class="kb-pill" id="kbpill-inspo" onclick="setKbFilter('inspo')">🟡 Inspo</button>
+      <div class="kb-sort-bar">
+        <span style="font-size:11px;color:var(--text3)">Trier par</span>
+        <button class="kb-sort-btn" id="kbsort-date" onclick="setKbSort('date')">📅 Date</button>
+        <button class="kb-sort-btn on" id="kbsort-cta" onclick="setKbSort('cta')">🔗 CTA Slug</button>
+        <button class="kb-sort-btn" id="kbsort-imp" onclick="setKbSort('imp')">👁 Impressions</button>
+      </div>
+    </div>
+
+    <div class="kb-grid" id="kbGrid"></div>
+
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">⚙ Settings</div>
+      <button class="modal-x" onclick="closeSettings()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        Acteur utilisé : <b>curious_coder/facebook-ads-library-scraper</b><br>
+        Coût : ~$10 / 1000 ads · Aucune vérification Meta requise
+      </div>
+      <div class="field">
+        <label>Clé API Apify</label>
+        <input type="password" id="setApify" placeholder="apify_api_..."/>
+      </div>
+      <div class="field">
+        <label>CPM de référence ERA (€)</label>
+        <input type="number" id="setCpm" placeholder="ex: 4.50" step="0.01"/>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Utilisé pour le proxy spend concurrent</div>
+      </div>
+      <div class="field">
+        <label>Limite d'ads par scrape</label>
+        <input type="number" id="setLimit" placeholder="150" min="10" max="500"/>
+      </div>
+      <button class="modal-save" onclick="saveSettings()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const S = {
+  competitors: JSON.parse(localStorage.getItem('ci_comps') || '[]'),
+  kb: JSON.parse(localStorage.getItem('ci_kb') || '{}'),
+  apifyKey: localStorage.getItem('ci_apify') || '',
+  refCpm: parseFloat(localStorage.getItem('ci_cpm') || '4.5'),
+  limit: parseInt(localStorage.getItem('ci_limit') || '150'),
+  kbFilter: 'all',
+  kbSort: 'date',  // date | imp | cta
+  adFilters: {}, // compIdx → { sort, type }
+};
+
+function save(k,v){localStorage.setItem(k, typeof v==='string'?v:JSON.stringify(v))}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function esc(t){return(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmt_n(v){return parseInt(v||0).toLocaleString('fr-FR')}
+function fmt_m(v){return parseFloat(v||0).toFixed(2)+'€'}
+function daysSince(dateStr){
+  if(!dateStr) return 0;
+  const d = typeof dateStr==='number' ? new Date(dateStr*1000) : new Date(dateStr);
+  if(isNaN(d)) return 0;
+  return Math.floor((Date.now()-d.getTime())/(1000*60*60*24));
+}
+function impColor(imp_mid){
+  if(imp_mid>500000) return 'var(--green)';
+  if(imp_mid>100000) return 'var(--yellow)';
+  if(imp_mid>10000) return 'var(--blue)';
+  return 'var(--text3)';
+}
+function impBarWidth(imp_mid){
+  // log scale 0-100%
+  if(!imp_mid) return 0;
+  const pct = Math.min(100, (Math.log10(imp_mid)/Math.log10(5000000))*100);
+  return Math.max(2, pct).toFixed(1);
+}
+function proxySpend(imp_mid, cpm){
+  if(!imp_mid || !cpm) return null;
+  return ((imp_mid / 1000) * cpm).toFixed(0);
+}
+function getMediaUrl(ad){
+  // curious_coder: videos/images are in snapshot.videos[] or snapshot.cards[].video_*
+  const snapVideos = ad.snapshot?.videos || [];
+  const cards = ad.snapshot?.cards || [];
+  // Try single video first
+  if(snapVideos.length){
+    return {
+      type: 'video',
+      thumb: snapVideos[0].video_preview_image_url || null,
+      src: snapVideos[0].video_hd_url || snapVideos[0].video_sd_url || null
+    };
+  }
+  // Try carousel cards with video
+  const videoCard = cards.find(c => c.video_preview_image_url || c.video_hd_url);
+  if(videoCard){
+    return {
+      type: 'video',
+      thumb: videoCard.video_preview_image_url || null,
+      src: videoCard.video_hd_url || videoCard.video_sd_url || null
+    };
+  }
+  // Try image cards
+  const imageCard = cards.find(c => c.original_image_url || c.resized_image_url);
+  if(imageCard){
+    return {type:'image', src: imageCard.original_image_url || imageCard.resized_image_url};
+  }
+  // Fallback: page profile picture as last resort
+  const ppic = ad.snapshot?.page_profile_picture_url;
+  if(ppic) return {type:'image', src: ppic, isAvatar: true};
+  return null;
+}
+function getAdText(ad){
+  // Real field from curious_coder actor: snapshot.body.text
+  const bodyText = ad.snapshot?.body?.text;
+  if(bodyText && !bodyText.includes('{{')) return bodyText;
+  // Fallback to cards (DCO/carousel)
+  const cardText = ad.snapshot?.cards?.[0]?.body;
+  if(cardText && !cardText.includes('{{')) return cardText;
+  // Last resort
+  return ad.snapshot?.title || ad.snapshot?.link_description || '';
+}
+function getCtaUrl(ad){
+  // curious_coder: link_url is in snapshot directly or in cards
+  return ad.snapshot?.link_url
+      || ad.snapshot?.cards?.[0]?.link_url
+      || null;
+}
+function getCtaText(ad){
+  return ad.snapshot?.cta_text
+      || ad.snapshot?.cards?.[0]?.cta_text
+      || '';
+}
+function getImpressions(ad){
+  // curious_coder: impressions_with_index.impressions_text (often null)
+  // No lower/upper bound available — use impressions_index as proxy
+  const idx = ad.impressions_with_index?.impressions_index;
+  const text = ad.impressions_with_index?.impressions_text;
+  // impressions_index: -1=unknown, 0=<1k, 1=1k-5k, 2=5k-10k... logarithmic
+  const midMap = {0:500, 1:3000, 2:7500, 3:15000, 4:30000, 5:75000, 6:150000, 7:350000, 8:750000};
+  const labelMap = {0:'< 1k', 1:'1k – 5k', 2:'5k – 10k', 3:'10k – 50k', 4:'50k – 100k', 5:'100k – 500k', 6:'500k – 1M', 7:'1M – 5M', 8:'> 5M'};
+  if(idx !== undefined && idx >= 0){
+    const mid = midMap[idx] || 500;
+    return {lo: mid*0.6|0, hi: mid*1.4|0, mid, label: labelMap[idx]||''};
+  }
+  return {lo:0, hi:0, mid:0, label:null};
+}
+function getAdType(ad){
+  const cards = ad.snapshot?.cards || [];
+  if(cards.length > 1) return 'carousel';
+  const videos = ad.snapshot?.videos || cards.filter(c=>c.video_hd_url||c.video_sd_url);
+  if(videos.length) return 'video';
+  return 'image';
+}
+function getStartDate(ad){
+  // curious_coder: start_date is Unix timestamp (seconds)
+  if(ad.start_date) return new Date(ad.start_date * 1000);
+  if(ad.start_date_formatted) return new Date(ad.start_date_formatted);
+  return null;
+}
+
+// ══════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════
+function switchView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.hbtn').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`v-${v}`).classList.add('active');
+  document.getElementById(`btn-${v}`).classList.add('active');
+  if(v==='kb') renderKb();
+}
+
+// ══════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════
+function openSettings(){
+  document.getElementById('setApify').value = S.apifyKey;
+  document.getElementById('setCpm').value = S.refCpm;
+  document.getElementById('setLimit').value = S.limit;
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('open') }
+function saveSettings(){
+  S.apifyKey = document.getElementById('setApify').value.trim();
+  S.refCpm = parseFloat(document.getElementById('setCpm').value)||4.5;
+  S.limit = parseInt(document.getElementById('setLimit').value)||20;
+  save('ci_apify', S.apifyKey);
+  save('ci_cpm', S.refCpm);
+  save('ci_limit', S.limit);
+  closeSettings();
+}
+
+// ══════════════════════════════════════════
+// COMPETITORS
+// ══════════════════════════════════════════
+function addComp(){
+  const name = document.getElementById('cName').value.trim();
+  const url  = document.getElementById('cUrl').value.trim();
+  const country = document.getElementById('cCountry').value;
+  if(!name||!url) return alert('Nom et URL requis');
+  S.competitors.push({name, url, country, ads:[], lastScrape:null});
+  save('ci_comps', S.competitors);
+  document.getElementById('cName').value='';
+  document.getElementById('cUrl').value='';
+  renderComps();
+}
+function removeComp(i){
+  if(!confirm(`Supprimer ${S.competitors[i].name} ?`)) return;
+  S.competitors.splice(i,1);
+  save('ci_comps', S.competitors);
+  renderComps();
+}
+
+function renderComps(){
+  const el = document.getElementById('compGrid');
+  if(!S.competitors.length){
+    el.innerHTML='<div class="ads-empty" style="border-style:dashed">Aucun concurrent. Ajoute une page Facebook ci-dessus.</div>';
+    return;
+  }
+  el.innerHTML = S.competitors.map((c,i) => compCard(c,i)).join('');
+}
+
+function compCard(c, i){
+  const totalImp = c.ads.reduce((s,a)=>s+getImpressions(a).mid,0);
+  const active = c.ads.filter(a=>a.isActive!==false).length;
+  const lastStr = c.lastScrape ? new Date(c.lastScrape).toLocaleDateString('fr-FR') : 'jamais';
+  return `<div class="comp-card" id="comp-${i}">
+    <div class="comp-card-head">
+      <div class="comp-card-left">
+        <div class="comp-avatar">${c.name[0].toUpperCase()}</div>
+        <div>
+          <div class="comp-name">${esc(c.name)}</div>
+          <div class="comp-url">${esc(c.url)} · ${c.country}</div>
+        </div>
+      </div>
+      <div class="comp-card-right">
+        <div class="comp-stats">
+          <div class="stat-item">
+            <div class="stat-val">${c.ads.length}</div>
+            <div class="stat-lbl">ads</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" style="color:var(--green)">${active}</div>
+            <div class="stat-lbl">actives</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" style="color:var(--blue)">${totalImp>0?fmt_n(Math.round(totalImp/1000))+'k':'—'}</div>
+            <div class="stat-lbl">imp. totales</div>
+          </div>
+        </div>
+        <button class="scrape-btn" id="scrape-btn-${i}" onclick="scrapeComp(${i})">⟳ Scrape</button>
+        <button class="rm-btn" onclick="removeComp(${i})">✕</button>
+      </div>
+    </div>
+    <div class="ads-container" id="ads-container-${i}">
+      ${c.ads.length ? renderAdsSection(c.ads, i, lastStr) : `<div class="ads-empty">Clique <b>Scrape</b> pour charger les pubs de ${esc(c.name)}</div>`}
+    </div>
+  </div>`;
+}
+
+function renderAdsSection(ads, compIdx, lastStr, newCount=0){
+  const f = S.adFilters[compIdx] || {sort:'imp', type:'all'};
+  let filtered = [...ads];
+  if(f.type!=='all') filtered = filtered.filter(a=>getAdType(a)===f.type);
+  filtered.sort((a,b)=>{
+    if(f.sort==='imp') return getImpressions(b).mid - getImpressions(a).mid;
+    if(f.sort==='date') {
+      const da=getStartDate(a)||new Date(0), db=getStartDate(b)||new Date(0);
+      return db-da;
+    }
+    if(f.sort==='duration') return daysSince(getStartDate(a)) - daysSince(getStartDate(b));
+    return 0;
+  });
+
+  return `
+    <div class="ads-filters">
+      <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">
+        ${ads.length} ads · dernier scrape ${lastStr}
+        ${newCount>0?`<span style="color:var(--accent2);font-weight:700;margin-left:8px">+${newCount} nouvelles ✦</span>`:''}
+      </span>
+      <div style="display:flex;gap:6px;margin-left:12px">
+        ${['all','image','video','carousel'].map(t=>`<div class="filter-chip ${f.type===t?'on':''}" onclick="setAdFilter(${compIdx},'type','${t}')">${t}</div>`).join('')}
+      </div>
+      <select class="sort-select" onchange="setAdFilter(${compIdx},'sort',this.value)">
+        <option value="imp" ${f.sort==='imp'?'selected':''}>↓ Impressions</option>
+        <option value="date" ${f.sort==='date'?'selected':''}>↓ Plus récentes</option>
+        <option value="duration" ${f.sort==='duration'?'selected':''}>↓ Durée (proxy perf)</option>
+      </select>
+    </div>
+    <div class="ads-grid">${filtered.map((ad,j)=>adCard(ad,compIdx,j)).join('')}</div>`;
+}
+
+function setAdFilter(compIdx, key, val){
+  if(!S.adFilters[compIdx]) S.adFilters[compIdx]={sort:'imp',type:'all'};
+  S.adFilters[compIdx][key]=val;
+  const c = S.competitors[compIdx];
+  const lastStr = c.lastScrape ? new Date(c.lastScrape).toLocaleDateString('fr-FR') : 'jamais';
+  document.getElementById(`ads-container-${compIdx}`).innerHTML = renderAdsSection(c.ads, compIdx, lastStr);
+}
+
+// ══════════════════════════════════════════
+// AD CARD
+// ══════════════════════════════════════════
+function adCard(ad, compIdx, j){
+  const media = getMediaUrl(ad);
+  const text = getAdText(ad);
+  const ctaUrl = getCtaUrl(ad);
+  const ctaText = getCtaText(ad);
+  const imp = getImpressions(ad);
+  const adType = getAdType(ad);
+  const startDate = getStartDate(ad);
+  const duration = startDate ? daysSince(startDate) : null;
+  const isActive = ad.is_active !== false;
+  const adId = ad.ad_archive_id || ad.id || ad.adArchiveID || `${compIdx}-${j}`;
+  const inKb = S.kb[adId];
+  const snapshotUrl = ad.ad_library_url
+    || ad.snapshotUrl
+    || (ad.ad_archive_id ? `https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}` : null);
+
+  let mediaHtml = '';
+  if(media){
+    if(media.type==='video' && media.thumb) mediaHtml = `<img src="${esc(media.thumb)}" alt="" onerror="this.style.display='none'"/>`;
+    else if(media.type==='video') mediaHtml = '<span class="ad-media-placeholder">🎬</span>';
+    else if(media.src) mediaHtml = `<img src="${esc(media.src)}" alt="" onerror="this.style.display='none'"/>`;
+  } else {
+    mediaHtml = '<span class="ad-media-placeholder">🎨</span>';
+  }
+
+  const typeBadge = `<span class="ad-type-badge badge-${adType}">${adType}</span>`;
+  const newBadge = ad._isNew ? `<span style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;animation:pulse-badge 2s infinite">✦ NEW</span>` : '';
+  const durBadge = duration!==null ? `<span class="ad-duration-badge">${duration}j</span>` : '';
+
+  const impMid = imp.mid;
+  const proxyS = proxySpend(impMid, S.refCpm);
+  const impBar = impBarWidth(impMid);
+  const impCol = impColor(impMid);
+
+  const impSection = `<div class="imp-meter">
+    <div class="imp-meter-top">
+      <span class="imp-label">IMPRESSIONS</span>
+      <span class="imp-range" style="color:${impCol}">${imp.lo>0?fmt_n(imp.lo)+' – '+fmt_n(imp.hi):'—'}</span>
+    </div>
+    ${imp.lo>0?`<div class="imp-bar-bg"><div class="imp-bar-fill" style="width:${impBar}%;background:${impCol}"></div></div>
+    <div class="imp-proxy">
+      <div class="proxy-item"><span class="proxy-lbl">CPM proxy </span><span class="proxy-val">${fmt_m(S.refCpm)}</span></div>
+      ${proxyS?`<div class="proxy-item"><span class="proxy-lbl">Spend proxy </span><span class="proxy-val" style="color:var(--yellow)">~${fmt_n(proxyS)}€</span></div>`:''}
+      ${duration?`<div class="proxy-item"><span class="proxy-lbl">Durée </span><span class="proxy-val" style="color:var(--green)">${duration}j</span></div>`:''}
+    </div>`:''}
+  </div>`;
+
+  const ctaSection = ctaUrl ? `<div class="ad-cta">
+    <span class="ad-cta-icon">🔗</span>
+    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ctaUrl)}</span>
+    ${ctaText?`<span style="flex-shrink:0;color:var(--accent2);font-size:10px;font-weight:600">${esc(ctaText)}</span>`:''}
+  </div>` : '';
+
+  const metaRow = `<div class="ad-meta-row">
+    <span class="meta-tag ${isActive?'active':'inactive'}">${isActive?'● Active':'○ Inactive'}</span>
+    ${startDate?`<span class="meta-tag">Depuis ${startDate.toLocaleDateString('fr-FR')}</span>`:''}
+  </div>`;
+
+  const kbEra = inKb?.label==='era';
+  const kbInspo = inKb?.label==='inspo';
+  const adData = JSON.stringify({id:adId, compIdx, adIdx:j, compName: S.competitors[compIdx]?.name||''}).replace(/'/g,"&#39;");
+
+  return `<div class="ad-card ${kbEra?'saved-era':kbInspo?'saved-inspo':''}" id="adcard-${adId}">
+    <div class="ad-media">
+      ${mediaHtml}
+      ${typeBadge}
+      ${newBadge}
+      ${durBadge}
+    </div>
+    <div class="ad-body">
+      ${text?`<div class="ad-text" id="adtext-${adId}">${esc(text)}</div>`:''}
+      ${impSection}
+      ${ctaSection}
+      ${metaRow}
+    </div>
+    <div class="ad-actions">
+      <button class="ad-act ${kbEra?'active-era':''}" onclick='saveToKb(${adData},"era")'>
+        ${kbEra?'✓ ERA':'＋ ERA'}
+      </button>
+      <button class="ad-act ${kbInspo?'active-inspo':''}" onclick='saveToKb(${adData},"inspo")'>
+        ${kbInspo?'★ Inspo':'☆ Inspo'}
+      </button>
+      ${text&&text.length>120?`<button class="ad-act expand-btn" onclick="toggleText('${adId}')">+ voir</button>`:''}
+      ${snapshotUrl?`<a class="ad-act" href="${esc(snapshotUrl)}" target="_blank">Library →</a>`:''}
+    </div>
+  </div>`;
+}
+
+function toggleText(adId){
+  const el=document.getElementById(`adtext-${adId}`);
+  if(!el) return;
+  el.classList.toggle('expanded');
+}
+
+// ══════════════════════════════════════════
+// SAVE TO KB
+// ══════════════════════════════════════════
+function saveToKb(adData, label){
+  const {id, compIdx, adIdx, compName} = adData;
+  const ad = S.competitors[compIdx]?.ads[adIdx];
+  if(!ad) return;
+  if(S.kb[id]?.label===label){
+    delete S.kb[id];
+  } else {
+    S.kb[id] = {
+      id, label, compName,
+      ad: {
+        text: getAdText(ad),
+        media: getMediaUrl(ad),
+        ctaUrl: getCtaUrl(ad),
+        ctaText: getCtaText(ad),
+        imp: getImpressions(ad),
+        isActive: ad.isActive!==false,
+        startDate: getStartDate(ad)?.toISOString()||null,
+        type: getAdType(ad),
+        snapshotUrl: ad.ad_library_url||ad.snapshotUrl||ad.snapshot_url||(ad.ad_archive_id?`https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}`:null),
+        duration: getStartDate(ad)?daysSince(getStartDate(ad)):null,
+      },
+      notes: S.kb[id]?.notes || '',
+      isNew: false,
+      savedAt: new Date().toISOString()
+    };
+  }
+  save('ci_kb', S.kb);
+  // Refresh card
+  const comp = S.competitors[compIdx];
+  const lastStr = comp.lastScrape ? new Date(comp.lastScrape).toLocaleDateString('fr-FR') : 'jamais';
+  const container = document.getElementById(`ads-container-${compIdx}`);
+  if(container) container.innerHTML = renderAdsSection(comp.ads, compIdx, lastStr);
+}
+
+// ══════════════════════════════════════════
+// SCRAPE (Apify)
+// ══════════════════════════════════════════
+async function scrapeComp(i){
+  if(!S.apifyKey){ alert('Configure ta clé Apify dans ⚙ Settings'); return; }
+  const comp = S.competitors[i];
+  const btn = document.getElementById(`scrape-btn-${i}`);
+  const container = document.getElementById(`ads-container-${i}`);
+
+  btn.disabled=true;
+  btn.textContent='⟳ Scraping...';
+  container.innerHTML=`<div class="loading-state"><div class="spinner"></div><div>Scraping les pubs de <b>${esc(comp.name)}</b>...</div><div style="font-size:11px;color:var(--text3);max-width:400px">Patiente 30-90s · Limite: ${S.limit} ads · Apify curious_coder</div></div>`;
+
+  try {
+    // Build proper Ad Library URL for getting ALL page ads
+    const raw = comp.url.trim();
+    const country = comp.country === 'ALL' ? 'ALL' : comp.country;
+    let adLibUrl;
+
+    // Helper: extract numeric page ID from various URL formats
+    function extractPageId(url) {
+      // profile.php?id=XXXXX
+      const profileMatch = url.match(/profile\.php\?id=(\d+)/);
+      if (profileMatch) return profileMatch[1];
+      // view_all_page_id=XXXXX
+      const pageIdMatch = url.match(/view_all_page_id=(\d+)/);
+      if (pageIdMatch) return pageIdMatch[1];
+      return null;
+    }
+
+    const extractedId = extractPageId(raw);
+
+    if (/^\d+$/.test(raw) || extractedId) {
+      // Numeric ID or profile.php?id= → view_all_page_id (most reliable)
+      const pid = extractedId || raw;
+      adLibUrl = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&view_all_page_id=${pid}&search_type=page&media_type=all`;
+    } else if (raw.includes('facebook.com/ads/library')) {
+      // Already an Ad Library URL → use as-is
+      adLibUrl = raw;
+    } else {
+      // Clean page URL like facebook.com/distrokid → extract slug
+      const slug = raw.replace(/https?:\/\/(www\.)?facebook\.com\//,'').replace(/\/$/, '').split('/')[0].split('?')[0];
+      adLibUrl = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&q=${encodeURIComponent(slug)}&search_type=page&media_type=all`;
+    }
+
+    // Show the user which URL is being used (debug)
+    container.innerHTML=`<div class="loading-state"><div class="spinner"></div>
+      <div>Scraping <b>${esc(comp.name)}</b>...</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:'JetBrains Mono',monospace;word-break:break-all;max-width:460px">${adLibUrl}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Limite: ${S.limit} ads · 30-90s</div>
+    </div>`;
+
+    // Minimum count is 10 per actor requirement
+    const reqCount = Math.max(10, S.limit);
+    const body = {
+      urls: [{ url: adLibUrl }],
+      count: reqCount,
+    };
+
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync-get-dataset-items?token=${S.apifyKey}&timeout=180&memory=512`,
+      {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      }
+    );
+
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error(`Apify ${res.status}: ${t.substring(0,300)}`);
+    }
+
+    let ads = await res.json();
+    console.log('Apify raw response type:', typeof ads, Array.isArray(ads) ? ads.length + ' items' : JSON.stringify(ads).substring(0,200));
+    if(!Array.isArray(ads)) ads = ads.items || ads.data || [];
+    console.log('Ads array length:', ads.length);
+
+    // Detect new ads vs previously seen
+    const prevIds = new Set((S.competitors[i].ads||[]).map(a=>a.ad_archive_id).filter(Boolean));
+    const newIds = new Set(ads.map(a=>a.ad_archive_id).filter(Boolean));
+    const newCount = [...newIds].filter(id=>!prevIds.has(id)).length;
+
+    // Mark new ads
+    ads = ads.map(a => ({
+      ...a,
+      _isNew: a.ad_archive_id && !prevIds.has(a.ad_archive_id) && prevIds.size > 0
+    }));
+
+    S.competitors[i].ads = ads;
+    S.competitors[i].lastScrape = new Date().toISOString();
+    S.competitors[i].prevCount = prevIds.size;
+    save('ci_comps', S.competitors);
+
+    const lastStr = new Date().toLocaleDateString('fr-FR');
+    if(ads.length) {
+      try {
+        container.innerHTML = renderAdsSection(ads, i, lastStr, newCount);
+      } catch(renderErr) {
+        console.error('Render error:', renderErr);
+        container.innerHTML = `<div class="err-box" style="margin:12px">Render error: ${esc(renderErr.message)}<br><small>Check console for details</small></div>`;
+      }
+    } else {
+      container.innerHTML = `<div class="ads-empty">Aucune pub trouvée (0 résultats). Vérifie l'URL ou essaie un autre pays.</div>`;
+    }
+    // Refresh stats in card header
+    renderComps();
+
+  } catch(e){
+    container.innerHTML=`<div class="err-box" style="margin:12px">
+      ⚠ ${esc(e.message)}<br>
+      <span style="font-size:11px;color:var(--text3)">
+        Vérifie : ① clé Apify valide · ② URL page Facebook correcte · ③ acteur curious_coder/facebook-ads-library-scraper activé sur ton compte Apify
+      </span>
+    </div>`;
+  }
+  btn.disabled=false;
+  btn.textContent='⟳ Scrape';
+}
+
+// ══════════════════════════════════════════
+// KNOWLEDGE BASE
+// ══════════════════════════════════════════
+function setKbFilter(f){
+  S.kbFilter = f;
+  document.querySelectorAll('.kb-pill').forEach(p=>p.classList.remove('on'));
+  document.getElementById(`kbpill-${f}`)?.classList.add('on');
+  renderKb();
+}
+function setKbSort(s){
+  S.kbSort = s;
+  document.querySelectorAll('.kb-sort-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById(`kbsort-${s}`)?.classList.add('on');
+  renderKb();
+}
+function extractSlug(url){
+  if(!url) return '—';
+  try {
+    const u = new URL(url);
+    const parts = u.pathname.split('/').filter(Boolean);
+    return parts[parts.length-1] || u.hostname;
+  } catch(e){ return url.split('/').pop() || url; }
+}
+
+function renderKb(){
+  const items = Object.values(S.kb);
+  const filtered = S.kbFilter==='all' ? items : items.filter(it=>it.label===S.kbFilter);
+  if(S.kbSort==='imp'){
+    filtered.sort((a,b)=>(b.ad?.imp?.mid||0)-(a.ad?.imp?.mid||0));
+  } else if(S.kbSort==='cta'){
+    filtered.sort((a,b)=>{
+      const sa=extractSlug(a.ad?.ctaUrl)||'zzz';
+      const sb=extractSlug(b.ad?.ctaUrl)||'zzz';
+      return sa.localeCompare(sb);
+    });
+  } else {
+    filtered.sort((a,b)=>new Date(b.savedAt)-new Date(a.savedAt));
+  }
+
+  const totalEra = items.filter(i=>i.label==='era').length;
+  const totalInspo = items.filter(i=>i.label==='inspo').length;
+  const totalImp = items.reduce((s,i)=>s+(i.ad?.imp?.mid||0),0);
+  const avgDuration = items.filter(i=>i.ad?.duration).reduce((s,i,_,a)=>s+i.ad.duration/a.length,0);
+
+  document.getElementById('kbStats').innerHTML = `
+    <div class="gstat"><div class="gstat-val" style="color:var(--accent2)">${items.length}</div><div class="gstat-lbl">Ads sauvegardées</div></div>
+    <div class="gstat"><div class="gstat-val" style="color:var(--green)">${totalEra}</div><div class="gstat-lbl">À runner ERA</div></div>
+    <div class="gstat"><div class="gstat-val" style="color:var(--yellow)">${totalInspo}</div><div class="gstat-lbl">Inspiration</div></div>
+    <div class="gstat"><div class="gstat-val" style="color:var(--blue)">${totalImp>0?fmt_n(Math.round(totalImp/1000))+'k':'—'}</div><div class="gstat-lbl">Imp. totales (proxy)</div></div>
+  `;
+
+  if(!filtered.length){
+    document.getElementById('kbGrid').innerHTML=`<div class="ads-empty" style="grid-column:1/-1">
+      Aucune ad sauvegardée${S.kbFilter!=='all'?' dans cette catégorie':''}.<br>
+      Va dans Scout et clique <b>+ ERA</b> ou <b>☆ Inspo</b> sur les ads intéressantes.
+    </div>`;
+    return;
+  }
+
+  document.getElementById('kbGrid').innerHTML = filtered.map(item => kbCard(item)).join('');
+}
+
+function kbCard(item){
+  const ad = item.ad;
+  const imp = ad.imp || {lo:0,hi:0,mid:0};
+  const proxyS = proxySpend(imp.mid, S.refCpm);
+  const slug = extractSlug(ad.ctaUrl);
+  const isNew = item.isNew || false;
+
+  let mediaHtml = '';
+  if(ad.media){
+    if(ad.media.type==='video' && ad.media.thumb) mediaHtml=`<img src="${esc(ad.media.thumb)}" alt="" style="width:100%;height:100%;object-fit:cover"/>`;
+    else if(ad.media.type==='video') mediaHtml='🎬';
+    else if(ad.media.src) mediaHtml=`<img src="${esc(ad.media.src)}" alt="" style="width:100%;height:100%;object-fit:cover"/>`;
+  }
+
+  // Video download: prefer hd url stored in media
+  const dlUrl = ad.media?.src || ad.media?.thumb || ad.snapshotUrl || '';
+  const adLibUrl = ad.snapshotUrl || '';
+
+  return `<div class="kb-card">
+    <div class="kb-card-head">
+      <span class="kb-competitor">${esc(item.compName)}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${isNew?'<span class="new-badge">NEW</span>':''}
+        <span class="kb-saved-label ${item.label==='era'?'kb-label-era':'kb-label-inspo'}">${item.label==='era'?'ERA':'INSPO'}</span>
+      </div>
+    </div>
+    <div class="kb-media" style="position:relative">
+      ${mediaHtml||'🎨'}
+      ${ad.type==='video'?'<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 6px;border-radius:3px">▶ VIDEO</div>':''}
+    </div>
+    <div class="kb-body">
+      ${ad.text?`<div class="kb-text">${esc(ad.text)}</div>`:''}
+      ${ad.ctaUrl?`<div class="cta-slug-badge" title="${esc(ad.ctaUrl)}">🔗 ${esc(slug)} · <span style="color:var(--text3)">${esc(ad.ctaUrl)}</span></div>`:''}
+      <div class="kb-metrics" style="margin-top:8px">
+        <div class="kb-m"><span class="kb-ml">Imp. </span><span class="kb-mv">${imp.label||'—'}</span></div>
+        ${proxyS?`<div class="kb-m"><span class="kb-ml">Spend proxy </span><span class="kb-mv" style="color:var(--yellow)">~${fmt_n(proxyS)}€</span></div>`:''}
+        ${ad.duration?`<div class="kb-m"><span class="kb-ml">Durée </span><span class="kb-mv" style="color:var(--green)">${ad.duration}j</span></div>`:''}
+      </div>
+    </div>
+    <div class="kb-notes-section">
+      <textarea class="kb-notes-area" id="kbnotes-${item.id}" placeholder="Hook / Angle / Pourquoi ça marche / Idées d'adaptation...">${esc(item.notes||'')}</textarea>
+    </div>
+    <div class="kb-footer" style="flex-wrap:wrap;gap:6px">
+      <button class="kb-save-note" onclick="saveKbNote('${item.id}')">💾 Sauvegarder</button>
+      <button class="kb-del-btn" onclick="deleteKb('${item.id}')">✕</button>
+      ${adLibUrl?`<a class="kb-dl-btn" href="${esc(adLibUrl)}" target="_blank">🔍 Ad Library</a>`:''}
+      ${dlUrl && ad.type==='video'?`<a class="kb-dl-btn" href="${esc(dlUrl)}" download target="_blank" style="background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.3);color:var(--blue)">⬇ DL Vidéo</a>`:''}
+    </div>
+  </div>`;
+}
+
+function saveKbNote(id){
+  if(!S.kb[id]) return;
+  S.kb[id].notes = document.getElementById(`kbnotes-${id}`)?.value || '';
+  save('ci_kb', S.kb);
+  // Flash feedback
+  const btn = event.target;
+  btn.textContent='✓ Sauvegardé';
+  setTimeout(()=>btn.textContent='Sauvegarder note', 1500);
+}
+function deleteKb(id){
+  delete S.kb[id];
+  save('ci_kb', S.kb);
+  renderKb();
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+renderComps();
+</script>
+</body>
+</html>
