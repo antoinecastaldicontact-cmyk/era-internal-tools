@@ -1303,7 +1303,28 @@ function renderScout(){
       allAds.push({ ad, compId, compIdx, compName: comp.name, adIdx });
     });
   }
-  if(S.activeOnly) allAds = allAds.filter(x => x.ad.isActive !== false);
+  console.log('[ERA] renderScout: total ads from all comps =', allAds.length);
+  if(allAds.length > 0){
+    console.log('[ERA] First ad shape:', allAds[0].ad);
+    console.log('[ERA] First ad keys:', Object.keys(allAds[0].ad));
+  }
+
+  // Active filter — defensive: support multiple field names that Apify may return
+  if(S.activeOnly){
+    const before = allAds.length;
+    allAds = allAds.filter(x => {
+      const ad = x.ad;
+      // Check multiple possible "active" indicators. Default = consider active if no signal.
+      if(ad.isActive === false) return false;
+      if(ad.is_active === false) return false;
+      if(ad.active_status === 'inactive') return false;
+      if(ad.active_status === false) return false;
+      // ad.snapshot may also have it
+      if(ad.snapshot?.is_active === false) return false;
+      return true;
+    });
+    console.log(`[ERA] After "active only" filter: ${allAds.length} of ${before}`);
+  }
 
   if(counter) counter.textContent = allAds.length ? `${allAds.length} ads` : '';
 
@@ -1316,22 +1337,29 @@ function renderScout(){
       </div>`;
       return;
     }
+    // We HAVE scraped data but nothing passed filters → show diagnostic
+    const totalScraped = Object.values(S.scrapedAds).reduce((s,a)=>s+(a?.length||0), 0);
     container.innerHTML = `<div class="scout-empty">
       <div class="scout-empty-icon">🔍</div>
-      <div class="scout-empty-title">Aucune ad ne matche</div>
-      <div class="scout-empty-sub">Désactive "Active only" pour voir les ads inactives.</div>
+      <div class="scout-empty-title">Aucune ad ne matche les filtres</div>
+      <div class="scout-empty-sub">${totalScraped} ads scrapées au total — toutes filtrées. Désactive <b>Active only</b> en haut pour voir les ads inactives. Si tu vois ce message alors qu'il devrait y avoir des ads actives, ouvre la console (Cmd+Option+I) et regarde les logs <code>[ERA]</code>.</div>
     </div>`;
     return;
   }
 
-  // Group
+  // Group with try/catch around each card so one bad ad doesn't kill the whole render
   const groups = {};
   allAds.forEach(item => {
     let key;
-    if(S.groupBy === 'slug'){
-      key = extractSlug(getCtaUrl(item.ad)) || '— sans slug —';
-    } else {
-      key = item.compName;
+    try {
+      if(S.groupBy === 'slug'){
+        key = extractSlug(getCtaUrl(item.ad)) || '— sans slug —';
+      } else {
+        key = item.compName;
+      }
+    } catch(e){
+      console.warn('[ERA] grouping fallback for ad:', e, item.ad);
+      key = '— erreur —';
     }
     if(!groups[key]) groups[key] = [];
     groups[key].push(item);
@@ -1625,6 +1653,10 @@ function extractSlug(url){
     const parts = u.pathname.split('/').filter(Boolean);
     return parts[parts.length-1] || u.hostname;
   } catch(e){ return url.split('/').pop() || url; }
+}
+function extractDomain(url){
+  if(!url) return '';
+  try { return new URL(url).hostname.replace(/^www\./,''); } catch(e){ return ''; }
 }
 
 function renderKb(){
