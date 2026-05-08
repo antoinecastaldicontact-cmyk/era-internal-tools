@@ -13,6 +13,9 @@
   --bg2:#0c0c10;
   --bg3:#13131a;
   --bg4:#1a1a24;
+  --gold:#fbbf24;
+  --pink:#f472b6;
+  --bg4:#1a1a24;
   --border:#1e1e2a;
   --border2:#252535;
   --text:#e8e8f0;
@@ -481,6 +484,102 @@ header{
 .gstat-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:24px;margin-bottom:4px}
 .gstat-lbl{font-size:11px;color:var(--text3);letter-spacing:.04em}
 
+/* ── V10: COMP MANAGEMENT (chips bar) ── */
+.comp-mgmt{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:14px}
+.comp-mgmt-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.comp-mgmt-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
+.comp-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1}
+.comp-chip{display:inline-flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border2);padding:5px 6px 5px 12px;border-radius:18px;font-size:12px;color:var(--text);transition:all .15s}
+.comp-chip:hover{border-color:var(--text3)}
+.comp-chip-name{font-weight:500}
+.comp-chip-country{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;background:var(--bg);padding:2px 6px;border-radius:8px}
+.comp-chip-act{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.comp-chip-act:hover{background:var(--bg);color:var(--text)}
+.comp-chip-act.del:hover{color:var(--red)}
+.comp-chip-act.scrape:hover{color:var(--accent2)}
+.comp-add-btn{background:none;border:1px dashed var(--border2);color:var(--text3);padding:5px 14px;border-radius:18px;font-size:12px;cursor:pointer;transition:all .15s;font-family:'Space Grotesk',sans-serif}
+.comp-add-btn:hover{border-color:var(--accent);color:var(--accent2)}
+
+/* ── V10: SCRAPE TOOLBAR ── */
+.scout-toolbar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:18px}
+.scout-toolbar-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.scout-action-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:9px 20px;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px}
+.scout-action-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(108,99,255,.25)}
+.scout-action-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.toolbar-toggle{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:6px 12px;border-radius:7px;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:'Space Grotesk',sans-serif}
+.toolbar-toggle:hover{border-color:var(--text3)}
+.toolbar-toggle.on{background:rgba(108,99,255,.15);border-color:var(--accent);color:var(--accent2)}
+.toolbar-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-right:4px}
+.toolbar-divider{width:1px;height:20px;background:var(--border)}
+.scrape-progress{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.scrape-row{display:flex;align-items:center;gap:10px;font-size:11px;font-family:'JetBrains Mono',monospace}
+.scrape-row .name{color:var(--text);min-width:120px}
+.scrape-row .status{color:var(--text3);flex:1}
+.scrape-row.done .status{color:var(--green)}
+.scrape-row.error .status{color:var(--red)}
+.spinner{width:14px;height:14px;border:2px solid rgba(108,99,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── V10: SCOUT FEED (groups + 6-col compact grid) ── */
+.scout-empty{padding:60px 20px;text-align:center;color:var(--text3);background:var(--bg2);border:1px dashed var(--border);border-radius:12px}
+.scout-empty-icon{font-size:42px;margin-bottom:14px;opacity:.5}
+.scout-empty-title{font-size:14px;color:var(--text2);margin-bottom:6px;font-weight:500}
+.scout-empty-sub{font-size:12px;line-height:1.7;max-width:420px;margin:0 auto}
+.scout-group{margin-bottom:24px}
+.scout-group-head{display:flex;align-items:center;gap:12px;margin:14px 0 12px;padding-bottom:8px;border-bottom:.5px solid var(--border)}
+.scout-group-icon{font-size:14px}
+.scout-group-title{font-size:13px;font-weight:600;color:var(--text)}
+.scout-group-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.04em}
+.scout-group-domain{color:var(--blue) !important}
+.scout-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
+.scout-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;transition:all .15s;font-size:11px}
+.scout-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.scout-card.saved{border-color:rgba(251,191,36,.5);box-shadow:0 0 0 1px rgba(251,191,36,.25)}
+.scout-card-head{padding:6px 10px;display:flex;align-items:center;justify-content:space-between;font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:.04em;border-bottom:.5px solid var(--border);min-height:24px}
+.scout-card-account{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.scout-card-status{display:flex;gap:6px;align-items:center}
+.scout-card-active{display:inline-flex;align-items:center;gap:3px;color:var(--green)}
+.scout-card-active::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.scout-card-inactive{display:inline-flex;align-items:center;gap:3px;color:var(--red)}
+.scout-card-inactive::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--red)}
+.scout-media{aspect-ratio:1/1;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:24px;opacity:.6;position:relative;cursor:pointer}
+.scout-media img,.scout-media video{width:100%;height:100%;object-fit:cover}
+.scout-media-badge{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.75);color:#fff;font-size:9px;padding:2px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace}
+.scout-body{padding:7px 10px;flex:1;display:flex;flex-direction:column;gap:5px;min-height:50px}
+.scout-text{font-size:10px;color:var(--text2);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.scout-slug-pill{display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border2);color:var(--blue);font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 6px;border-radius:3px;align-self:flex-start;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scout-card-foot{padding:6px 8px;border-top:.5px solid var(--border);display:flex;gap:5px;align-items:center}
+.scout-save-btn{flex:1;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:var(--gold);padding:5px 8px;border-radius:5px;font-size:10px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .15s}
+.scout-save-btn:hover{background:rgba(251,191,36,.2)}
+.scout-save-btn.saved{background:rgba(251,191,36,.25);color:var(--gold)}
+.scout-libbtn{background:none;border:1px solid var(--border2);color:var(--text3);padding:5px 8px;border-radius:5px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;text-decoration:none}
+.scout-libbtn:hover{color:var(--accent2);border-color:var(--accent)}
+
+/* ── V10: SAVE MODAL (Hook/Caption/Angle) ── */
+.check-row{display:flex;gap:10px}
+.check-card{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:4px;text-align:center}
+.check-card:hover{border-color:var(--text3)}
+.check-card.on.hook{border-color:#f472b6;background:rgba(244,114,182,.08)}
+.check-card.on.caption{border-color:var(--blue);background:rgba(56,189,248,.08)}
+.check-card-icon{font-size:18px}
+.check-card-label{font-size:12px;font-weight:600;color:var(--text)}
+.check-card-sub{font-size:10px;color:var(--text3);line-height:1.4}
+.angle-input-wrap{position:relative}
+.angle-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;margin-top:4px;max-height:200px;overflow-y:auto;z-index:10;display:none}
+.angle-suggestions.open{display:block}
+.angle-sugg{padding:8px 12px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+.angle-sugg:hover{background:var(--bg4)}
+.angle-sugg .badge{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.angle-sugg.create{color:var(--accent2)}
+
+/* ── V10: ANGLE TAGS MANAGER (Settings) ── */
+.tag-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.tag-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px}
+.tag-row-name{flex:1;font-size:12px;color:var(--text)}
+.tag-row-count{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.tag-row-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 6px}
+.tag-row-del:hover{color:var(--red)}
+
 /* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
 .modal-bg.open{display:flex}
@@ -635,38 +734,61 @@ a{color:inherit;text-decoration:none}
 <div id="v-scout" class="view active">
   <div class="wrap">
 
-    <div class="add-panel">
-      <div class="section-label">Ajouter un concurrent</div>
-      <div class="add-form">
-        <div class="field">
-          <label>Nom</label>
-          <input type="text" id="cName" placeholder="DistroKid"/>
-        </div>
-        <div class="field">
-          <label>Page Facebook URL ou ID</label>
-          <input type="text" id="cUrl" placeholder="https://www.facebook.com/distrokid OU 340565305811499"/>
-        </div>
-        <div class="field">
-          <label>Pays</label>
-          <select id="cCountry">
-            <option value="ALL">ALL</option>
-            <option value="FR" selected>FR</option>
-            <option value="US">US</option>
-            <option value="GB">GB</option>
-            <option value="DE">DE</option>
-            <option value="ES">ES</option>
-            <option value="BE">BE</option>
-            <option value="CA">CA</option>
-          </select>
-        </div>
-        <button class="add-btn" onclick="addComp()">+ Ajouter</button>
+    <!-- COMPETITOR MANAGEMENT (chips) -->
+    <div class="comp-mgmt">
+      <div class="comp-mgmt-row">
+        <span class="comp-mgmt-label">Concurrents</span>
+        <div class="comp-chips" id="compChips"></div>
+        <button class="comp-add-btn" onclick="openAddComp()">+ Ajouter</button>
       </div>
     </div>
 
-    <div class="comp-grid" id="compGrid">
-      <div class="ads-empty" style="border-style:dashed">Aucun concurrent ajouté. Rentre le nom et l'URL d'une page Facebook ci-dessus.</div>
+    <!-- SCRAPE TOOLBAR -->
+    <div class="scout-toolbar">
+      <div class="scout-toolbar-row">
+        <button class="scout-action-btn" id="scrapeAllBtn" onclick="scrapeAll()">🎯 Scrape all</button>
+        <div class="toolbar-divider"></div>
+        <span class="toolbar-label">Affichage</span>
+        <button class="toolbar-toggle on" id="tg-active" onclick="toggleActiveOnly()">Active only</button>
+        <span class="toolbar-label" style="margin-left:6px">Group by</span>
+        <button class="toolbar-toggle on" id="grp-slug" onclick="setGroupBy('slug')">Slug (track)</button>
+        <button class="toolbar-toggle" id="grp-account" onclick="setGroupBy('account')">Ad account</button>
+        <span style="margin-left:auto;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="scoutCounter"></span>
+      </div>
+      <div class="scrape-progress" id="scrapeProgress" style="display:none"></div>
     </div>
 
+    <!-- RESULTS FEED -->
+    <div id="scoutResults"></div>
+
+  </div>
+</div>
+
+<!-- ADD COMPETITOR MODAL -->
+<div class="modal-bg" id="addCompModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">+ Ajouter un concurrent</div>
+      <button class="modal-x" onclick="closeAddComp()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Nom</label><input type="text" id="cName" placeholder="DistroKid"/></div>
+      <div class="field">
+        <label>Page Facebook URL ou ID numérique</label>
+        <input type="text" id="cUrl" placeholder="facebook.com/distrokid OU 340565305811499"/>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">L'ID numérique (visible dans l'URL Ad Library) est le plus fiable.</div>
+      </div>
+      <div class="field">
+        <label>Pays</label>
+        <select id="cCountry">
+          <option value="ALL">ALL (tous pays)</option>
+          <option value="FR" selected>FR</option><option value="US">US</option><option value="GB">GB</option>
+          <option value="DE">DE</option><option value="ES">ES</option><option value="IT">IT</option>
+          <option value="BE">BE</option><option value="CA">CA</option><option value="NL">NL</option>
+        </select>
+      </div>
+      <button class="add-btn" onclick="addComp()" style="width:100%">+ Ajouter</button>
+    </div>
   </div>
 </div>
 
@@ -717,6 +839,48 @@ a{color:inherit;text-decoration:none}
 </div>
 
 <!-- SETTINGS MODAL -->
+<!-- V10: SAVE TO LIBRARY MODAL -->
+<div class="modal-bg" id="saveModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">💾 Sauvegarder dans la Library</div>
+      <button class="modal-x" onclick="closeSaveModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace" id="saveModalContext"></div>
+      <div>
+        <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px">Ce que j'aime dans cette ad</div>
+        <div class="check-row">
+          <div class="check-card hook" id="cc-hook" onclick="toggleSaveCheck('hook')">
+            <div class="check-card-icon">🎯</div>
+            <div class="check-card-label">Hook</div>
+            <div class="check-card-sub">3 premières secondes</div>
+          </div>
+          <div class="check-card caption" id="cc-caption" onclick="toggleSaveCheck('caption')">
+            <div class="check-card-icon">📝</div>
+            <div class="check-card-label">Caption</div>
+            <div class="check-card-sub">Texte écrit</div>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>🏷 Angle marketing (sub-tag)</label>
+        <div class="angle-input-wrap">
+          <input type="text" id="saveAngle" placeholder="Choisir ou créer un angle..." oninput="onAngleInput()" onfocus="onAngleInput()" autocomplete="off"/>
+          <div class="angle-suggestions" id="angleSuggs"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Tape pour filtrer · Ex: Lyrics, Snapchat, IRL, POV</div>
+      </div>
+      <div class="field">
+        <label>Note libre</label>
+        <textarea id="saveNote" placeholder="Pourquoi cette ad ? Pattern à reproduire ? Idée d'adaptation..."></textarea>
+      </div>
+      <button class="modal-save" onclick="confirmSave()">Sauvegarder</button>
+      <button onclick="closeSaveModal()" style="background:none;border:1px solid var(--border2);color:var(--text2);padding:9px;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:12px;cursor:pointer;width:100%;margin-top:6px">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="settingsModal">
   <div class="modal">
     <div class="modal-head">
@@ -733,15 +897,25 @@ a{color:inherit;text-decoration:none}
         <input type="password" id="setApify" placeholder="apify_api_..."/>
       </div>
       <div class="field">
-        <label>CPM de référence ERA (€)</label>
-        <input type="number" id="setCpm" placeholder="ex: 4.50" step="0.01"/>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">Utilisé pour le proxy spend concurrent</div>
+        <label>Limite d'ads par concurrent par scrape</label>
+        <input type="number" id="setLimit" placeholder="50" min="10" max="500"/>
       </div>
-      <div class="field">
-        <label>Limite d'ads par scrape</label>
-        <input type="number" id="setLimit" placeholder="150" min="10" max="500"/>
+
+      <div style="height:1px;background:var(--border);margin:6px 0"></div>
+
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">🏷 Angle marketing — sub-tags</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px">Catégories pour classer tes ads dans la Library.</div>
+        <div class="tag-list" id="angleTagList"></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <input type="text" id="newAngleTag" placeholder="Nouveau sub-tag..." style="flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:7px 10px;border-radius:6px;font-size:12px;outline:none" onkeydown="if(event.key==='Enter')addAngleTag()"/>
+          <button onclick="addAngleTag()" style="background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);color:var(--accent2);padding:7px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">+ Ajouter</button>
+        </div>
       </div>
-      <button class="modal-save" onclick="saveSettings()">Enregistrer</button>
+
+      <div style="height:1px;background:var(--border);margin:6px 0"></div>
+
+      <button class="modal-save" onclick="saveSettings()">Enregistrer settings</button>
       <button onclick="doLogout()" style="background:none;border:1px solid rgba(255,68,102,.3);color:var(--red);padding:10px;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;width:100%;margin-top:4px">Se déconnecter</button>
     </div>
   </div>
@@ -777,6 +951,12 @@ const S = {
   // Volatile (in-memory, cleared on refresh)
   scrapedAds: {},    // {compId: [ads...]}
   lastScrape: {},    // {compId: ISO timestamp}
+  // V10
+  angleTags: [],     // [{id,name}]
+  groupBy: 'slug',
+  activeOnly: true,
+  pendingSave: null,         // {ad, compId, compName, compIdx, adIdx}
+  pendingSaveCheck: { hook:false, caption:false },
   // UI
   kbFilter: 'all',
   kbSort: 'date',
@@ -984,19 +1164,57 @@ function switchView(v){
 // ══════════════════════════════════════════
 function openSettings(){
   document.getElementById('setApify').value = S.apifyKey;
-  document.getElementById('setCpm').value = S.refCpm;
   document.getElementById('setLimit').value = S.limit;
+  renderAngleTagList();
   document.getElementById('settingsModal').classList.add('open');
 }
 function closeSettings(){ document.getElementById('settingsModal').classList.remove('open') }
 function saveSettings(){
   S.apifyKey = document.getElementById('setApify').value.trim();
-  S.refCpm = parseFloat(document.getElementById('setCpm').value)||4.5;
-  S.limit = parseInt(document.getElementById('setLimit').value)||20;
+  S.limit = parseInt(document.getElementById('setLimit').value)||50;
   save('ci_apify', S.apifyKey);
-  save('ci_cpm', S.refCpm);
   save('ci_limit', S.limit);
   closeSettings();
+}
+
+function renderAngleTagList(){
+  const el = document.getElementById('angleTagList');
+  if(!el) return;
+  if(!S.angleTags.length){
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px">Aucun tag.</div>';
+    return;
+  }
+  el.innerHTML = S.angleTags.map(t => `
+    <div class="tag-row">
+      <span class="tag-row-name">${esc(t.name)}</span>
+      <span class="tag-row-count">${_countLibByAngle(t.name)} ads</span>
+      <button class="tag-row-del" onclick="deleteAngleTag('${t.id}','${esc(t.name)}')">×</button>
+    </div>
+  `).join('');
+}
+
+async function addAngleTag(){
+  const inp = document.getElementById('newAngleTag');
+  const name = inp.value.trim();
+  if(!name) return;
+  if(S.angleTags.some(t => t.name.toLowerCase() === name.toLowerCase())){ alert('Ce tag existe déjà.'); return; }
+  const created = await cloudInsert('angle_tags', { name });
+  if(created){
+    S.angleTags.push(created);
+    inp.value = '';
+    renderAngleTagList();
+  }
+}
+
+async function deleteAngleTag(id, name){
+  const used = _countLibByAngle(name);
+  const msg = used > 0 ? `Ce tag est utilisé sur ${used} ad(s) de ta library. Le supprimer va laisser ces ads sans angle. Continuer ?` : 'Supprimer ce tag ?';
+  if(!confirm(msg)) return;
+  const ok = await cloudDelete('angle_tags', { id });
+  if(ok){
+    S.angleTags = S.angleTags.filter(t => t.id !== id);
+    renderAngleTagList();
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1012,377 +1230,378 @@ async function addComp(){
     S.competitors.push(row);
     document.getElementById('cName').value='';
     document.getElementById('cUrl').value='';
+    closeAddComp();
     renderComps();
-  }
-}
-async function removeComp(i){
-  const c = S.competitors[i];
-  if(!c) return;
-  if(!confirm(`Supprimer ${c.name} ?`)) return;
-  const ok = await cloudDelete('competitors', { id: c.id });
-  if(ok){
-    S.competitors.splice(i,1);
-    delete S.scrapedAds[c.id];
-    delete S.lastScrape[c.id];
-    renderComps();
+    renderScout();
   }
 }
 
+// ══════════════════════════════════════════
+// V10: COMPETITOR CHIPS
+// ══════════════════════════════════════════
 function renderComps(){
-  const el = document.getElementById('compGrid');
+  const el = document.getElementById('compChips');
+  if(!el) return;
   if(!S.competitors.length){
-    el.innerHTML='<div class="ads-empty" style="border-style:dashed">Aucun concurrent. Ajoute une page Facebook ci-dessus.</div>';
+    el.innerHTML = '<span style="font-size:11px;color:var(--text3);font-style:italic">Aucun concurrent — clique <b>+ Ajouter</b> →</span>';
     return;
   }
-  el.innerHTML = S.competitors.map((c,i) => compCard(c,i)).join('');
+  el.innerHTML = S.competitors.map(c => `
+    <span class="comp-chip">
+      <span class="comp-chip-name">${esc(c.name)}</span>
+      <span class="comp-chip-country">${esc(c.country||'FR')}</span>
+      <button class="comp-chip-act scrape" title="Scrape ce concurrent" onclick="scrapeOne('${c.id}')">⟳</button>
+      <button class="comp-chip-act del" title="Supprimer" onclick="removeCompById('${c.id}')">×</button>
+    </span>
+  `).join('');
 }
 
-function compCard(c, i){
-  // Ads come from volatile session memory now
-  const ads = S.scrapedAds[c.id] || [];
-  const lastScrape = S.lastScrape[c.id] || null;
-  const totalImp = ads.reduce((s,a)=>s+getImpressions(a).mid,0);
-  const active = ads.filter(a=>a.isActive!==false).length;
-  const lastStr = lastScrape ? new Date(lastScrape).toLocaleDateString('fr-FR') : 'jamais';
-  return `<div class="comp-card" id="comp-${i}">
-    <div class="comp-card-head">
-      <div class="comp-card-left">
-        <div class="comp-avatar">${c.name[0].toUpperCase()}</div>
-        <div>
-          <div class="comp-name">${esc(c.name)}</div>
-          <div class="comp-url">${esc(c.url)} · ${c.country}</div>
-        </div>
-      </div>
-      <div class="comp-card-right">
-        <div class="comp-stats">
-          <div class="stat-item">
-            <div class="stat-val">${ads.length}</div>
-            <div class="stat-lbl">ads</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-val" style="color:var(--green)">${active}</div>
-            <div class="stat-lbl">actives</div>
-          </div>
-          <div class="stat-item">
-            <div class="stat-val" style="color:var(--blue)">${totalImp>0?fmt_n(Math.round(totalImp/1000))+'k':'—'}</div>
-            <div class="stat-lbl">imp. totales</div>
-          </div>
-        </div>
-        <button class="scrape-btn" id="scrape-btn-${i}" onclick="scrapeComp(${i})">⟳ Scrape</button>
-        <button class="rm-btn" onclick="removeComp(${i})">✕</button>
-      </div>
-    </div>
-    <div class="ads-container" id="ads-container-${i}">
-      ${ads.length ? renderAdsSection(ads, i, lastStr) : `<div class="ads-empty">Clique <b>Scrape</b> pour charger les pubs de ${esc(c.name)}</div>`}
-    </div>
-  </div>`;
+function openAddComp(){ document.getElementById('addCompModal').classList.add('open'); }
+function closeAddComp(){ document.getElementById('addCompModal').classList.remove('open'); }
+
+async function removeCompById(id){
+  const c = S.competitors.find(x => x.id === id);
+  if(!c) return;
+  if(!confirm(`Supprimer ${c.name} ?`)) return;
+  const ok = await cloudDelete('competitors', { id });
+  if(ok){
+    S.competitors = S.competitors.filter(x => x.id !== id);
+    delete S.scrapedAds[id];
+    delete S.lastScrape[id];
+    renderComps();
+    renderScout();
+  }
 }
 
-function renderAdsSection(ads, compIdx, lastStr, newCount=0){
-  const f = S.adFilters[compIdx] || {sort:'imp', type:'all'};
-  let filtered = [...ads];
-  if(f.type!=='all') filtered = filtered.filter(a=>getAdType(a)===f.type);
-  filtered.sort((a,b)=>{
-    if(f.sort==='imp') return getImpressions(b).mid - getImpressions(a).mid;
-    if(f.sort==='date') {
-      const da=getStartDate(a)||new Date(0), db=getStartDate(b)||new Date(0);
-      return db-da;
+// ══════════════════════════════════════════
+// V10: SCOUT FEED (grouped by slug or account)
+// ══════════════════════════════════════════
+function toggleActiveOnly(){
+  S.activeOnly = !S.activeOnly;
+  document.getElementById('tg-active').classList.toggle('on', S.activeOnly);
+  renderScout();
+}
+function setGroupBy(g){
+  S.groupBy = g;
+  document.getElementById('grp-slug').classList.toggle('on', g==='slug');
+  document.getElementById('grp-account').classList.toggle('on', g==='account');
+  renderScout();
+}
+
+function renderScout(){
+  const container = document.getElementById('scoutResults');
+  const counter = document.getElementById('scoutCounter');
+  if(!container) return;
+
+  // Flatten all scraped ads with their competitor info
+  let allAds = [];
+  for(const compId in S.scrapedAds){
+    const comp = S.competitors.find(c => c.id === compId);
+    if(!comp) continue;
+    const compIdx = S.competitors.indexOf(comp);
+    S.scrapedAds[compId].forEach((ad, adIdx) => {
+      allAds.push({ ad, compId, compIdx, compName: comp.name, adIdx });
+    });
+  }
+  if(S.activeOnly) allAds = allAds.filter(x => x.ad.isActive !== false);
+
+  if(counter) counter.textContent = allAds.length ? `${allAds.length} ads` : '';
+
+  if(!allAds.length){
+    if(!Object.keys(S.scrapedAds).length){
+      container.innerHTML = `<div class="scout-empty">
+        <div class="scout-empty-icon">🎯</div>
+        <div class="scout-empty-title">Pas encore d'ads scrapées</div>
+        <div class="scout-empty-sub">${S.competitors.length === 0 ? 'Ajoute d\\'abord tes concurrents avec le bouton <b>+ Ajouter</b> en haut.' : 'Clique <b>🎯 Scrape all</b> pour charger les ads en cours de tous tes concurrents.'}</div>
+      </div>`;
+      return;
     }
-    if(f.sort==='duration') return daysSince(getStartDate(a)) - daysSince(getStartDate(b));
-    return 0;
-  });
-
-  return `
-    <div class="ads-filters">
-      <span style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace">
-        ${ads.length} ads · dernier scrape ${lastStr}
-        ${newCount>0?`<span style="color:var(--accent2);font-weight:700;margin-left:8px">+${newCount} nouvelles ✦</span>`:''}
-      </span>
-      <div style="display:flex;gap:6px;margin-left:12px">
-        ${['all','image','video','carousel'].map(t=>`<div class="filter-chip ${f.type===t?'on':''}" onclick="setAdFilter(${compIdx},'type','${t}')">${t}</div>`).join('')}
-      </div>
-      <select class="sort-select" onchange="setAdFilter(${compIdx},'sort',this.value)">
-        <option value="imp" ${f.sort==='imp'?'selected':''}>↓ Impressions</option>
-        <option value="date" ${f.sort==='date'?'selected':''}>↓ Plus récentes</option>
-        <option value="duration" ${f.sort==='duration'?'selected':''}>↓ Durée (proxy perf)</option>
-      </select>
-    </div>
-    <div class="ads-grid">${filtered.map((ad,j)=>adCard(ad,compIdx,j)).join('')}</div>`;
-}
-
-function setAdFilter(compIdx, key, val){
-  if(!S.adFilters[compIdx]) S.adFilters[compIdx]={sort:'imp',type:'all'};
-  S.adFilters[compIdx][key]=val;
-  const c = S.competitors[compIdx];
-  const ads = S.scrapedAds[c.id] || [];
-  const lastScrape = S.lastScrape[c.id] || null;
-  const lastStr = lastScrape ? new Date(lastScrape).toLocaleDateString('fr-FR') : 'jamais';
-  document.getElementById(`ads-container-${compIdx}`).innerHTML = renderAdsSection(ads, compIdx, lastStr);
-}
-
-// ══════════════════════════════════════════
-// AD CARD
-// ══════════════════════════════════════════
-function adCard(ad, compIdx, j){
-  const media = getMediaUrl(ad);
-  const text = getAdText(ad);
-  const ctaUrl = getCtaUrl(ad);
-  const ctaText = getCtaText(ad);
-  const imp = getImpressions(ad);
-  const adType = getAdType(ad);
-  const startDate = getStartDate(ad);
-  const duration = startDate ? daysSince(startDate) : null;
-  const isActive = ad.is_active !== false;
-  const adId = ad.ad_archive_id || ad.id || ad.adArchiveID || `${compIdx}-${j}`;
-  const inLib = S.library.find(it => it.ad_id === adId);
-  const snapshotUrl = ad.ad_library_url
-    || ad.snapshotUrl
-    || (ad.ad_archive_id ? `https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}` : null);
-
-  let mediaHtml = '';
-  if(media){
-    if(media.type==='video' && media.thumb) mediaHtml = `<img src="${esc(media.thumb)}" alt="" onerror="this.style.display='none'"/>`;
-    else if(media.type==='video') mediaHtml = '<span class="ad-media-placeholder">🎬</span>';
-    else if(media.src) mediaHtml = `<img src="${esc(media.src)}" alt="" onerror="this.style.display='none'"/>`;
-  } else {
-    mediaHtml = '<span class="ad-media-placeholder">🎨</span>';
+    container.innerHTML = `<div class="scout-empty">
+      <div class="scout-empty-icon">🔍</div>
+      <div class="scout-empty-title">Aucune ad ne matche</div>
+      <div class="scout-empty-sub">Désactive "Active only" pour voir les ads inactives.</div>
+    </div>`;
+    return;
   }
 
-  const typeBadge = `<span class="ad-type-badge badge-${adType}">${adType}</span>`;
-  const newBadge = ad._isNew ? `<span style="position:absolute;top:8px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;animation:pulse-badge 2s infinite">✦ NEW</span>` : '';
-  const durBadge = duration!==null ? `<span class="ad-duration-badge">${duration}j</span>` : '';
+  // Group
+  const groups = {};
+  allAds.forEach(item => {
+    let key;
+    if(S.groupBy === 'slug'){
+      key = extractSlug(getCtaUrl(item.ad)) || '— sans slug —';
+    } else {
+      key = item.compName;
+    }
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
 
-  const impMid = imp.mid;
-  const proxyS = proxySpend(impMid, S.refCpm);
-  const impBar = impBarWidth(impMid);
-  const impCol = impColor(impMid);
+  // Sort groups by count desc
+  const sortedKeys = Object.keys(groups).sort((a,b) => groups[b].length - groups[a].length);
 
-  const impSection = `<div class="imp-meter">
-    <div class="imp-meter-top">
-      <span class="imp-label">IMPRESSIONS</span>
-      <span class="imp-range" style="color:${impCol}">${imp.lo>0?fmt_n(imp.lo)+' – '+fmt_n(imp.hi):'—'}</span>
+  // Saved IDs lookup
+  const savedIds = new Set(S.library.map(l => l.ad_id));
+
+  container.innerHTML = sortedKeys.map(key => {
+    const items = groups[key];
+    const groupIcon = S.groupBy === 'slug' ? '🔗' : '📣';
+    const sample = items[0]?.ad;
+    const domain = S.groupBy === 'slug' ? extractDomain(getCtaUrl(sample)) : '';
+    const accounts = [...new Set(items.map(i=>i.compName))].length;
+    return `<div class="scout-group">
+      <div class="scout-group-head">
+        <span class="scout-group-icon">${groupIcon}</span>
+        <span class="scout-group-title">${esc(key)}</span>
+        ${domain?`<span class="scout-group-meta scout-group-domain">${esc(domain)}</span>`:''}
+        <span class="scout-group-meta" style="margin-left:auto">${items.length} ads · ${accounts} ${S.groupBy==='slug'?'ad accounts':'angles'}</span>
+      </div>
+      <div class="scout-grid">
+        ${items.map(item => scoutCard(item, savedIds)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function scoutCard(item, savedIds){
+  const { ad, compName, compIdx, adIdx } = item;
+  const adId = ad.ad_archive_id || ad.id || `${compName}-${adIdx}`;
+  const isSaved = savedIds.has(adId);
+  const m = getMediaUrl(ad);
+  const text = getAdText(ad);
+  const ctaUrl = getCtaUrl(ad);
+  const slug = extractSlug(ctaUrl);
+  const adType = getAdType(ad);
+  const adAccount = ad.page_name || ad.snapshot?.page_name || ad.byline || compName || '—';
+  const startDate = getStartDate(ad);
+  const duration = startDate ? daysSince(startDate.toISOString()) : null;
+  const isActive = ad.isActive !== false;
+  const adLibUrl = ad.ad_library_url || ad.snapshotUrl || (ad.ad_archive_id ? `https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}` : '');
+
+  let media = '🎨';
+  if(m){
+    if(m.type === 'video' && m.thumb) media = `<img src="${esc(m.thumb)}" loading="lazy"/>`;
+    else if(m.type === 'video' && m.src) media = `<video src="${esc(m.src)}" muted loop preload="metadata" onmouseenter="this.play()" onmouseleave="this.pause();this.currentTime=0"></video>`;
+    else if(m.src) media = `<img src="${esc(m.src)}" loading="lazy"/>`;
+  }
+
+  const adData = JSON.stringify({id:adId, compIdx, adIdx, compName}).replace(/'/g,"&#39;");
+
+  return `<div class="scout-card ${isSaved?'saved':''}">
+    <div class="scout-card-head">
+      <span class="scout-card-account" title="${esc(adAccount)}">${esc(adAccount)}</span>
+      <span class="${isActive?'scout-card-active':'scout-card-inactive'}">${isActive?(duration!==null?duration+'j':'LIVE'):'OFF'}</span>
     </div>
-    ${imp.lo>0?`<div class="imp-bar-bg"><div class="imp-bar-fill" style="width:${impBar}%;background:${impCol}"></div></div>
-    <div class="imp-proxy">
-      <div class="proxy-item"><span class="proxy-lbl">CPM proxy </span><span class="proxy-val">${fmt_m(S.refCpm)}</span></div>
-      ${proxyS?`<div class="proxy-item"><span class="proxy-lbl">Spend proxy </span><span class="proxy-val" style="color:var(--yellow)">~${fmt_n(proxyS)}€</span></div>`:''}
-      ${duration?`<div class="proxy-item"><span class="proxy-lbl">Durée </span><span class="proxy-val" style="color:var(--green)">${duration}j</span></div>`:''}
-    </div>`:''}
-  </div>`;
-
-  const ctaSection = ctaUrl ? `<div class="ad-cta">
-    <span class="ad-cta-icon">🔗</span>
-    <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(ctaUrl)}</span>
-    ${ctaText?`<span style="flex-shrink:0;color:var(--accent2);font-size:10px;font-weight:600">${esc(ctaText)}</span>`:''}
-  </div>` : '';
-
-  const metaRow = `<div class="ad-meta-row">
-    <span class="meta-tag ${isActive?'active':'inactive'}">${isActive?'● Active':'○ Inactive'}</span>
-    ${startDate?`<span class="meta-tag">Depuis ${startDate.toLocaleDateString('fr-FR')}</span>`:''}
-  </div>`;
-
-  const isSaved = !!inLib;
-  const adData = JSON.stringify({id:adId, compIdx, adIdx:j, compName: S.competitors[compIdx]?.name||''}).replace(/'/g,"&#39;");
-
-  return `<div class="ad-card ${isSaved?'saved-era':''}" id="adcard-${adId}">
-    <div class="ad-media">
-      ${mediaHtml}
-      ${typeBadge}
-      ${newBadge}
-      ${durBadge}
+    <div class="scout-media" ${adLibUrl?`onclick="window.open('${esc(adLibUrl)}','_blank')"`:''}>
+      ${media}
+      ${adType==='video'?'<div class="scout-media-badge">▶</div>':adType==='carousel'?'<div class="scout-media-badge">⬚</div>':''}
     </div>
-    <div class="ad-body">
-      ${text?`<div class="ad-text" id="adtext-${adId}">${esc(text)}</div>`:''}
-      ${impSection}
-      ${ctaSection}
-      ${metaRow}
+    <div class="scout-body">
+      ${slug?`<span class="scout-slug-pill" title="${esc(ctaUrl)}">🔗 ${esc(slug)}</span>`:''}
+      ${text?`<div class="scout-text">${esc(text)}</div>`:'<div class="scout-text" style="color:var(--text3);font-style:italic">— pas de texte —</div>'}
     </div>
-    <div class="ad-actions">
-      <button class="ad-act ${isSaved?'active-era':''}" onclick='saveToLibrary(${adData})'>
-        ${isSaved?'✓ Saved':'＋ Save to Library'}
+    <div class="scout-card-foot">
+      <button class="scout-save-btn ${isSaved?'saved':''}" onclick='${isSaved?`unsaveFromLibrary("${esc(adId)}")`:`openSaveModal(${adData})`}'>
+        ${isSaved?'★ Saved':'+ Save'}
       </button>
-      ${text&&text.length>120?`<button class="ad-act expand-btn" onclick="toggleText('${adId}')">+ voir</button>`:''}
-      ${snapshotUrl?`<a class="ad-act" href="${esc(snapshotUrl)}" target="_blank">Library →</a>`:''}
+      ${adLibUrl?`<a class="scout-libbtn" href="${esc(adLibUrl)}" target="_blank" title="Ad Library">↗</a>`:''}
     </div>
   </div>`;
 }
 
-function toggleText(adId){
-  const el=document.getElementById(`adtext-${adId}`);
-  if(!el) return;
-  el.classList.toggle('expanded');
+// ══════════════════════════════════════════
+// V10: SCRAPE ALL + SCRAPE ONE
+// ══════════════════════════════════════════
+function buildAdLibUrl(comp){
+  const raw = comp.url.trim();
+  const country = comp.country === 'ALL' ? 'ALL' : comp.country;
+  const profileMatch = raw.match(/profile\.php\?id=(\d+)/);
+  const pageIdMatch = raw.match(/view_all_page_id=(\d+)/);
+  const extractedId = profileMatch?.[1] || pageIdMatch?.[1];
+  if(/^\d+$/.test(raw) || extractedId){
+    const pid = extractedId || raw;
+    return `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&view_all_page_id=${pid}&search_type=page&media_type=all`;
+  }
+  if(raw.includes('facebook.com/ads/library')) return raw;
+  const slug = raw.replace(/https?:\/\/(www\.)?facebook\.com\//,'').replace(/\/$/, '').split('/')[0].split('?')[0];
+  return `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&q=${encodeURIComponent(slug)}&search_type=page&media_type=all`;
+}
+
+async function scrapeOneInternal(comp){
+  const adLibUrl = buildAdLibUrl(comp);
+  const reqCount = Math.max(10, S.limit);
+  const res = await fetch(
+    `https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync-get-dataset-items?token=${S.apifyKey}&timeout=180&memory=512`,
+    { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ urls:[{url:adLibUrl}], count: reqCount }) }
+  );
+  if(!res.ok){ const t = await res.text(); throw new Error(`Apify ${res.status}: ${t.substring(0,200)}`); }
+  let ads = await res.json();
+  if(!Array.isArray(ads)) ads = ads.items || ads.data || [];
+  return ads;
+}
+
+async function scrapeOne(id){
+  if(!S.apifyKey){ alert('Configure ta clé Apify dans ⚙ Settings'); return; }
+  const comp = S.competitors.find(c => c.id === id);
+  if(!comp) return;
+  const progress = document.getElementById('scrapeProgress');
+  progress.style.display = 'flex';
+  progress.innerHTML = `<div class="scrape-row" id="sp-${id}"><span class="spinner"></span><span class="name">${esc(comp.name)}</span><span class="status">Scraping...</span></div>`;
+  try {
+    const ads = await scrapeOneInternal(comp);
+    S.scrapedAds[id] = ads;
+    S.lastScrape[id] = new Date().toISOString();
+    document.getElementById(`sp-${id}`).className = 'scrape-row done';
+    document.getElementById(`sp-${id}`).innerHTML = `<span style="color:var(--green)">✓</span><span class="name">${esc(comp.name)}</span><span class="status">${ads.length} ads</span>`;
+    renderScout();
+  } catch(e){
+    document.getElementById(`sp-${id}`).className = 'scrape-row error';
+    document.getElementById(`sp-${id}`).innerHTML = `<span style="color:var(--red)">⚠</span><span class="name">${esc(comp.name)}</span><span class="status">${esc(e.message)}</span>`;
+  }
+  setTimeout(() => { progress.style.display = 'none'; progress.innerHTML = ''; }, 5000);
+}
+
+async function scrapeAll(){
+  if(!S.apifyKey){ alert('Configure ta clé Apify dans ⚙ Settings'); return; }
+  if(!S.competitors.length){ alert('Ajoute au moins un concurrent.'); return; }
+  const btn = document.getElementById('scrapeAllBtn');
+  btn.disabled = true; btn.textContent = '⏳ Scraping...';
+  const progress = document.getElementById('scrapeProgress');
+  progress.style.display = 'flex';
+  progress.innerHTML = S.competitors.map(c =>
+    `<div class="scrape-row" id="sp-${c.id}"><span class="spinner"></span><span class="name">${esc(c.name)}</span><span class="status">En attente...</span></div>`
+  ).join('');
+
+  // Sequential to avoid Apify rate limiting + show progress
+  for(const comp of S.competitors){
+    document.getElementById(`sp-${comp.id}`).querySelector('.status').textContent = 'Scraping...';
+    try {
+      const ads = await scrapeOneInternal(comp);
+      S.scrapedAds[comp.id] = ads;
+      S.lastScrape[comp.id] = new Date().toISOString();
+      const row = document.getElementById(`sp-${comp.id}`);
+      row.className = 'scrape-row done';
+      row.innerHTML = `<span style="color:var(--green)">✓</span><span class="name">${esc(comp.name)}</span><span class="status">${ads.length} ads</span>`;
+      renderScout();
+    } catch(e){
+      const row = document.getElementById(`sp-${comp.id}`);
+      row.className = 'scrape-row error';
+      row.innerHTML = `<span style="color:var(--red)">⚠</span><span class="name">${esc(comp.name)}</span><span class="status">${esc(e.message.substring(0,60))}</span>`;
+    }
+  }
+
+  btn.disabled = false; btn.textContent = '🎯 Scrape all';
+  setTimeout(() => { progress.style.display = 'none'; }, 8000);
 }
 
 // ══════════════════════════════════════════
-// SAVE TO LIBRARY
+// V10: SAVE MODAL
 // ══════════════════════════════════════════
-async function saveToLibrary(adData){
+function openSaveModal(adData){
   const {id, compIdx, adIdx, compName} = adData;
   const comp = S.competitors[compIdx];
   if(!comp) return;
   const ad = (S.scrapedAds[comp.id]||[])[adIdx];
-  if(!ad) return;
+  if(!ad) return alert('Ad introuvable');
+  S.pendingSave = { id, compIdx, adIdx, compName, comp, ad };
+  S.pendingSaveCheck = { hook:false, caption:false };
+  document.getElementById('cc-hook').classList.remove('on');
+  document.getElementById('cc-caption').classList.remove('on');
+  document.getElementById('saveAngle').value = '';
+  document.getElementById('saveNote').value = '';
+  document.getElementById('saveModalContext').textContent = `${compName} · ${ad.page_name || ad.snapshot?.page_name || '—'}`;
+  document.getElementById('saveModal').classList.add('open');
+  document.getElementById('angleSuggs').classList.remove('open');
+}
+function closeSaveModal(){
+  document.getElementById('saveModal').classList.remove('open');
+  S.pendingSave = null;
+}
+function toggleSaveCheck(k){
+  S.pendingSaveCheck[k] = !S.pendingSaveCheck[k];
+  document.getElementById(`cc-${k}`).classList.toggle('on', S.pendingSaveCheck[k]);
+}
+function _countLibByAngle(name){ return S.library.filter(l => l.angle_tag === name).length; }
 
-  const existing = S.library.find(it => it.ad_id === id);
-  if(existing){
-    // Toggle off → delete from library
-    const ok = await cloudDelete('library', { user_id: _currentUser.id, ad_id: id });
-    if(ok){
-      S.library = S.library.filter(it => it.ad_id !== id);
-    }
-  } else {
-    // Insert into library table
-    const ad_data = {
-      text: getAdText(ad),
-      media: getMediaUrl(ad),
-      ctaUrl: getCtaUrl(ad),
-      ctaText: getCtaText(ad),
-      imp: getImpressions(ad),
-      isActive: ad.isActive!==false,
-      startDate: getStartDate(ad)?.toISOString()||null,
-      type: getAdType(ad),
-      snapshotUrl: ad.ad_library_url||ad.snapshotUrl||ad.snapshot_url||(ad.ad_archive_id?`https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}`:null),
-      duration: getStartDate(ad)?daysSince(getStartDate(ad)):null,
-    };
-    const row = await cloudInsert('library', {
-      ad_id: id,
-      competitor_name: compName,
-      ad_data,
-      is_hook: false,
-      is_caption: false,
-      angle_tag: null,
-      notes: ''
-    });
-    if(row) S.library.unshift(row);
+function onAngleInput(){
+  const input = document.getElementById('saveAngle');
+  const sugg = document.getElementById('angleSuggs');
+  const q = input.value.trim().toLowerCase();
+  const matches = S.angleTags.filter(t => !q || t.name.toLowerCase().includes(q));
+  let html = matches.map(t => `<div class="angle-sugg" onclick="pickAngle('${esc(t.name)}')">${esc(t.name)}<span class="badge">${_countLibByAngle(t.name)} ads</span></div>`).join('');
+  if(q && !S.angleTags.some(t => t.name.toLowerCase() === q)){
+    html += `<div class="angle-sugg create" onclick="pickAngle('${esc(input.value.trim())}',true)">+ Créer "${esc(input.value.trim())}"</div>`;
   }
-  // Refresh card
-  const ads = S.scrapedAds[comp.id] || [];
-  const lastScrape = S.lastScrape[comp.id] || null;
-  const lastStr = lastScrape ? new Date(lastScrape).toLocaleDateString('fr-FR') : 'jamais';
-  const container = document.getElementById(`ads-container-${compIdx}`);
-  if(container) container.innerHTML = renderAdsSection(ads, compIdx, lastStr);
+  sugg.innerHTML = html || `<div class="angle-sugg" style="color:var(--text3);cursor:default">Tape pour créer un nouveau tag…</div>`;
+  sugg.classList.add('open');
 }
 
-// ══════════════════════════════════════════
-// SCRAPE (Apify)
-// ══════════════════════════════════════════
-async function scrapeComp(i){
-  if(!S.apifyKey){ alert('Configure ta clé Apify dans ⚙ Settings'); return; }
-  const comp = S.competitors[i];
-  const btn = document.getElementById(`scrape-btn-${i}`);
-  const container = document.getElementById(`ads-container-${i}`);
-
-  btn.disabled=true;
-  btn.textContent='⟳ Scraping...';
-  container.innerHTML=`<div class="loading-state"><div class="spinner"></div><div>Scraping les pubs de <b>${esc(comp.name)}</b>...</div><div style="font-size:11px;color:var(--text3);max-width:400px">Patiente 30-90s · Limite: ${S.limit} ads · Apify curious_coder</div></div>`;
-
-  try {
-    // Build proper Ad Library URL for getting ALL page ads
-    const raw = comp.url.trim();
-    const country = comp.country === 'ALL' ? 'ALL' : comp.country;
-    let adLibUrl;
-
-    // Helper: extract numeric page ID from various URL formats
-    function extractPageId(url) {
-      // profile.php?id=XXXXX
-      const profileMatch = url.match(/profile\.php\?id=(\d+)/);
-      if (profileMatch) return profileMatch[1];
-      // view_all_page_id=XXXXX
-      const pageIdMatch = url.match(/view_all_page_id=(\d+)/);
-      if (pageIdMatch) return pageIdMatch[1];
-      return null;
-    }
-
-    const extractedId = extractPageId(raw);
-
-    if (/^\d+$/.test(raw) || extractedId) {
-      // Numeric ID or profile.php?id= → view_all_page_id (most reliable)
-      const pid = extractedId || raw;
-      adLibUrl = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&view_all_page_id=${pid}&search_type=page&media_type=all`;
-    } else if (raw.includes('facebook.com/ads/library')) {
-      // Already an Ad Library URL → use as-is
-      adLibUrl = raw;
-    } else {
-      // Clean page URL like facebook.com/distrokid → extract slug
-      const slug = raw.replace(/https?:\/\/(www\.)?facebook\.com\//,'').replace(/\/$/, '').split('/')[0].split('?')[0];
-      adLibUrl = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=${country}&q=${encodeURIComponent(slug)}&search_type=page&media_type=all`;
-    }
-
-    // Show the user which URL is being used (debug)
-    container.innerHTML=`<div class="loading-state"><div class="spinner"></div>
-      <div>Scraping <b>${esc(comp.name)}</b>...</div>
-      <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:'JetBrains Mono',monospace;word-break:break-all;max-width:460px">${adLibUrl}</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Limite: ${S.limit} ads · 30-90s</div>
-    </div>`;
-
-    // Minimum count is 10 per actor requirement
-    const reqCount = Math.max(10, S.limit);
-    const body = {
-      urls: [{ url: adLibUrl }],
-      count: reqCount,
-    };
-
-    const res = await fetch(
-      `https://api.apify.com/v2/acts/curious_coder~facebook-ads-library-scraper/run-sync-get-dataset-items?token=${S.apifyKey}&timeout=180&memory=512`,
-      {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
-      }
-    );
-
-    if(!res.ok){
-      const t = await res.text();
-      throw new Error(`Apify ${res.status}: ${t.substring(0,300)}`);
-    }
-
-    let ads = await res.json();
-    console.log('Apify raw response type:', typeof ads, Array.isArray(ads) ? ads.length + ' items' : JSON.stringify(ads).substring(0,200));
-    if(!Array.isArray(ads)) ads = ads.items || ads.data || [];
-    console.log('Ads array length:', ads.length);
-
-    // Detect new ads vs previously seen (within session memory)
-    const compId = S.competitors[i].id;
-    const prevAds = S.scrapedAds[compId] || [];
-    const prevIds = new Set(prevAds.map(a=>a.ad_archive_id).filter(Boolean));
-    const newIds = new Set(ads.map(a=>a.ad_archive_id).filter(Boolean));
-    const newCount = [...newIds].filter(id=>!prevIds.has(id)).length;
-
-    // Mark new ads
-    ads = ads.map(a => ({
-      ...a,
-      _isNew: a.ad_archive_id && !prevIds.has(a.ad_archive_id) && prevIds.size > 0
-    }));
-
-    // Volatile: in-memory only, NOT persisted (per V9 architecture)
-    S.scrapedAds[compId] = ads;
-    S.lastScrape[compId] = new Date().toISOString();
-
-    const lastStr = new Date().toLocaleDateString('fr-FR');
-    if(ads.length) {
-      try {
-        container.innerHTML = renderAdsSection(ads, i, lastStr, newCount);
-      } catch(renderErr) {
-        console.error('Render error:', renderErr);
-        container.innerHTML = `<div class="err-box" style="margin:12px">Render error: ${esc(renderErr.message)}<br><small>Check console for details</small></div>`;
-      }
-    } else {
-      container.innerHTML = `<div class="ads-empty">Aucune pub trouvée (0 résultats). Vérifie l'URL ou essaie un autre pays.</div>`;
-    }
-    // Refresh stats in card header
-    renderComps();
-
-  } catch(e){
-    container.innerHTML=`<div class="err-box" style="margin:12px">
-      ⚠ ${esc(e.message)}<br>
-      <span style="font-size:11px;color:var(--text3)">
-        Vérifie : ① clé Apify valide · ② URL page Facebook correcte · ③ acteur curious_coder/facebook-ads-library-scraper activé sur ton compte Apify
-      </span>
-    </div>`;
+async function pickAngle(name, isNew=false){
+  document.getElementById('saveAngle').value = name;
+  document.getElementById('angleSuggs').classList.remove('open');
+  if(isNew){
+    const created = await cloudInsert('angle_tags', { name });
+    if(created) S.angleTags.push(created);
   }
-  btn.disabled=false;
-  btn.textContent='⟳ Scrape';
 }
+
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('.angle-input-wrap')){
+    document.getElementById('angleSuggs')?.classList.remove('open');
+  }
+});
+
+async function confirmSave(){
+  if(!S.pendingSave) { closeSaveModal(); return; }
+  const { id, compName, ad } = S.pendingSave;
+  const angle = document.getElementById('saveAngle').value.trim();
+  const note = document.getElementById('saveNote').value.trim();
+
+  // Auto-create angle tag if it doesn't exist
+  if(angle && !S.angleTags.some(t => t.name.toLowerCase() === angle.toLowerCase())){
+    const created = await cloudInsert('angle_tags', { name: angle });
+    if(created) S.angleTags.push(created);
+  }
+
+  const startDate = getStartDate(ad);
+  const ad_data = {
+    text: getAdText(ad),
+    media: getMediaUrl(ad),
+    ctaUrl: getCtaUrl(ad),
+    ctaText: getCtaText(ad),
+    isActive: ad.isActive!==false,
+    startDate: startDate?.toISOString()||null,
+    type: getAdType(ad),
+    snapshotUrl: ad.ad_library_url||ad.snapshotUrl||(ad.ad_archive_id?`https://www.facebook.com/ads/library/?id=${ad.ad_archive_id}`:null),
+    duration: startDate?daysSince(startDate.toISOString()):null,
+  };
+  const row = await cloudInsert('library', {
+    ad_id: id,
+    competitor_name: compName,
+    ad_data,
+    is_hook: S.pendingSaveCheck.hook,
+    is_caption: S.pendingSaveCheck.caption,
+    angle_tag: angle || null,
+    notes: note,
+  });
+  if(row){
+    S.library.unshift(row);
+    closeSaveModal();
+    renderScout();
+    if(document.getElementById('v-kb').classList.contains('active')) renderKb();
+  }
+}
+
+async function unsaveFromLibrary(adId){
+  if(!confirm('Retirer cette ad de la library ?')) return;
+  const ok = await cloudDelete('library', { user_id: _currentUser.id, ad_id: adId });
+  if(ok){
+    S.library = S.library.filter(l => l.ad_id !== adId);
+    renderScout();
+    if(document.getElementById('v-kb').classList.contains('active')) renderKb();
+  }
+}
+
 
 // ══════════════════════════════════════════
 // KNOWLEDGE BASE
@@ -1813,6 +2032,17 @@ async function loadAll(){
     }
     S.library = lib || [];
 
+    // 4. Angle tags
+    const { data: tags, error: tErr } = await db.from('angle_tags').select('*').order('name');
+    if(tErr){ if(tErr.code === '42P01'){ _showSetupBanner(); return false; } throw tErr; }
+    S.angleTags = tags || [];
+    // Seed defaults if empty
+    if(S.angleTags.length === 0){
+      const DEFAULT_ANGLES = ['Lyrics','Snapchat','IRL','POV','BTS','Performance live','Mood','Workout','Cinematic','Phone farm'];
+      const { data: seeded } = await db.from('angle_tags').insert(DEFAULT_ANGLES.map(name => ({ name }))).select();
+      S.angleTags = seeded || [];
+    }
+
     setSyncStatus('synced');
     return true;
   } catch(e){
@@ -1834,6 +2064,7 @@ async function initApp(){
     }
     document.getElementById('loginScreen').classList.remove('visible');
     renderComps();
+    renderScout();
     renderKb();
     console.log('[ERA] initApp: render complete');
   } catch(e){
