@@ -575,6 +575,42 @@ header{
 /* ── V10: ANGLE TAGS MANAGER (Settings) ── */
 .tag-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
 .tag-row{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px}
+
+/* ── V11: KB selection checkbox ── */
+.kb-select-cb{position:relative;width:18px;height:18px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.kb-select-cb input{opacity:0;width:18px;height:18px;margin:0;cursor:pointer;position:absolute;inset:0}
+.kb-select-cb span{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;background:var(--bg3);display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.kb-select-cb input:checked + span{background:var(--accent);border-color:var(--accent)}
+.kb-select-cb input:checked + span::after{content:'✓';color:#fff;font-size:11px;font-weight:bold;line-height:1}
+.kb-select-cb:hover span{border-color:var(--text3)}
+
+/* ── V11: +Angle pill ── */
+.kb-tag-add{background:var(--bg3) !important;border:1px dashed var(--border2) !important;color:var(--text3) !important;padding:3px 9px;border-radius:12px;font-size:10px;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:all .15s}
+.kb-tag-add:hover{border-color:var(--accent) !important;color:var(--accent2) !important}
+
+/* ── V11: angles editor popover ── */
+.angles-popover{position:fixed;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:300;width:280px;max-height:400px;overflow-y:auto}
+.angles-popover-title{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:10px;letter-spacing:.04em}
+.angles-popover-list{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;max-height:240px;overflow-y:auto}
+.angle-cb-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;transition:background .12s}
+.angle-cb-row:hover{background:var(--bg3)}
+.angle-cb-row input{margin:0;cursor:pointer}
+.angle-cb-row span{flex:1;color:var(--text)}
+.angle-cb-row .count{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.angles-popover-add{display:flex;gap:6px;padding-top:8px;border-top:1px solid var(--border)}
+.angles-popover-add input{flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:6px 10px;border-radius:6px;font-size:11px;outline:none;font-family:'Space Grotesk',sans-serif}
+.angles-popover-add input:focus{border-color:var(--accent)}
+.angles-popover-add button{background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);color:var(--accent2);padding:6px 11px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+
+/* ── V11: export bar ── */
+.kb-export-bar{display:flex;align-items:center;gap:12px;background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.25);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.kb-export-count{font-size:12px;color:var(--accent2);font-weight:600}
+.kb-export-clear{background:none;border:1px solid var(--border2);color:var(--text2);padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+.kb-export-clear:hover{color:var(--text);border-color:var(--text3)}
+.kb-export-btn{background:linear-gradient(135deg,var(--green),#00b87f);color:#000;border:none;padding:7px 16px;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;margin-left:auto}
+.kb-export-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,229,160,.25)}
+.kb-export-bar .selectall{font-size:11px;color:var(--text2);cursor:pointer;text-decoration:underline;text-underline-offset:3px;background:none;border:none;font-family:'Space Grotesk',sans-serif;padding:4px 0}
+.kb-export-bar .selectall:hover{color:var(--text)}
 .tag-row-name{flex:1;font-size:12px;color:var(--text)}
 .tag-row-count{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
 .tag-row-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 6px}
@@ -833,6 +869,8 @@ a{color:inherit;text-decoration:none}
       <button class="kb-clear-filters" onclick="clearKbFilters()">Reset</button>
     </div>
 
+    <div class="kb-export-bar" id="kbExportBar" style="display:none"></div>
+
     <div class="kb-grid" id="kbGrid"></div>
 
   </div>
@@ -864,12 +902,13 @@ a{color:inherit;text-decoration:none}
         </div>
       </div>
       <div class="field">
-        <label>🏷 Angle marketing (sub-tag)</label>
+        <label>🏷 Angles marketing — multi-select</label>
+        <div id="pendingAnglePills" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px"></div>
         <div class="angle-input-wrap">
-          <input type="text" id="saveAngle" placeholder="Choisir ou créer un angle..." oninput="onAngleInput()" onfocus="onAngleInput()" autocomplete="off"/>
+          <input type="text" id="saveAngle" placeholder="Tape pour ajouter un angle..." oninput="onAngleInput()" onfocus="onAngleInput()" autocomplete="off"/>
           <div class="angle-suggestions" id="angleSuggs"></div>
         </div>
-        <div style="font-size:10px;color:var(--text3);margin-top:2px">Tape pour filtrer · Ex: Lyrics, Snapchat, IRL, POV</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Click sur un angle pour l'ajouter · Plusieurs possibles · Ex: Lyrics + Snapchat + IRL</div>
       </div>
       <div class="field">
         <label>Note libre</label>
@@ -957,6 +996,9 @@ const S = {
   activeOnly: true,
   pendingSave: null,         // {ad, compId, compName, compIdx, adIdx}
   pendingSaveCheck: { hook:false, caption:false },
+  // V11
+  kbSelected: new Set(),     // adIds selected for export
+  pendingSaveAngles: [],     // multi-select angles in save modal
   // UI
   kbFilter: 'all',
   kbSort: 'date',
@@ -1533,6 +1575,7 @@ function openSaveModal(adData){
   if(!ad) return alert('Ad introuvable');
   S.pendingSave = { id, compIdx, adIdx, compName, comp, ad };
   S.pendingSaveCheck = { hook:false, caption:false };
+  S.pendingSaveAngles = [];
   document.getElementById('cc-hook').classList.remove('on');
   document.getElementById('cc-caption').classList.remove('on');
   document.getElementById('saveAngle').value = '';
@@ -1540,37 +1583,61 @@ function openSaveModal(adData){
   document.getElementById('saveModalContext').textContent = `${compName} · ${ad.page_name || ad.snapshot?.page_name || '—'}`;
   document.getElementById('saveModal').classList.add('open');
   document.getElementById('angleSuggs').classList.remove('open');
+  renderPendingAnglePills();
 }
 function closeSaveModal(){
   document.getElementById('saveModal').classList.remove('open');
   S.pendingSave = null;
+  S.pendingSaveAngles = [];
 }
 function toggleSaveCheck(k){
   S.pendingSaveCheck[k] = !S.pendingSaveCheck[k];
   document.getElementById(`cc-${k}`).classList.toggle('on', S.pendingSaveCheck[k]);
 }
-function _countLibByAngle(name){ return S.library.filter(l => l.angle_tag === name).length; }
+function _countLibByAngle(name){
+  return S.library.filter(l => parseAngles(l.angle_tag).includes(name)).length;
+}
+
+function renderPendingAnglePills(){
+  const host = document.getElementById('pendingAnglePills');
+  if(!host) return;
+  if(!S.pendingSaveAngles.length){ host.innerHTML = ''; return; }
+  host.innerHTML = S.pendingSaveAngles.map(a =>
+    `<span class="kb-tag-pill tag-concept on" style="cursor:pointer" onclick="removePendingAngle('${esc(a)}')">💡 ${esc(a)} ✕</span>`
+  ).join('');
+}
+function removePendingAngle(name){
+  S.pendingSaveAngles = S.pendingSaveAngles.filter(a => a.toLowerCase() !== name.toLowerCase());
+  renderPendingAnglePills();
+}
 
 function onAngleInput(){
   const input = document.getElementById('saveAngle');
   const sugg = document.getElementById('angleSuggs');
   const q = input.value.trim().toLowerCase();
-  const matches = S.angleTags.filter(t => !q || t.name.toLowerCase().includes(q));
+  // Hide angles already picked
+  const remaining = S.angleTags.filter(t => !S.pendingSaveAngles.some(p => p.toLowerCase() === t.name.toLowerCase()));
+  const matches = remaining.filter(t => !q || t.name.toLowerCase().includes(q));
   let html = matches.map(t => `<div class="angle-sugg" onclick="pickAngle('${esc(t.name)}')">${esc(t.name)}<span class="badge">${_countLibByAngle(t.name)} ads</span></div>`).join('');
-  if(q && !S.angleTags.some(t => t.name.toLowerCase() === q)){
+  if(q && !S.angleTags.some(t => t.name.toLowerCase() === q) && !S.pendingSaveAngles.some(p => p.toLowerCase() === q)){
     html += `<div class="angle-sugg create" onclick="pickAngle('${esc(input.value.trim())}',true)">+ Créer "${esc(input.value.trim())}"</div>`;
   }
-  sugg.innerHTML = html || `<div class="angle-sugg" style="color:var(--text3);cursor:default">Tape pour créer un nouveau tag…</div>`;
+  sugg.innerHTML = html || `<div class="angle-sugg" style="color:var(--text3);cursor:default">Tous les angles existants ont été ajoutés. Tape pour créer un nouveau.</div>`;
   sugg.classList.add('open');
 }
 
 async function pickAngle(name, isNew=false){
-  document.getElementById('saveAngle').value = name;
-  document.getElementById('angleSuggs').classList.remove('open');
   if(isNew){
     const created = await cloudInsert('angle_tags', { name });
     if(created) S.angleTags.push(created);
   }
+  // Add to pending if not already there
+  if(!S.pendingSaveAngles.some(a => a.toLowerCase() === name.toLowerCase())){
+    S.pendingSaveAngles.push(name);
+  }
+  document.getElementById('saveAngle').value = '';
+  document.getElementById('angleSuggs').classList.remove('open');
+  renderPendingAnglePills();
 }
 
 document.addEventListener('click', (e) => {
@@ -1582,14 +1649,18 @@ document.addEventListener('click', (e) => {
 async function confirmSave(){
   if(!S.pendingSave) { closeSaveModal(); return; }
   const { id, compName, ad } = S.pendingSave;
-  const angle = document.getElementById('saveAngle').value.trim();
-  const note = document.getElementById('saveNote').value.trim();
-
-  // Auto-create angle tag if it doesn't exist
-  if(angle && !S.angleTags.some(t => t.name.toLowerCase() === angle.toLowerCase())){
-    const created = await cloudInsert('angle_tags', { name: angle });
-    if(created) S.angleTags.push(created);
+  // If user typed something in input but didn't pick, treat it as a final angle
+  const typed = document.getElementById('saveAngle').value.trim();
+  if(typed){
+    if(!S.angleTags.some(t => t.name.toLowerCase() === typed.toLowerCase())){
+      const created = await cloudInsert('angle_tags', { name: typed });
+      if(created) S.angleTags.push(created);
+    }
+    if(!S.pendingSaveAngles.some(a => a.toLowerCase() === typed.toLowerCase())){
+      S.pendingSaveAngles.push(typed);
+    }
   }
+  const note = document.getElementById('saveNote').value.trim();
 
   const startDate = getStartDate(ad);
   const ad_data = {
@@ -1609,7 +1680,7 @@ async function confirmSave(){
     ad_data,
     is_hook: S.pendingSaveCheck.hook,
     is_caption: S.pendingSaveCheck.caption,
-    angle_tag: angle || null,
+    angle_tag: joinAngles(S.pendingSaveAngles),
     notes: note,
   });
   if(row){
@@ -1659,6 +1730,25 @@ function extractDomain(url){
   try { return new URL(url).hostname.replace(/^www\./,''); } catch(e){ return ''; }
 }
 
+// V11: angle_tag stored as comma-separated string in DB to avoid migration
+// All UI work with arrays; (de)serialization happens at the boundary.
+function parseAngles(angleTagStr){
+  if(!angleTagStr) return [];
+  return String(angleTagStr).split(',').map(s => s.trim()).filter(Boolean);
+}
+function joinAngles(arr){
+  if(!arr || !arr.length) return null;
+  // Dedupe + trim
+  const seen = new Set();
+  const clean = [];
+  for(const a of arr){
+    const t = String(a).trim();
+    const k = t.toLowerCase();
+    if(t && !seen.has(k)){ seen.add(k); clean.push(t); }
+  }
+  return clean.length ? clean.join(',') : null;
+}
+
 function renderKb(){
   const items = S.library || [];
 
@@ -1679,11 +1769,12 @@ function renderKb(){
   // Tag filter: hook / caption / concept(=has angle) / untagged — multi-select OR
   if(S.kbTagFilter.length > 0){
     filtered = filtered.filter(it => {
+      const angles = parseAngles(it.angle_tag);
       return S.kbTagFilter.some(f => {
         if(f === 'hook')     return it.is_hook;
         if(f === 'caption')  return it.is_caption;
-        if(f === 'concept')  return !!it.angle_tag;
-        if(f === 'untagged') return !it.is_hook && !it.is_caption && !it.angle_tag;
+        if(f === 'concept')  return angles.length > 0;
+        if(f === 'untagged') return !it.is_hook && !it.is_caption && angles.length === 0;
         return false;
       });
     });
@@ -1696,14 +1787,15 @@ function renderKb(){
   if(S.kbSlugFilter !== 'all'){
     filtered = filtered.filter(it => extractSlug(it.ad_data?.ctaUrl) === S.kbSlugFilter);
   }
-  // Search
+  // Search (now includes angles)
   if(S.kbSearch.trim()){
     const q = S.kbSearch.toLowerCase().trim();
     filtered = filtered.filter(it =>
       (it.ad_data?.text || '').toLowerCase().includes(q) ||
       (it.notes || '').toLowerCase().includes(q) ||
       (it.competitor_name || '').toLowerCase().includes(q) ||
-      (extractSlug(it.ad_data?.ctaUrl) || '').toLowerCase().includes(q)
+      (extractSlug(it.ad_data?.ctaUrl) || '').toLowerCase().includes(q) ||
+      parseAngles(it.angle_tag).some(a => a.toLowerCase().includes(q))
     );
   }
 
@@ -1722,7 +1814,7 @@ function renderKb(){
   // Stats
   const totalHooks    = items.filter(i => i.is_hook).length;
   const totalCaptions = items.filter(i => i.is_caption).length;
-  const totalUntagged = items.filter(i => !i.is_hook && !i.is_caption && !i.angle_tag).length;
+  const totalUntagged = items.filter(i => !i.is_hook && !i.is_caption && parseAngles(i.angle_tag).length === 0).length;
   const uniqueComps   = new Set(items.map(i => i.competitor_name).filter(Boolean)).size;
 
   document.getElementById('kbStats').innerHTML = `
@@ -1740,14 +1832,17 @@ function renderKb(){
   }
 
   document.getElementById('kbGrid').innerHTML = filtered.map(item => kbCard(item)).join('');
+  renderKbExportBar();
 }
 
 function kbCard(item){
   const ad = item.ad_data || {};
   const slug = extractSlug(ad.ctaUrl);
-  const isUntagged = !item.is_hook && !item.is_caption && !item.angle_tag;
+  const angles = parseAngles(item.angle_tag);
+  const isUntagged = !item.is_hook && !item.is_caption && angles.length === 0;
   const adId = item.ad_id;
   const savedDate = item.saved_at ? new Date(item.saved_at).toLocaleDateString('fr-FR') : '';
+  const isSelected = S.kbSelected.has(adId);
 
   let mediaHtml = '';
   if(ad.media){
@@ -1761,8 +1856,12 @@ function kbCard(item){
 
   return `<div class="kb-card">
     <div class="kb-card-head">
+      <label class="kb-select-cb" title="Sélectionner pour export">
+        <input type="checkbox" ${isSelected?'checked':''} onchange="toggleKbSelect('${esc(adId)}')"/>
+        <span></span>
+      </label>
       <span class="kb-competitor">${esc(item.competitor_name||'')}</span>
-      <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace">${esc(savedDate)}</span>
+      <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-left:auto">${esc(savedDate)}</span>
     </div>
     <div class="kb-media" style="position:relative">
       ${mediaHtml||'🎨'}
@@ -1771,7 +1870,8 @@ function kbCard(item){
     <div class="kb-tags-row">
       <button class="kb-tag-pill tag-hook ${item.is_hook?'on':''}" onclick="toggleKbTag('${esc(adId)}','hook')" title="Hook = les 3 premières secondes / accroche visuelle">🎯 Hook</button>
       <button class="kb-tag-pill tag-caption ${item.is_caption?'on':''}" onclick="toggleKbTag('${esc(adId)}','caption')" title="Caption = le texte écrit, le copywriting">📝 Caption</button>
-      ${item.angle_tag?`<span class="kb-tag-pill tag-concept on" title="Angle marketing">💡 ${esc(item.angle_tag)}</span>`:''}
+      ${angles.map(a=>`<span class="kb-tag-pill tag-concept on" onclick="openAnglesEditor('${esc(adId)}',event)" style="cursor:pointer" title="Cliquer pour éditer les angles">💡 ${esc(a)}</span>`).join('')}
+      <button class="kb-tag-pill kb-tag-add" onclick="openAnglesEditor('${esc(adId)}',event)" title="Ajouter / éditer les angles">${angles.length?'＋':'💡 +Angle'}</button>
       ${isUntagged?'<span class="kb-untagged-badge">À TAGGER</span>':''}
     </div>
     <div class="kb-body">
@@ -1832,6 +1932,229 @@ async function toggleKbTag(id, tag){
     item[col] = newVal;
     renderKb();
   }
+}
+
+// ══════════════════════════════════════════
+// V11: ANGLES EDITOR POPOVER (multi-select on saved ads)
+// ══════════════════════════════════════════
+function openAnglesEditor(adId, ev){
+  if(ev){ ev.stopPropagation(); }
+  closeAnglesPopover();
+  const item = S.library.find(it => it.ad_id === adId);
+  if(!item) return;
+  const currentAngles = parseAngles(item.angle_tag);
+  const pop = document.createElement('div');
+  pop.className = 'angles-popover';
+  pop.id = 'anglesPopover';
+  pop.innerHTML = `
+    <div class="angles-popover-title">🏷 Angles marketing</div>
+    <div class="angles-popover-list" id="anglesPopoverList">
+      ${S.angleTags.map(t => {
+        const checked = currentAngles.includes(t.name);
+        return `<label class="angle-cb-row">
+          <input type="checkbox" ${checked?'checked':''} onchange="toggleAngleOnAd('${esc(adId)}','${esc(t.name)}')"/>
+          <span>${esc(t.name)}</span>
+          <span class="count">${_countLibByAngle(t.name)}</span>
+        </label>`;
+      }).join('')}
+    </div>
+    <div class="angles-popover-add">
+      <input type="text" id="newAngleInPopover" placeholder="Nouveau sub-tag..." onkeydown="if(event.key==='Enter')addAngleFromPopover('${esc(adId)}')"/>
+      <button onclick="addAngleFromPopover('${esc(adId)}')">+</button>
+    </div>
+  `;
+  // Position near the click target
+  const target = ev?.currentTarget || ev?.target;
+  if(target){
+    const r = target.getBoundingClientRect();
+    pop.style.left = Math.min(r.left, window.innerWidth - 300) + 'px';
+    pop.style.top  = (r.bottom + 6) + 'px';
+  } else {
+    pop.style.left = '50%'; pop.style.top = '20%'; pop.style.transform='translateX(-50%)';
+  }
+  document.body.appendChild(pop);
+  // Close on outside click
+  setTimeout(() => document.addEventListener('click', _onAnglesPopoverOutside, { once:true }), 0);
+}
+function _onAnglesPopoverOutside(e){
+  const pop = document.getElementById('anglesPopover');
+  if(pop && !pop.contains(e.target)) closeAnglesPopover();
+  else if(pop) setTimeout(() => document.addEventListener('click', _onAnglesPopoverOutside, { once:true }), 0);
+}
+function closeAnglesPopover(){
+  document.getElementById('anglesPopover')?.remove();
+}
+
+async function toggleAngleOnAd(adId, angleName){
+  const item = S.library.find(it => it.ad_id === adId);
+  if(!item) return;
+  const angles = parseAngles(item.angle_tag);
+  const idx = angles.findIndex(a => a.toLowerCase() === angleName.toLowerCase());
+  if(idx >= 0) angles.splice(idx, 1);
+  else angles.push(angleName);
+  const newVal = joinAngles(angles);
+  const ok = await cloudUpdate('library', { user_id: _currentUser.id, ad_id: adId }, { angle_tag: newVal });
+  if(ok){
+    item.angle_tag = newVal;
+    renderKb();
+    // Re-open popover at same spot? Easier: keep it in sync by re-rendering counts inline
+    // For now: just re-render the popover content
+    const pop = document.getElementById('anglesPopover');
+    if(pop){
+      const list = pop.querySelector('#anglesPopoverList');
+      if(list){
+        const angles = parseAngles(item.angle_tag);
+        list.innerHTML = S.angleTags.map(t => {
+          const checked = angles.includes(t.name);
+          return `<label class="angle-cb-row">
+            <input type="checkbox" ${checked?'checked':''} onchange="toggleAngleOnAd('${esc(adId)}','${esc(t.name)}')"/>
+            <span>${esc(t.name)}</span>
+            <span class="count">${_countLibByAngle(t.name)}</span>
+          </label>`;
+        }).join('');
+      }
+    }
+  }
+}
+
+async function addAngleFromPopover(adId){
+  const inp = document.getElementById('newAngleInPopover');
+  const name = inp?.value.trim();
+  if(!name) return;
+  // Create global tag if it doesn't exist
+  if(!S.angleTags.some(t => t.name.toLowerCase() === name.toLowerCase())){
+    const created = await cloudInsert('angle_tags', { name });
+    if(created) S.angleTags.push(created);
+  }
+  // Apply to ad (toggle on)
+  const item = S.library.find(it => it.ad_id === adId);
+  if(item){
+    const angles = parseAngles(item.angle_tag);
+    if(!angles.some(a => a.toLowerCase() === name.toLowerCase())){
+      angles.push(name);
+      const newVal = joinAngles(angles);
+      await cloudUpdate('library', { user_id: _currentUser.id, ad_id: adId }, { angle_tag: newVal });
+      item.angle_tag = newVal;
+    }
+  }
+  inp.value = '';
+  renderKb();
+  // Re-render popover entirely
+  closeAnglesPopover();
+  const card = document.querySelector(`[data-adid="${adId}"]`); // not present, but we rebuild via openAnglesEditor on next click
+}
+
+// ══════════════════════════════════════════
+// V11: SELECTION + EXPORT
+// ══════════════════════════════════════════
+function toggleKbSelect(adId){
+  if(S.kbSelected.has(adId)) S.kbSelected.delete(adId);
+  else S.kbSelected.add(adId);
+  renderKbExportBar();
+}
+function clearKbSelection(){
+  S.kbSelected.clear();
+  renderKb();
+}
+function selectAllVisible(){
+  // Collect ad_ids of currently visible items
+  document.querySelectorAll('.kb-card .kb-select-cb input').forEach(cb => {
+    const card = cb.closest('.kb-card');
+    if(!card) return;
+    // Match by competitor name or via dataset — easier: re-walk filtered library
+  });
+  // Simpler: rebuild from current filter set. We re-apply filters to figure out what's visible.
+  const visible = _currentlyVisibleAdIds();
+  visible.forEach(id => S.kbSelected.add(id));
+  renderKb();
+}
+function _currentlyVisibleAdIds(){
+  // Mirror the filter logic from renderKb
+  let arr = [...S.library];
+  if(S.kbTagFilter.length > 0){
+    arr = arr.filter(it => {
+      const angles = parseAngles(it.angle_tag);
+      return S.kbTagFilter.some(f => {
+        if(f === 'hook')     return it.is_hook;
+        if(f === 'caption')  return it.is_caption;
+        if(f === 'concept')  return angles.length > 0;
+        if(f === 'untagged') return !it.is_hook && !it.is_caption && angles.length === 0;
+      });
+    });
+  }
+  if(S.kbMediaFilter !== 'all') arr = arr.filter(it => (it.ad_data?.type || '').toLowerCase() === S.kbMediaFilter);
+  if(S.kbSlugFilter !== 'all') arr = arr.filter(it => extractSlug(it.ad_data?.ctaUrl) === S.kbSlugFilter);
+  if(S.kbSearch.trim()){
+    const q = S.kbSearch.toLowerCase().trim();
+    arr = arr.filter(it =>
+      (it.ad_data?.text || '').toLowerCase().includes(q) ||
+      (it.notes || '').toLowerCase().includes(q) ||
+      (it.competitor_name || '').toLowerCase().includes(q) ||
+      (extractSlug(it.ad_data?.ctaUrl) || '').toLowerCase().includes(q) ||
+      parseAngles(it.angle_tag).some(a => a.toLowerCase().includes(q))
+    );
+  }
+  return arr.map(it => it.ad_id);
+}
+
+function renderKbExportBar(){
+  const host = document.getElementById('kbExportBar');
+  if(!host) return;
+  if(S.kbSelected.size === 0){
+    host.style.display = 'none';
+    host.innerHTML = '';
+    return;
+  }
+  host.style.display = 'flex';
+  host.innerHTML = `
+    <span class="kb-export-count">${S.kbSelected.size} ad${S.kbSelected.size>1?'s':''} sélectionnée${S.kbSelected.size>1?'s':''}</span>
+    <button class="selectall" onclick="selectAllVisible()">+ tout sélectionner (visible)</button>
+    <button class="kb-export-clear" onclick="clearKbSelection()">Désélectionner tout</button>
+    <button class="kb-export-btn" onclick="exportSelectedToCSV()">⬇ Export CSV (matrice)</button>
+  `;
+}
+
+function _csvEscape(v){
+  if(v === null || v === undefined) return '';
+  const s = String(v);
+  if(/[",\n\r]/.test(s)){
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function exportSelectedToCSV(){
+  const items = S.library.filter(l => S.kbSelected.has(l.ad_id));
+  if(!items.length) return;
+  // Columns mirroring user's MatrixSong template:
+  // Angle Marketing | Media Type | Concept | Langues | Hooks (Accroches) - Idées | Accounts | Refs
+  const headers = ['Angle Marketing','Media Type','Concept','Langues','Hooks (Accroches) - Idées','Accounts','Refs'];
+  const rows = items.map(it => {
+    const ad = it.ad_data || {};
+    const angles = parseAngles(it.angle_tag).join(' | ');
+    const mediaType = ad.type || '';
+    // Concept = the caption text if user marked is_caption (they liked the copy), else empty
+    const concept = it.is_caption ? (ad.text || '') : '';
+    const langues = ''; // Apify doesn't expose language reliably
+    // Hooks idéas = notes if user marked is_hook (they liked the hook)
+    const hooks = it.is_hook ? (it.notes || '') : (it.notes || '');
+    // If user wants notes in either case, just always include them. Adjust if needed.
+    const accounts = it.competitor_name || '';
+    const refs = ad.snapshotUrl || '';
+    return [angles, mediaType, concept, langues, hooks, accounts, refs];
+  });
+  const csv = [headers, ...rows].map(r => r.map(_csvEscape).join(',')).join('\r\n');
+  // Add UTF-8 BOM so Excel opens it with proper accents
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const ts = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+  a.download = `era-matrix-${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function toggleKbTagFilter(tag){
