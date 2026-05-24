@@ -154,6 +154,62 @@ td.right{text-align:right}
 .open-link{color:var(--accent2);text-decoration:none;font-size:10px;letter-spacing:.1em;text-transform:uppercase;transition:color .15s}
 .open-link:hover{color:var(--accent)}
 
+.thumb{
+  position:relative;width:48px;height:64px;border-radius:6px;overflow:hidden;
+  background:var(--bg3);border:.5px solid var(--border);cursor:pointer;
+  display:block;transition:all .15s;
+}
+.thumb:hover{border-color:var(--accent);transform:scale(1.03)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb-placeholder{
+  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;
+}
+.thumb-play{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.3);opacity:0;transition:opacity .15s;
+  color:#fff;font-size:18px;
+}
+.thumb:hover .thumb-play{opacity:1}
+
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(5,5,7,.85);
+  z-index:100;display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);padding:32px;
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--bg2);border:.5px solid var(--border);border-radius:14px;
+  width:100%;max-width:900px;max-height:90vh;overflow-y:auto;
+  display:grid;grid-template-columns:340px 1fr;gap:0;
+}
+@media (max-width:760px){.modal{grid-template-columns:1fr}}
+.modal-video{
+  background:#000;display:flex;align-items:center;justify-content:center;
+  border-right:.5px solid var(--border);min-height:560px;
+}
+@media (max-width:760px){.modal-video{border-right:none;border-bottom:.5px solid var(--border);min-height:480px}}
+.modal-video iframe{width:100%;height:100%;border:none;min-height:560px}
+@media (max-width:760px){.modal-video iframe{min-height:480px}}
+.modal-info{padding:28px;display:flex;flex-direction:column;gap:18px}
+.modal-close{
+  position:absolute;top:20px;right:20px;
+  background:var(--bg2);border:.5px solid var(--border);border-radius:50%;
+  width:36px;height:36px;color:var(--text2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:16px;
+  transition:all .15s;z-index:101;
+}
+.modal-close:hover{color:var(--text);border-color:var(--accent)}
+.modal-section{display:flex;flex-direction:column;gap:6px}
+.modal-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.16em;text-transform:uppercase}
+.modal-value{font-size:14px;color:var(--text);line-height:1.5}
+.modal-value.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.modal-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px;background:var(--bg);border:.5px solid var(--border);border-radius:8px}
+.modal-stat-label{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+.modal-stat-value{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text);font-weight:500}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
+.modal-actions .btn,.modal-actions .btn-ghost{padding:11px 18px;font-size:10px;flex:1;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+
 .empty{padding:60px 20px;text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px;border:.5px dashed var(--border);border-radius:12px;line-height:1.7;letter-spacing:.04em}
 .empty-title{text-transform:uppercase;letter-spacing:.16em;color:var(--text2);margin-bottom:8px;font-size:10px}
 
@@ -183,7 +239,7 @@ td.right{text-align:right}
       <div class="field">
         <label>TikTok music URL</label>
         <input type="text" id="tiktokUrl" placeholder="https://www.tiktok.com/music/track-name-1234567890"/>
-        <div class="hint">Actor: clockworks/tiktok-scraper — $0.003–0.0037 / result</div>
+        <div class="hint">Actor: clockworks/tiktok-sound-scraper — $0.004 / video</div>
       </div>
       <div class="field">
         <label>Instagram audio URL</label>
@@ -243,6 +299,7 @@ td.right{text-align:right}
       <table>
         <thead>
           <tr id="thRow">
+            <th></th>
             <th data-sort="platform">Platform</th>
             <th data-sort="author">Creator</th>
             <th data-sort="views" class="right active">Views ↓</th>
@@ -269,6 +326,15 @@ td.right{text-align:right}
     <span><a href="https://github.com/antoinecastaldicontact-cmyk/era-internal-tools" target="_blank">github →</a></span>
   </div>
 
+</div>
+
+<!-- VIDEO PREVIEW MODAL -->
+<div class="modal-overlay" id="previewModal" onclick="if(event.target===this)closePreview()">
+  <button class="modal-close" onclick="closePreview()" aria-label="Close">✕</button>
+  <div class="modal">
+    <div class="modal-video" id="previewVideo"></div>
+    <div class="modal-info" id="previewInfo"></div>
+  </div>
 </div>
 
 <script>
@@ -315,7 +381,7 @@ function updateCostEstimate(){
   const ig = document.getElementById('instagramUrl').value.trim();
   let cost = 0;
   let parts = [];
-  if(tt){ const c = max * 0.0037; cost += c; parts.push(`TT $${c.toFixed(2)}`); }
+  if(tt){ const c = max * 0.004; cost += c; parts.push(`TT $${c.toFixed(2)}`); }
   if(ig){ const c = max * 0.002; cost += c; parts.push(`IG $${c.toFixed(2)}`); }
   const el = document.getElementById('costEstimate');
   if(S.useMock){ el.textContent = 'Mock mode — no Apify spend'; el.style.color = 'var(--text3)'; }
@@ -327,19 +393,21 @@ function updateCostEstimate(){
    MOCK DATA — réalistic ICP Composed Athlete
 ========================================================= */
 function generateMock(){
+  // Use picsum.photos as placeholder thumbnails (deterministic with seed)
+  const thumb = (id) => `https://picsum.photos/seed/${id}/300/400`;
   return [
-    { platform:'tiktok', author:'@marathon_kev', authorFollowers:18400, views:142000, likes:11800, comments:187, shares:542, caption:'Final 10k of Sunday long run. Cadence locked at 178.', postDate:'2026-05-19', videoUrl:'https://www.tiktok.com/@marathon_kev/video/7384', duration:24 },
-    { platform:'tiktok', author:'@dusk.runners', authorFollowers:47200, views:856000, likes:78400, comments:1240, shares:4870, caption:'5am threshold session. The sound matters.', postDate:'2026-05-22', videoUrl:'https://www.tiktok.com/@dusk.runners/video/7401', duration:31 },
-    { platform:'tiktok', author:'@cadence.lab', authorFollowers:8100, views:23400, likes:1890, comments:34, shares:78, caption:'Sub-3 build, week 14. Track work.', postDate:'2026-05-17', videoUrl:'https://www.tiktok.com/@cadence.lab/video/7298', duration:18 },
-    { platform:'tiktok', author:'@runner_archive', authorFollowers:62000, views:412000, likes:29800, comments:412, shares:1820, caption:'Morning 15k. Composed.', postDate:'2026-05-20', videoUrl:'https://www.tiktok.com/@runner_archive/video/7355', duration:47 },
-    { platform:'tiktok', author:'@hyrox.daily', authorFollowers:22300, views:67200, likes:5410, comments:89, shares:234, caption:'Compromised run station. Pacing held.', postDate:'2026-05-18', videoUrl:'https://www.tiktok.com/@hyrox.daily/video/7312', duration:28 },
-    { platform:'tiktok', author:'@quietmiles', authorFollowers:4800, views:11200, likes:980, comments:22, shares:41, caption:'Z2 effort. No music industrial complex.', postDate:'2026-05-15', videoUrl:'https://www.tiktok.com/@quietmiles/video/7281', duration:35 },
-    { platform:'tiktok', author:'@trail.cadence', authorFollowers:14600, views:89400, likes:7120, comments:134, shares:318, caption:'Elevation block. Fenix at 162 BPM.', postDate:'2026-05-21', videoUrl:'https://www.tiktok.com/@trail.cadence/video/7388', duration:41 },
-    { platform:'instagram', author:'@composed.runner', authorFollowers:31200, views:184000, likes:14200, comments:287, shares:0, caption:'Block 3. Long run. The vehicle, not the reward.', postDate:'2026-05-22', videoUrl:'https://www.instagram.com/reel/Cxx1', duration:29 },
-    { platform:'instagram', author:'@maya.runs', authorFollowers:9400, views:41800, likes:3210, comments:67, shares:0, caption:'Sunday morning. Cadence work. Slow becoming fast.', postDate:'2026-05-19', videoUrl:'https://www.instagram.com/reel/Cyy2', duration:22 },
-    { platform:'instagram', author:'@runner.archive.fr', authorFollowers:56800, views:327000, likes:24800, comments:412, shares:0, caption:'Marathon build. Week 12. Intentional.', postDate:'2026-05-23', videoUrl:'https://www.instagram.com/reel/Czz3', duration:38 },
-    { platform:'instagram', author:'@athletes.journal', authorFollowers:102000, views:612000, likes:48300, comments:720, shares:0, caption:'Threshold day. Track. The work.', postDate:'2026-05-20', videoUrl:'https://www.instagram.com/reel/Caa4', duration:44 },
-    { platform:'instagram', author:'@_quietrunner_', authorFollowers:3200, views:8400, likes:642, comments:14, shares:0, caption:'Z2. Becoming.', postDate:'2026-05-16', videoUrl:'https://www.instagram.com/reel/Cbb5', duration:19 },
+    { platform:'tiktok', author:'@marathon_kev', authorFollowers:18400, views:142000, likes:11800, comments:187, shares:542, caption:'Final 10k of Sunday long run. Cadence locked at 178.', postDate:'2026-05-19', videoUrl:'https://www.tiktok.com/@marathon_kev/video/7384', videoId:'7384', thumbnail:thumb('tt1'), downloadUrl:'', duration:24 },
+    { platform:'tiktok', author:'@dusk.runners', authorFollowers:47200, views:856000, likes:78400, comments:1240, shares:4870, caption:'5am threshold session. The sound matters.', postDate:'2026-05-22', videoUrl:'https://www.tiktok.com/@dusk.runners/video/7401', videoId:'7401', thumbnail:thumb('tt2'), downloadUrl:'', duration:31 },
+    { platform:'tiktok', author:'@cadence.lab', authorFollowers:8100, views:23400, likes:1890, comments:34, shares:78, caption:'Sub-3 build, week 14. Track work.', postDate:'2026-05-17', videoUrl:'https://www.tiktok.com/@cadence.lab/video/7298', videoId:'7298', thumbnail:thumb('tt3'), downloadUrl:'', duration:18 },
+    { platform:'tiktok', author:'@runner_archive', authorFollowers:62000, views:412000, likes:29800, comments:412, shares:1820, caption:'Morning 15k. Composed.', postDate:'2026-05-20', videoUrl:'https://www.tiktok.com/@runner_archive/video/7355', videoId:'7355', thumbnail:thumb('tt4'), downloadUrl:'', duration:47 },
+    { platform:'tiktok', author:'@hyrox.daily', authorFollowers:22300, views:67200, likes:5410, comments:89, shares:234, caption:'Compromised run station. Pacing held.', postDate:'2026-05-18', videoUrl:'https://www.tiktok.com/@hyrox.daily/video/7312', videoId:'7312', thumbnail:thumb('tt5'), downloadUrl:'', duration:28 },
+    { platform:'tiktok', author:'@quietmiles', authorFollowers:4800, views:11200, likes:980, comments:22, shares:41, caption:'Z2 effort. No music industrial complex.', postDate:'2026-05-15', videoUrl:'https://www.tiktok.com/@quietmiles/video/7281', videoId:'7281', thumbnail:thumb('tt6'), downloadUrl:'', duration:35 },
+    { platform:'tiktok', author:'@trail.cadence', authorFollowers:14600, views:89400, likes:7120, comments:134, shares:318, caption:'Elevation block. Fenix at 162 BPM.', postDate:'2026-05-21', videoUrl:'https://www.tiktok.com/@trail.cadence/video/7388', videoId:'7388', thumbnail:thumb('tt7'), downloadUrl:'', duration:41 },
+    { platform:'instagram', author:'@composed.runner', authorFollowers:31200, views:184000, likes:14200, comments:287, shares:0, caption:'Block 3. Long run. The vehicle, not the reward.', postDate:'2026-05-22', videoUrl:'https://www.instagram.com/reel/Cxx1', videoId:'Cxx1', thumbnail:thumb('ig1'), downloadUrl:'', duration:29 },
+    { platform:'instagram', author:'@maya.runs', authorFollowers:9400, views:41800, likes:3210, comments:67, shares:0, caption:'Sunday morning. Cadence work. Slow becoming fast.', postDate:'2026-05-19', videoUrl:'https://www.instagram.com/reel/Cyy2', videoId:'Cyy2', thumbnail:thumb('ig2'), downloadUrl:'', duration:22 },
+    { platform:'instagram', author:'@runner.archive.fr', authorFollowers:56800, views:327000, likes:24800, comments:412, shares:0, caption:'Marathon build. Week 12. Intentional.', postDate:'2026-05-23', videoUrl:'https://www.instagram.com/reel/Czz3', videoId:'Czz3', thumbnail:thumb('ig3'), downloadUrl:'', duration:38 },
+    { platform:'instagram', author:'@athletes.journal', authorFollowers:102000, views:612000, likes:48300, comments:720, shares:0, caption:'Threshold day. Track. The work.', postDate:'2026-05-20', videoUrl:'https://www.instagram.com/reel/Caa4', videoId:'Caa4', thumbnail:thumb('ig4'), downloadUrl:'', duration:44 },
+    { platform:'instagram', author:'@_quietrunner_', authorFollowers:3200, views:8400, likes:642, comments:14, shares:0, caption:'Z2. Becoming.', postDate:'2026-05-16', videoUrl:'https://www.instagram.com/reel/Cbb5', videoId:'Cbb5', thumbnail:thumb('ig5'), downloadUrl:'', duration:19 },
   ];
 }
 
@@ -371,19 +439,28 @@ function pick(obj, ...keys){
   return undefined;
 }
 function normalizeTiktok(items){
-  return items.map(it => ({
-    platform:'tiktok',
-    author: pick(it, 'authorMeta.name', 'authorMeta.nickName', 'author.uniqueId') ? '@' + pick(it,'authorMeta.name','authorMeta.nickName','author.uniqueId') : '@unknown',
-    authorFollowers: pick(it,'authorMeta.fans','authorMeta.followerCount') || 0,
-    views: pick(it,'playCount','videoViewCount','stats.playCount') || 0,
-    likes: pick(it,'diggCount','stats.diggCount') || 0,
-    comments: pick(it,'commentCount','stats.commentCount') || 0,
-    shares: pick(it,'shareCount','stats.shareCount') || 0,
-    caption: pick(it,'text','desc','description') || '',
-    postDate: (pick(it,'createTimeISO','createTime') || '').toString().slice(0,10),
-    videoUrl: pick(it,'webVideoUrl','shareUrl','url') || '',
-    duration: pick(it,'videoMeta.duration','duration') || 0,
-  }));
+  return items.map(it => {
+    const webUrl = pick(it,'webVideoUrl','shareUrl','url') || '';
+    // Extract video ID from URL pattern: tiktok.com/@user/video/VIDEO_ID
+    const idMatch = webUrl.match(/\/video\/(\d+)/);
+    const videoId = idMatch ? idMatch[1] : (pick(it,'id') || '');
+    return {
+      platform:'tiktok',
+      author: pick(it, 'authorMeta.name', 'authorMeta.nickName', 'author.uniqueId') ? '@' + pick(it,'authorMeta.name','authorMeta.nickName','author.uniqueId') : '@unknown',
+      authorFollowers: pick(it,'authorMeta.fans','authorMeta.followerCount') || 0,
+      views: pick(it,'playCount','videoViewCount','stats.playCount') || 0,
+      likes: pick(it,'diggCount','stats.diggCount') || 0,
+      comments: pick(it,'commentCount','stats.commentCount') || 0,
+      shares: pick(it,'shareCount','stats.shareCount') || 0,
+      caption: pick(it,'text','desc','description') || '',
+      postDate: (pick(it,'createTimeISO','createTime') || '').toString().slice(0,10),
+      videoUrl: webUrl,
+      videoId: videoId,
+      thumbnail: pick(it,'videoMeta.coverUrl','videoMeta.originalCoverUrl','covers.default') || '',
+      downloadUrl: pick(it,'videoMeta.downloadAddr','videoMeta.originalDownloadAddr','mediaUrls.0') || '',
+      duration: pick(it,'videoMeta.duration','duration') || 0,
+    };
+  });
 }
 function normalizeInstagram(items){
   return items.map(it => ({
@@ -397,6 +474,9 @@ function normalizeInstagram(items){
     caption: pick(it,'caption','text','description') || '',
     postDate: (pick(it,'timestamp','takenAt','takenAtTimestamp') || '').toString().slice(0,10),
     videoUrl: pick(it,'url','permalink','postUrl') || '',
+    videoId: pick(it,'shortCode','code','id') || '',
+    thumbnail: pick(it,'displayUrl','thumbnailUrl','coverUrl','image') || '',
+    downloadUrl: pick(it,'videoUrl','videoUrlBackup','mediaUrls.0') || '',
     duration: pick(it,'videoDuration','duration') || 0,
   }));
 }
@@ -443,13 +523,12 @@ async function handleRun(){
     if(tt){
       setStatus('running', 'Scraping TikTok...');
       const ttInput = {
-        musicUrls: [tt],
+        musics: [tt],
         resultsPerPage: max,
         shouldDownloadVideos: false,
         shouldDownloadCovers: false,
-        shouldDownloadSubtitles: false,
       };
-      const ttRaw = await callApify('clockworks/tiktok-scraper', ttInput);
+      const ttRaw = await callApify('clockworks/tiktok-sound-scraper', ttInput);
       S.results.push(...normalizeTiktok(ttRaw));
     }
     if(ig){
@@ -523,12 +602,18 @@ function renderStats(filtered){
 
 function renderTable(filtered){
   const tbody = document.getElementById('tbody');
+  S._filtered = filtered; // store for modal lookup
   if(filtered.length === 0){
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">No results match current filters</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">No results match current filters</td></tr>`;
     return;
   }
-  tbody.innerHTML = filtered.map(r => `
+  tbody.innerHTML = filtered.map((r, i) => `
     <tr class="row-hover">
+      <td style="padding:10px 14px">
+        ${r.thumbnail
+          ? `<div class="thumb" onclick="openPreview(${i})"><img src="${escapeAttr(r.thumbnail)}" alt="" onerror="this.style.display='none';this.parentNode.innerHTML='<div class=&quot;thumb-placeholder&quot;>NO IMG</div>'"/><div class="thumb-play">▶</div></div>`
+          : `<div class="thumb" onclick="openPreview(${i})"><div class="thumb-placeholder">▶</div></div>`}
+      </td>
       <td><span class="platform-tag ${r.platform === 'tiktok' ? 'tt' : 'ig'}">${r.platform === 'tiktok' ? 'TT' : 'IG'}</span></td>
       <td>
         <div class="author">${escapeHtml(r.author)}</div>
@@ -538,8 +623,8 @@ function renderTable(filtered){
       <td class="right"><span class="metric-muted">${fmt(r.likes)}</span></td>
       <td class="right"><span class="metric-muted">${fmt(r.comments)}</span></td>
       <td class="date-cell">${r.postDate || '—'}</td>
-      <td class="caption-cell" title="${escapeHtml(r.caption)}">${escapeHtml(r.caption) || '—'}</td>
-      <td class="right"><a class="open-link" href="${r.videoUrl}" target="_blank" rel="noopener">Open →</a></td>
+      <td class="caption-cell" title="${escapeAttr(r.caption)}">${escapeHtml(r.caption) || '—'}</td>
+      <td class="right"><a class="open-link" href="${escapeAttr(r.videoUrl)}" target="_blank" rel="noopener">Open →</a></td>
     </tr>
   `).join('');
 
@@ -560,16 +645,90 @@ function renderTable(filtered){
 function escapeHtml(s){
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function escapeAttr(s){
+  return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+/* =========================================================
+   VIDEO PREVIEW MODAL
+========================================================= */
+function openPreview(idx){
+  const r = (S._filtered || [])[idx];
+  if(!r) return;
+  const overlay = document.getElementById('previewModal');
+  const videoBox = document.getElementById('previewVideo');
+  const infoBox = document.getElementById('previewInfo');
+
+  // Embed
+  let embedHtml = '';
+  if(r.platform === 'tiktok' && r.videoId){
+    embedHtml = `<iframe src="https://www.tiktok.com/embed/v2/${escapeAttr(r.videoId)}" allowfullscreen allow="encrypted-media; fullscreen"></iframe>`;
+  } else if(r.platform === 'instagram' && r.videoId){
+    embedHtml = `<iframe src="https://www.instagram.com/p/${escapeAttr(r.videoId)}/embed/" allowfullscreen allow="encrypted-media"></iframe>`;
+  } else if(r.thumbnail){
+    embedHtml = `<img src="${escapeAttr(r.thumbnail)}" style="max-width:100%;max-height:560px;object-fit:contain" alt=""/>`;
+  } else {
+    embedHtml = `<div style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em">PREVIEW UNAVAILABLE</div>`;
+  }
+  videoBox.innerHTML = embedHtml;
+
+  // Info panel
+  const downloadFilename = `${r.platform}-${(r.author || 'unknown').replace('@','')}-${r.videoId || Date.now()}.mp4`;
+  infoBox.innerHTML = `
+    <div class="modal-section">
+      <div class="modal-label">Platform</div>
+      <div class="modal-value">
+        <span class="platform-tag ${r.platform === 'tiktok' ? 'tt' : 'ig'}">${r.platform === 'tiktok' ? 'TikTok' : 'Instagram'}</span>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Creator</div>
+      <div class="modal-value mono">${escapeHtml(r.author)} · ${fmt(r.authorFollowers)} followers</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Caption</div>
+      <div class="modal-value" style="font-size:13px;line-height:1.6;max-height:120px;overflow-y:auto">${escapeHtml(r.caption) || '—'}</div>
+    </div>
+    <div class="modal-stats">
+      <div><div class="modal-stat-label">Views</div><div class="modal-stat-value">${fmt(r.views)}</div></div>
+      <div><div class="modal-stat-label">Likes</div><div class="modal-stat-value">${fmt(r.likes)}</div></div>
+      <div><div class="modal-stat-label">Comments</div><div class="modal-stat-value">${fmt(r.comments)}</div></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-label">Posted · Duration</div>
+      <div class="modal-value mono">${r.postDate || '—'} · ${r.duration}s</div>
+    </div>
+    <div class="modal-actions">
+      ${r.downloadUrl
+        ? `<a class="btn" href="${escapeAttr(r.downloadUrl)}" download="${escapeAttr(downloadFilename)}" target="_blank" rel="noopener">↓ Download MP4</a>`
+        : `<button class="btn" disabled style="opacity:.4;cursor:not-allowed">No MP4 URL</button>`}
+      <a class="btn-ghost" href="${escapeAttr(r.videoUrl)}" target="_blank" rel="noopener">Open on ${r.platform === 'tiktok' ? 'TikTok' : 'Instagram'} →</a>
+    </div>
+    ${r.downloadUrl
+      ? `<div class="hint" style="margin-top:4px">If browser opens the video in a new tab instead of downloading, right-click → Save video as.</div>`
+      : ''}
+  `;
+
+  overlay.classList.add('show');
+}
+function closePreview(){
+  const overlay = document.getElementById('previewModal');
+  const videoBox = document.getElementById('previewVideo');
+  videoBox.innerHTML = ''; // stop iframe playback
+  overlay.classList.remove('show');
+}
+window.openPreview = openPreview;
+window.closePreview = closePreview;
 
 /* =========================================================
    EXPORT CSV
 ========================================================= */
 function exportCSV(){
   const filtered = applyFiltersAndSort();
-  const headers = ['platform','author','followers','views','likes','comments','shares','date','duration_s','url','caption'];
+  const headers = ['platform','author','followers','views','likes','comments','shares','date','duration_s','url','download_url','thumbnail','caption'];
   const rows = filtered.map(r => [
     r.platform, r.author, r.authorFollowers, r.views, r.likes, r.comments, r.shares,
-    r.postDate, r.duration, r.videoUrl,
+    r.postDate, r.duration, r.videoUrl, r.downloadUrl || '', r.thumbnail || '',
     (r.caption || '').replace(/"/g,'""').replace(/\n/g,' ')
   ]);
   const csv = headers.join(',') + '\n' + rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
@@ -641,6 +800,11 @@ document.querySelectorAll('th[data-sort]').forEach(th => {
 loadToken();
 updateCostEstimate();
 setStatus('', 'Idle');
+
+// ESC to close preview modal
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closePreview();
+});
 </script>
 </body>
 </html>
