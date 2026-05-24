@@ -7,6 +7,8 @@ Hub des outils internes ERA Music. Hébergé sur Vercel, déployé automatiqueme
 | Outil | Statut | URL |
 |---|---|---|
 | Competitor Intel | Live | [/competitor-intel/](/competitor-intel/) |
+| Fan Link Generator | Live | [/fan-link-generator/](/fan-link-generator/) |
+| Sound Intel | Beta | [/sound-intel/](/sound-intel/) |
 
 ## Stack
 
@@ -26,10 +28,14 @@ Hub des outils internes ERA Music. Hébergé sur Vercel, déployé automatiqueme
 
 ```
 era-internal-tools/
-├── index.html           # Hub (liste des outils)
+├── index.html               # Hub (liste des outils)
 ├── README.md
-└── competitor-intel/
-    └── index.html       # Outil de scraping ad library
+├── competitor-intel/
+│   └── index.html           # Scraping Meta Ad Library
+├── fan-link-generator/
+│   └── index.html           # ReleaseConfig Lovable
+└── sound-intel/
+    └── index.html           # UGC extraction TikTok + Instagram
 ```
 
 Chaque nouvel outil = un nouveau dossier avec son propre `index.html`. Le hub liste les outils disponibles + roadmap.

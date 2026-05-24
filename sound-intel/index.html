@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERA · Sound Intel</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050507;--bg2:#0c0c10;--bg3:#13131a;
+  --border:#1e1e2a;--border2:#252535;
+  --text:#e8e8f0;--text2:#7878a0;--text3:#3a3a55;
+  --accent:#6c63ff;--accent2:#8b85ff;
+  --green:#00e5a0;--yellow:#ffb830;--red:#ff5066;
+  --tt:#69c9d0;--ig:#e1306c;
+}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Space Grotesk',sans-serif;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:.4;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:60px 60px;pointer-events:none;z-index:0;
+}
+.wrap{position:relative;z-index:1;max-width:1280px;margin:0 auto;padding:60px 32px 80px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:36px}
+.back{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:.16em;text-transform:uppercase;text-decoration:none;transition:color .15s}
+.back:hover{color:var(--text2)}
+.status{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.status .dot{width:6px;height:6px;border-radius:50%;background:var(--text3);transition:background .15s}
+.status.running .dot{background:var(--yellow);animation:pulse 1s infinite}
+.status.ok .dot{background:var(--green)}
+.status.err .dot{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.brand{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:18px}
+h1{font-size:42px;font-weight:300;line-height:1.05;letter-spacing:-.02em;margin-bottom:14px}
+h1 b{font-weight:600;color:var(--accent2)}
+.lead{font-size:14px;color:var(--text2);max-width:640px;line-height:1.6;margin-bottom:40px}
+
+.panel{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.panel-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.16em;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.panel-title::after{content:'';flex:1;height:.5px;background:var(--border)}
+
+.row{display:grid;gap:16px;margin-bottom:16px}
+.row.r2{grid-template-columns:1fr 1fr}
+.row.r3{grid-template-columns:2fr 1fr 1fr}
+@media (max-width:760px){.row.r2,.row.r3{grid-template-columns:1fr}}
+
+.field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px}
+.field label .hint-inline{color:var(--text3);text-transform:none;letter-spacing:0;font-size:10px;margin-left:6px}
+.field input{
+  width:100%;padding:11px 14px;
+  background:var(--bg);border:.5px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;
+  transition:border-color .15s;
+}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field input::placeholder{color:var(--text3)}
+.field input:disabled{opacity:.4;cursor:not-allowed}
+.hint{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-top:6px;line-height:1.5}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{
+  background:var(--accent);color:#fff;border:none;
+  padding:13px 28px;border-radius:8px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letterspacing:.14em;letter-spacing:.14em;
+  text-transform:uppercase;font-weight:500;cursor:pointer;
+  transition:all .15s;
+}
+.btn:hover:not(:disabled){background:var(--accent2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{
+  background:transparent;color:var(--text2);
+  border:.5px solid var(--border);padding:13px 20px;border-radius:8px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;cursor:pointer;transition:all .15s;
+}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-toggle{
+  width:100%;padding:11px 14px;border-radius:8px;
+  background:transparent;color:var(--text);
+  border:.5px solid var(--border);
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;cursor:pointer;transition:all .15s;
+}
+.btn-toggle.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.err{
+  margin-top:14px;padding:11px 14px;
+  background:rgba(255,80,102,.06);border:.5px solid rgba(255,80,102,.3);border-radius:8px;
+  color:var(--red);font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.5;
+}
+
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border:.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.stat{background:var(--bg2);padding:18px 22px}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px}
+.stat-value{font-size:24px;font-weight:300;color:var(--text);letter-spacing:-.01em;line-height:1}
+.stat-value.tt{color:var(--tt)}
+.stat-value.ig{color:var(--ig)}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text2)}
+.filters-label{letter-spacing:.16em;text-transform:uppercase;color:var(--text3)}
+.chip{
+  background:transparent;border:.5px solid var(--border);color:var(--text2);
+  padding:6px 12px;border-radius:6px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .15s;
+}
+.chip:hover{border-color:var(--border2);color:var(--text)}
+.chip.active{border-color:var(--accent);color:var(--accent2);background:rgba(108,99,255,.07)}
+.filters input{
+  background:var(--bg);border:.5px solid var(--border);border-radius:6px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;
+  padding:6px 10px;width:110px;
+}
+.filters input:focus{outline:none;border-color:var(--accent)}
+
+.results{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;overflow:hidden}
+.results-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:980px}
+th{
+  padding:12px 14px;text-align:left;
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text3);font-weight:500;
+  border-bottom:.5px solid var(--border);
+  cursor:pointer;user-select:none;transition:color .15s;
+}
+th:hover{color:var(--text2)}
+th.active{color:var(--accent2)}
+th.right{text-align:right}
+td{padding:14px;border-bottom:.5px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:12px}
+tr:last-child td{border-bottom:none}
+tr.row-hover:hover td{background:var(--bg3)}
+td.right{text-align:right}
+.platform-tag{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:.5px solid currentColor;font-weight:500}
+.platform-tag.tt{color:var(--tt)}
+.platform-tag.ig{color:var(--ig)}
+.author{color:var(--text);font-size:12px}
+.author-followers{color:var(--text3);font-size:10px;margin-top:2px}
+.metric{color:var(--text);font-weight:500;font-size:13px}
+.metric-muted{color:var(--text2)}
+.caption-cell{color:var(--text2);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5}
+.date-cell{color:var(--text3)}
+.open-link{color:var(--accent2);text-decoration:none;font-size:10px;letter-spacing:.1em;text-transform:uppercase;transition:color .15s}
+.open-link:hover{color:var(--accent)}
+
+.empty{padding:60px 20px;text-align:center;color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px;border:.5px dashed var(--border);border-radius:12px;line-height:1.7;letter-spacing:.04em}
+.empty-title{text-transform:uppercase;letter-spacing:.16em;color:var(--text2);margin-bottom:8px;font-size:10px}
+
+.footer{margin-top:60px;padding-top:24px;border-top:.5px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.06em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.footer a{color:var(--text2);text-decoration:none}
+.footer a:hover{color:var(--text)}
+
+::selection{background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="back" href="/">← ERA · Internal Tools</a>
+    <div class="status" id="status"><span class="dot"></span><span id="statusText">Idle</span></div>
+  </div>
+
+  <div class="brand">ERA Music · Sound Intel</div>
+  <h1>UGC extraction<br><b>for a given track.</b></h1>
+  <p class="lead">Surface les créateurs qui utilisent une release ERA sur TikTok et Instagram. Backend Apify, output normalisé, export CSV. Token partagé avec Competitor Intel.</p>
+
+  <!-- CONFIG PANEL -->
+  <div class="panel">
+    <div class="panel-title">Source</div>
+    <div class="row r2">
+      <div class="field">
+        <label>TikTok music URL</label>
+        <input type="text" id="tiktokUrl" placeholder="https://www.tiktok.com/music/track-name-1234567890"/>
+        <div class="hint">Actor: clockworks/tiktok-scraper — $0.003–0.0037 / result</div>
+      </div>
+      <div class="field">
+        <label>Instagram audio URL</label>
+        <input type="text" id="instagramUrl" placeholder="https://www.instagram.com/reels/audio/1234567890"/>
+        <div class="hint">Actor: kinaesthetic_millionaire/instagram-reels-audio-scraper — $0.002 / result</div>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:24px">Run config</div>
+    <div class="row r3">
+      <div class="field">
+        <label>Apify token <span class="hint-inline">— stocké en localStorage (clé ci_apify, partagée avec Competitor Intel)</span></label>
+        <input type="password" id="apifyToken" placeholder="apify_api_..."/>
+      </div>
+      <div class="field">
+        <label>Max results / platform</label>
+        <input type="number" id="maxResults" value="30" min="1" max="500"/>
+      </div>
+      <div class="field">
+        <label>Mode</label>
+        <button class="btn-toggle on" id="modeToggle">Mock data</button>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:8px">
+      <button class="btn" id="runBtn">Run extraction</button>
+      <button class="btn-ghost" id="exportBtn" style="display:none">Export CSV</button>
+      <button class="btn-ghost" id="clearBtn" style="display:none">Clear</button>
+      <div style="flex:1"></div>
+      <div class="hint" id="costEstimate" style="margin-top:0"></div>
+    </div>
+    <div class="err" id="errBox" style="display:none"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats" id="statsBar" style="display:none">
+    <div class="stat"><div class="stat-label">UGCs</div><div class="stat-value" id="sCount">0</div></div>
+    <div class="stat"><div class="stat-label">TikTok</div><div class="stat-value tt" id="sTt">0</div></div>
+    <div class="stat"><div class="stat-label">Instagram</div><div class="stat-value ig" id="sIg">0</div></div>
+    <div class="stat"><div class="stat-label">Total views</div><div class="stat-value" id="sViews">0</div></div>
+    <div class="stat"><div class="stat-label">Total likes</div><div class="stat-value" id="sLikes">0</div></div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters" id="filtersBar" style="display:none">
+    <span class="filters-label">Filter</span>
+    <button class="chip active" data-platform="all">All</button>
+    <button class="chip" data-platform="tiktok">TikTok</button>
+    <button class="chip" data-platform="instagram">Instagram</button>
+    <span class="filters-label" style="margin-left:14px">Min views</span>
+    <input type="number" id="minViews" value="0" min="0"/>
+  </div>
+
+  <!-- RESULTS TABLE -->
+  <div class="results" id="resultsWrap" style="display:none">
+    <div class="results-scroll">
+      <table>
+        <thead>
+          <tr id="thRow">
+            <th data-sort="platform">Platform</th>
+            <th data-sort="author">Creator</th>
+            <th data-sort="views" class="right active">Views ↓</th>
+            <th data-sort="likes" class="right">Likes</th>
+            <th data-sort="comments" class="right">Comments</th>
+            <th data-sort="postDate">Date</th>
+            <th>Caption</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EMPTY -->
+  <div class="empty" id="emptyState">
+    <div class="empty-title">No data</div>
+    <div>Drop a TikTok music URL or an Instagram audio URL, then run.</div>
+  </div>
+
+  <div class="footer">
+    <span>ERA · Sound Intel · v0.1</span>
+    <span><a href="https://github.com/antoinecastaldicontact-cmyk/era-internal-tools" target="_blank">github →</a></span>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   STATE
+========================================================= */
+const S = {
+  apifyKey: '',
+  results: [],
+  useMock: true,
+  sortBy: 'views',
+  sortDir: 'desc',
+  platformFilter: 'all',
+  minViews: 0,
+};
+
+/* =========================================================
+   STORAGE — réutilise ci_apify (partagé avec Competitor Intel)
+========================================================= */
+function loadToken(){
+  S.apifyKey = localStorage.getItem('ci_apify') || '';
+  document.getElementById('apifyToken').value = S.apifyKey;
+}
+function saveToken(){
+  S.apifyKey = document.getElementById('apifyToken').value.trim();
+  localStorage.setItem('ci_apify', S.apifyKey);
+}
+
+/* =========================================================
+   STATUS BAR
+========================================================= */
+function setStatus(state, text){
+  const el = document.getElementById('status');
+  el.className = 'status ' + state;
+  document.getElementById('statusText').textContent = text;
+}
+
+/* =========================================================
+   COST ESTIMATE
+========================================================= */
+function updateCostEstimate(){
+  const max = parseInt(document.getElementById('maxResults').value) || 0;
+  const tt = document.getElementById('tiktokUrl').value.trim();
+  const ig = document.getElementById('instagramUrl').value.trim();
+  let cost = 0;
+  let parts = [];
+  if(tt){ const c = max * 0.0037; cost += c; parts.push(`TT $${c.toFixed(2)}`); }
+  if(ig){ const c = max * 0.002; cost += c; parts.push(`IG $${c.toFixed(2)}`); }
+  const el = document.getElementById('costEstimate');
+  if(S.useMock){ el.textContent = 'Mock mode — no Apify spend'; el.style.color = 'var(--text3)'; }
+  else if(parts.length){ el.textContent = `Est. max spend: ${parts.join(' · ')} = $${cost.toFixed(2)}`; el.style.color = 'var(--text2)'; }
+  else { el.textContent = ''; }
+}
+
+/* =========================================================
+   MOCK DATA — réalistic ICP Composed Athlete
+========================================================= */
+function generateMock(){
+  return [
+    { platform:'tiktok', author:'@marathon_kev', authorFollowers:18400, views:142000, likes:11800, comments:187, shares:542, caption:'Final 10k of Sunday long run. Cadence locked at 178.', postDate:'2026-05-19', videoUrl:'https://www.tiktok.com/@marathon_kev/video/7384', duration:24 },
+    { platform:'tiktok', author:'@dusk.runners', authorFollowers:47200, views:856000, likes:78400, comments:1240, shares:4870, caption:'5am threshold session. The sound matters.', postDate:'2026-05-22', videoUrl:'https://www.tiktok.com/@dusk.runners/video/7401', duration:31 },
+    { platform:'tiktok', author:'@cadence.lab', authorFollowers:8100, views:23400, likes:1890, comments:34, shares:78, caption:'Sub-3 build, week 14. Track work.', postDate:'2026-05-17', videoUrl:'https://www.tiktok.com/@cadence.lab/video/7298', duration:18 },
+    { platform:'tiktok', author:'@runner_archive', authorFollowers:62000, views:412000, likes:29800, comments:412, shares:1820, caption:'Morning 15k. Composed.', postDate:'2026-05-20', videoUrl:'https://www.tiktok.com/@runner_archive/video/7355', duration:47 },
+    { platform:'tiktok', author:'@hyrox.daily', authorFollowers:22300, views:67200, likes:5410, comments:89, shares:234, caption:'Compromised run station. Pacing held.', postDate:'2026-05-18', videoUrl:'https://www.tiktok.com/@hyrox.daily/video/7312', duration:28 },
+    { platform:'tiktok', author:'@quietmiles', authorFollowers:4800, views:11200, likes:980, comments:22, shares:41, caption:'Z2 effort. No music industrial complex.', postDate:'2026-05-15', videoUrl:'https://www.tiktok.com/@quietmiles/video/7281', duration:35 },
+    { platform:'tiktok', author:'@trail.cadence', authorFollowers:14600, views:89400, likes:7120, comments:134, shares:318, caption:'Elevation block. Fenix at 162 BPM.', postDate:'2026-05-21', videoUrl:'https://www.tiktok.com/@trail.cadence/video/7388', duration:41 },
+    { platform:'instagram', author:'@composed.runner', authorFollowers:31200, views:184000, likes:14200, comments:287, shares:0, caption:'Block 3. Long run. The vehicle, not the reward.', postDate:'2026-05-22', videoUrl:'https://www.instagram.com/reel/Cxx1', duration:29 },
+    { platform:'instagram', author:'@maya.runs', authorFollowers:9400, views:41800, likes:3210, comments:67, shares:0, caption:'Sunday morning. Cadence work. Slow becoming fast.', postDate:'2026-05-19', videoUrl:'https://www.instagram.com/reel/Cyy2', duration:22 },
+    { platform:'instagram', author:'@runner.archive.fr', authorFollowers:56800, views:327000, likes:24800, comments:412, shares:0, caption:'Marathon build. Week 12. Intentional.', postDate:'2026-05-23', videoUrl:'https://www.instagram.com/reel/Czz3', duration:38 },
+    { platform:'instagram', author:'@athletes.journal', authorFollowers:102000, views:612000, likes:48300, comments:720, shares:0, caption:'Threshold day. Track. The work.', postDate:'2026-05-20', videoUrl:'https://www.instagram.com/reel/Caa4', duration:44 },
+    { platform:'instagram', author:'@_quietrunner_', authorFollowers:3200, views:8400, likes:642, comments:14, shares:0, caption:'Z2. Becoming.', postDate:'2026-05-16', videoUrl:'https://www.instagram.com/reel/Cbb5', duration:19 },
+  ];
+}
+
+/* =========================================================
+   APIFY CALL
+========================================================= */
+async function callApify(actorId, input){
+  const url = `https://api.apify.com/v2/acts/${actorId.replace('/','~')}/run-sync-get-dataset-items?token=${encodeURIComponent(S.apifyKey)}`;
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(input),
+  });
+  if(!res.ok){
+    const t = await res.text();
+    throw new Error(`Apify ${res.status}: ${t.substring(0,200)}`);
+  }
+  return await res.json();
+}
+
+/* =========================================================
+   NORMALIZERS — defensive: try multiple field names
+========================================================= */
+function pick(obj, ...keys){
+  for(const k of keys){
+    const v = k.split('.').reduce((o,p)=>o&&o[p], obj);
+    if(v !== undefined && v !== null) return v;
+  }
+  return undefined;
+}
+function normalizeTiktok(items){
+  return items.map(it => ({
+    platform:'tiktok',
+    author: pick(it, 'authorMeta.name', 'authorMeta.nickName', 'author.uniqueId') ? '@' + pick(it,'authorMeta.name','authorMeta.nickName','author.uniqueId') : '@unknown',
+    authorFollowers: pick(it,'authorMeta.fans','authorMeta.followerCount') || 0,
+    views: pick(it,'playCount','videoViewCount','stats.playCount') || 0,
+    likes: pick(it,'diggCount','stats.diggCount') || 0,
+    comments: pick(it,'commentCount','stats.commentCount') || 0,
+    shares: pick(it,'shareCount','stats.shareCount') || 0,
+    caption: pick(it,'text','desc','description') || '',
+    postDate: (pick(it,'createTimeISO','createTime') || '').toString().slice(0,10),
+    videoUrl: pick(it,'webVideoUrl','shareUrl','url') || '',
+    duration: pick(it,'videoMeta.duration','duration') || 0,
+  }));
+}
+function normalizeInstagram(items){
+  return items.map(it => ({
+    platform:'instagram',
+    author: pick(it,'ownerUsername','username','owner.username') ? '@' + pick(it,'ownerUsername','username','owner.username') : '@unknown',
+    authorFollowers: pick(it,'ownerFollowersCount','followersCount','owner.followersCount') || 0,
+    views: pick(it,'videoViewCount','videoPlayCount','viewsCount','playCount') || 0,
+    likes: pick(it,'likesCount','likes') || 0,
+    comments: pick(it,'commentsCount','comments') || 0,
+    shares: 0,
+    caption: pick(it,'caption','text','description') || '',
+    postDate: (pick(it,'timestamp','takenAt','takenAtTimestamp') || '').toString().slice(0,10),
+    videoUrl: pick(it,'url','permalink','postUrl') || '',
+    duration: pick(it,'videoDuration','duration') || 0,
+  }));
+}
+
+/* =========================================================
+   FORMATTERS
+========================================================= */
+function fmt(n){
+  if(n == null) return '0';
+  if(n >= 1_000_000) return (n/1_000_000).toFixed(1) + 'M';
+  if(n >= 1_000) return (n/1_000).toFixed(1) + 'K';
+  return String(n);
+}
+
+/* =========================================================
+   RUN
+========================================================= */
+async function handleRun(){
+  saveToken();
+  document.getElementById('errBox').style.display = 'none';
+  S.results = [];
+
+  const tt = document.getElementById('tiktokUrl').value.trim();
+  const ig = document.getElementById('instagramUrl').value.trim();
+  const max = parseInt(document.getElementById('maxResults').value) || 30;
+
+  if(S.useMock){
+    setStatus('running', 'Loading mock');
+    document.getElementById('runBtn').disabled = true;
+    await new Promise(r => setTimeout(r, 500));
+    S.results = generateMock();
+    document.getElementById('runBtn').disabled = false;
+    setStatus('ok', `${S.results.length} UGCs (mock)`);
+    render();
+    return;
+  }
+
+  if(!S.apifyKey){ showErr('Apify token required — paste it above (will save to localStorage)'); return; }
+  if(!tt && !ig){ showErr('Provide at least one source URL'); return; }
+
+  document.getElementById('runBtn').disabled = true;
+
+  try{
+    if(tt){
+      setStatus('running', 'Scraping TikTok...');
+      const ttInput = {
+        musicUrls: [tt],
+        resultsPerPage: max,
+        shouldDownloadVideos: false,
+        shouldDownloadCovers: false,
+        shouldDownloadSubtitles: false,
+      };
+      const ttRaw = await callApify('clockworks/tiktok-scraper', ttInput);
+      S.results.push(...normalizeTiktok(ttRaw));
+    }
+    if(ig){
+      setStatus('running', 'Scraping Instagram...');
+      // Defensive: try audioUrl, fall back to a more generic shape if needed
+      const igInput = {
+        audioUrl: ig,
+        resultsLimit: max,
+      };
+      const igRaw = await callApify('kinaesthetic_millionaire/instagram-reels-audio-scraper', igInput);
+      S.results.push(...normalizeInstagram(igRaw));
+    }
+    setStatus('ok', `${S.results.length} UGCs`);
+    render();
+  } catch(e){
+    setStatus('err', 'Failed');
+    showErr(e.message || String(e));
+  } finally {
+    document.getElementById('runBtn').disabled = false;
+  }
+}
+
+function showErr(msg){
+  const el = document.getElementById('errBox');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+/* =========================================================
+   RENDER
+========================================================= */
+function render(){
+  const filtered = applyFiltersAndSort();
+  renderStats(filtered);
+  renderTable(filtered);
+  const hasResults = S.results.length > 0;
+  document.getElementById('emptyState').style.display = hasResults ? 'none' : 'block';
+  document.getElementById('statsBar').style.display = hasResults ? 'grid' : 'none';
+  document.getElementById('filtersBar').style.display = hasResults ? 'flex' : 'none';
+  document.getElementById('resultsWrap').style.display = hasResults ? 'block' : 'none';
+  document.getElementById('exportBtn').style.display = hasResults ? 'inline-block' : 'none';
+  document.getElementById('clearBtn').style.display = hasResults ? 'inline-block' : 'none';
+}
+
+function applyFiltersAndSort(){
+  let r = S.results.slice();
+  if(S.platformFilter !== 'all') r = r.filter(x => x.platform === S.platformFilter);
+  if(S.minViews > 0) r = r.filter(x => x.views >= S.minViews);
+  r.sort((a,b) => {
+    const av = a[S.sortBy] ?? 0;
+    const bv = b[S.sortBy] ?? 0;
+    if(typeof av === 'string'){
+      return S.sortDir === 'desc' ? bv.localeCompare(av) : av.localeCompare(bv);
+    }
+    return S.sortDir === 'desc' ? bv - av : av - bv;
+  });
+  return r;
+}
+
+function renderStats(filtered){
+  const totalViews = filtered.reduce((s,x) => s + (x.views||0), 0);
+  const totalLikes = filtered.reduce((s,x) => s + (x.likes||0), 0);
+  const tt = filtered.filter(x => x.platform === 'tiktok').length;
+  const ig = filtered.filter(x => x.platform === 'instagram').length;
+  document.getElementById('sCount').textContent = filtered.length;
+  document.getElementById('sTt').textContent = tt;
+  document.getElementById('sIg').textContent = ig;
+  document.getElementById('sViews').textContent = fmt(totalViews);
+  document.getElementById('sLikes').textContent = fmt(totalLikes);
+}
+
+function renderTable(filtered){
+  const tbody = document.getElementById('tbody');
+  if(filtered.length === 0){
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">No results match current filters</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(r => `
+    <tr class="row-hover">
+      <td><span class="platform-tag ${r.platform === 'tiktok' ? 'tt' : 'ig'}">${r.platform === 'tiktok' ? 'TT' : 'IG'}</span></td>
+      <td>
+        <div class="author">${escapeHtml(r.author)}</div>
+        <div class="author-followers">${fmt(r.authorFollowers)} followers</div>
+      </td>
+      <td class="right"><span class="metric">${fmt(r.views)}</span></td>
+      <td class="right"><span class="metric-muted">${fmt(r.likes)}</span></td>
+      <td class="right"><span class="metric-muted">${fmt(r.comments)}</span></td>
+      <td class="date-cell">${r.postDate || '—'}</td>
+      <td class="caption-cell" title="${escapeHtml(r.caption)}">${escapeHtml(r.caption) || '—'}</td>
+      <td class="right"><a class="open-link" href="${r.videoUrl}" target="_blank" rel="noopener">Open →</a></td>
+    </tr>
+  `).join('');
+
+  // Update sort indicators in headers
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.classList.remove('active');
+    const col = th.getAttribute('data-sort');
+    const baseLabel = {platform:'Platform',author:'Creator',views:'Views',likes:'Likes',comments:'Comments',postDate:'Date'}[col];
+    if(col === S.sortBy){
+      th.classList.add('active');
+      th.textContent = baseLabel + (S.sortDir === 'desc' ? ' ↓' : ' ↑');
+    } else {
+      th.textContent = baseLabel;
+    }
+  });
+}
+
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* =========================================================
+   EXPORT CSV
+========================================================= */
+function exportCSV(){
+  const filtered = applyFiltersAndSort();
+  const headers = ['platform','author','followers','views','likes','comments','shares','date','duration_s','url','caption'];
+  const rows = filtered.map(r => [
+    r.platform, r.author, r.authorFollowers, r.views, r.likes, r.comments, r.shares,
+    r.postDate, r.duration, r.videoUrl,
+    (r.caption || '').replace(/"/g,'""').replace(/\n/g,' ')
+  ]);
+  const csv = headers.join(',') + '\n' + rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `era-ugcs-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================
+   EVENT WIRING
+========================================================= */
+document.getElementById('runBtn').addEventListener('click', handleRun);
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  S.results = [];
+  setStatus('', 'Idle');
+  render();
+});
+
+document.getElementById('modeToggle').addEventListener('click', () => {
+  S.useMock = !S.useMock;
+  const btn = document.getElementById('modeToggle');
+  btn.textContent = S.useMock ? 'Mock data' : 'Live scrape';
+  btn.classList.toggle('on', S.useMock);
+  document.getElementById('apifyToken').disabled = S.useMock;
+  updateCostEstimate();
+});
+
+['tiktokUrl','instagramUrl','maxResults'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateCostEstimate);
+});
+
+document.getElementById('apifyToken').addEventListener('blur', saveToken);
+
+document.querySelectorAll('.chip[data-platform]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip[data-platform]').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    S.platformFilter = chip.getAttribute('data-platform');
+    render();
+  });
+});
+
+document.getElementById('minViews').addEventListener('input', e => {
+  S.minViews = parseInt(e.target.value) || 0;
+  render();
+});
+
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.getAttribute('data-sort');
+    if(S.sortBy === col){
+      S.sortDir = S.sortDir === 'desc' ? 'asc' : 'desc';
+    } else {
+      S.sortBy = col;
+      S.sortDir = 'desc';
+    }
+    render();
+  });
+});
+
+/* =========================================================
+   INIT
+========================================================= */
+loadToken();
+updateCostEstimate();
+setStatus('', 'Idle');
+</script>
+</body>
+</html>
