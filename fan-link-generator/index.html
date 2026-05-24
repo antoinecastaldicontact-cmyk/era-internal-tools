@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ERA Fan Link Generator — v16</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#060606;--surface:#0f0f0f;--surface2:#141414;--border:#1e1e1e;--border-hover:#333;
+  --text:#e8e8e8;--text-2:#888;--text-3:#555;--accent:#fff;--green:#4ade80;--red:#f87171;
+  --font:'DM Sans',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);padding:3rem 1.5rem;line-height:1.5}
+.container{max-width:660px;margin:0 auto}
+.header{display:flex;align-items:center;gap:12px;margin-bottom:3rem}
+.header-badge{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--text-3);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:3px 8px}
+.header h1{font-size:13px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);flex:1}
+.section{margin-bottom:2rem}
+.section-title{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text-3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+label.fl{font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;display:block}
+label.fl .req{color:var(--red);margin-left:2px}
+input,select{width:100%;font-size:13px;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;font-family:var(--font);transition:border-color .15s}
+input:focus,select:focus{border-color:var(--border-hover)}
+input::placeholder{color:var(--text-3)}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.4)}
+select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23555' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.field{margin-bottom:12px}
+.custom-input{margin-top:6px;display:none}
+.copy-bar{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:8px}
+.copy-bar-prefix{font-family:var(--mono);font-size:12px;color:var(--text-3);padding:9px 0 9px 12px;white-space:nowrap;user-select:none}
+.copy-bar-value{font-family:var(--mono);font-size:12px;color:var(--text);flex:1;padding:9px 4px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy-bar-btn{font-family:var(--mono);font-size:11px;color:var(--text-3);background:transparent;border:none;border-left:1px solid var(--border);padding:9px 14px;cursor:pointer;transition:color .15s;white-space:nowrap}
+.copy-bar-btn:hover{color:var(--text)}
+.mood-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.mood-chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-3);background:var(--surface);transition:all .15s;user-select:none}
+.mood-chip:hover{border-color:var(--border-hover);color:var(--text-2)}
+.mood-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(255,255,255,.05)}
+.mood-custom-wrap{margin-top:8px;display:flex;gap:8px}
+.mood-custom-wrap input{flex:1}
+.mood-add-btn{font-size:12px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-3);cursor:pointer;font-family:var(--font);white-space:nowrap;transition:all .15s}
+.mood-add-btn:hover{color:var(--text);border-color:var(--border-hover)}
+.dsp-block{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;transition:border-color .15s}
+.dsp-block:hover{border-color:var(--border-hover)}
+.dsp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.dsp-num{font-family:var(--mono);font-size:11px;color:var(--text-3)}
+.remove-btn{font-size:11px;color:var(--text-3);cursor:pointer;background:none;border:none;padding:2px 6px;border-radius:4px;transition:all .15s;font-family:var(--font)}
+.remove-btn:hover{color:var(--red);background:rgba(248,113,113,.08)}
+.add-btn{font-size:12px;color:var(--text-3);cursor:pointer;background:none;border:1px dashed var(--border);border-radius:6px;padding:10px;width:100%;margin-top:4px;transition:all .15s;font-family:var(--font)}
+.add-btn:hover{border-color:var(--border-hover);color:var(--text-2)}
+.utm-preview{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:6px;word-break:break-all;line-height:1.5}
+.url-error{font-family:var(--mono);font-size:10px;color:var(--red);margin-top:5px;display:none}
+.dsp-url.invalid{border-color:var(--red) !important}
+.validation-summary{font-family:var(--mono);font-size:11px;color:var(--red);background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:6px;padding:10px 14px;margin-bottom:16px;display:none;line-height:1.6}
+.generate-btn{width:100%;padding:12px;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-family:var(--font);transition:opacity .15s}
+.generate-btn:hover{opacity:.85}
+.generate-btn:disabled{opacity:.35;cursor:not-allowed}
+.output-wrap{margin-top:2rem;display:none}
+.output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.output-label{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text-3)}
+.copy-btn{font-family:var(--mono);font-size:11px;cursor:pointer;background:none;border:1px solid var(--border);border-radius:4px;padding:4px 12px;color:var(--text-3);transition:all .15s}
+.copy-btn:hover{color:var(--text);border-color:var(--border-hover)}
+.output-pre{font-family:var(--mono);font-size:11.5px;line-height:1.7;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;white-space:pre-wrap;word-break:break-word;color:var(--text);max-height:600px;overflow-y:auto;margin:0}
+.output-pre::-webkit-scrollbar{width:4px}
+.output-pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.copied{color:var(--green) !important;border-color:var(--green) !important}
+.divider{height:1px;background:var(--border);margin:2.5rem 0}
+.migrate-btn{width:100%;padding:10px;font-size:12px;font-weight:500;letter-spacing:.04em;cursor:pointer;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-3);font-family:var(--font);transition:all .15s;margin-top:10px}
+.migrate-btn:hover{border-color:var(--border-hover);color:var(--text)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span class="header-badge">v16</span>
+    <h1>ERA Fan Link Generator</h1>
+  </div>
+
+  <!-- RELEASE INFO -->
+  <div class="section">
+    <div class="section-title">Release info</div>
+    <div class="row2 field">
+      <div><label class="fl">Artist <span class="req">*</span></label><input id="artist" placeholder="Artist name" /></div>
+      <div><label class="fl">Track / Release title <span class="req">*</span></label><input id="title" placeholder="Track Title" /></div>
+    </div>
+    <div class="row2 field">
+      <div><label class="fl">Featured artist</label><input id="feat" placeholder="(optional)" /></div>
+      <div><label class="fl">Release type <span class="req">*</span></label>
+        <select id="rtype">
+          <option value="Single">Single</option>
+          <option value="EP">EP</option>
+          <option value="Album">Album</option>
+          <option value="Compilation">Compilation</option>
+        </select>
+      </div>
+    </div>
+    <div class="row2 field">
+      <div><label class="fl">Label <span class="req">*</span></label><input id="label" placeholder="ERA Music" /></div>
+      <div><label class="fl">Release date <span class="req">*</span></label><input id="release-date" type="date" /></div>
+    </div>
+    <div class="row2 field">
+      <div><label class="fl">Artwork ext</label>
+        <select id="artwork-ext"><option value=".webp">.webp</option><option value=".jpg">.jpg</option><option value=".png">.png</option></select>
+      </div>
+      <div><label class="fl">Artwork file</label><input id="artwork" placeholder="auto" readonly style="color:var(--text-3)" /></div>
+    </div>
+    <div class="copy-bar">
+      <span class="copy-bar-prefix">fanlinkhub.com/</span>
+      <span class="copy-bar-value" id="slug-display">-</span>
+      <button class="copy-bar-btn" id="url-copy-btn">copy url</button>
+    </div>
+    <div class="copy-bar">
+      <span class="copy-bar-prefix">/artworks/</span>
+      <span class="copy-bar-value" id="artwork-display">-</span>
+      <button class="copy-bar-btn" id="artwork-copy-btn">copy</button>
+    </div>
+  </div>
+
+  <!-- METADATA -->
+  <div class="section">
+    <div class="section-title">Metadata</div>
+
+    <div class="field">
+      <label class="fl">Genre principal <span class="req">*</span></label>
+      <select id="genre-primary" style="max-width:280px">
+        <option value="">— choisir —</option>
+        <option value="afro_house">afro_house</option>
+        <option value="afrobeat">afrobeat</option>
+        <option value="dance">dance</option>
+        <option value="deep_house">deep_house</option>
+        <option value="downtempo">downtempo</option>
+        <option value="house">house</option>
+        <option value="indie_dance">indie_dance</option>
+        <option value="melodic_techno">melodic_techno</option>
+        <option value="organic_house">organic_house</option>
+        <option value="pop">pop</option>
+        <option value="progressive">progressive</option>
+        <option value="slap_house">slap_house</option>
+        <option value="__custom__">custom...</option>
+      </select>
+      <input id="genre-primary-custom" class="custom-input" style="max-width:280px" placeholder="genre libre" />
+    </div>
+
+    <div class="field">
+      <label class="fl">Track language <span class="req">*</span></label>
+      <select id="track-lang" style="max-width:280px">
+        <option value="">— choisir —</option>
+        <option value="en">en — English</option>
+        <option value="fr">fr — Français</option>
+        <option value="es">es — Español</option>
+        <option value="pt">pt — Português</option>
+        <option value="de">de — Deutsch</option>
+        <option value="it">it — Italiano</option>
+        <option value="instrumental">instrumental</option>
+        <option value="__custom__">custom...</option>
+      </select>
+      <input id="track-lang-custom" class="custom-input" style="max-width:280px" placeholder="code langue libre" />
+    </div>
+
+    <div class="field">
+      <label class="fl">Mood tags <span class="req">*</span> <span style="color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0">(au moins un)</span></label>
+      <div class="mood-grid" id="mood-grid">
+        <span class="mood-chip" data-mood="chill">chill</span>
+        <span class="mood-chip" data-mood="drive">drive</span>
+        <span class="mood-chip" data-mood="focus">focus</span>
+        <span class="mood-chip" data-mood="late_night">late_night</span>
+        <span class="mood-chip" data-mood="party">party</span>
+        <span class="mood-chip" data-mood="running">running</span>
+        <span class="mood-chip" data-mood="sport">sport</span>
+        <span class="mood-chip" data-mood="sunset">sunset</span>
+        <span class="mood-chip" data-mood="training">training</span>
+      </div>
+      <div class="mood-custom-wrap">
+        <input id="mood-custom-input" placeholder="tag custom..." />
+        <button class="mood-add-btn" id="mood-add-btn">+ Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DSP LINKS -->
+  <div class="section">
+    <div class="section-title">DSP links</div>
+    <div id="dsp-list"></div>
+    <button class="add-btn" id="add-dsp-btn">+ Add platform</button>
+  </div>
+
+  <div class="validation-summary" id="validation-summary"></div>
+  <button class="generate-btn" id="generate-btn">Generate Lovable Prompt — V3</button>
+
+  <div class="divider"></div>
+  <button class="migrate-btn" id="migrate-btn">Générer prompt migration Apple Music → geo (toutes releases)</button>
+
+  <div class="output-wrap" id="output-wrap">
+    <div class="output-header">
+      <span class="output-label" id="output-label">Lovable prompt — ready to paste</span>
+      <button class="copy-btn" id="copy-prompt-btn">copy</button>
+    </div>
+    <pre class="output-pre" id="output"></pre>
+  </div>
+</div>
+
+<script>
+(function(){
+
+var DSP_PRESETS = {
+  "Spotify":      { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/spotify.svg",       ph:"https://open.spotify.com/track/" },
+  "Apple Music":  { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/applemusic.svg",   ph:"https://music.apple.com/fr/album/title/albumid?i=trackid" },
+  "Deezer":       { logo:"/icons/deezer.webp",                                                   ph:"https://www.deezer.com/track/" },
+  "Amazon Music": { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/amazonmusic.svg",  ph:"https://music.amazon.com/albums/" },
+  "YouTube Music":{ logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/youtubemusic.svg", ph:"https://music.youtube.com/watch?v=" },
+  "Tidal":        { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/tidal.svg",         ph:"https://tidal.com/browse/track/" },
+  "Beatport":     { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/beatport.svg",     ph:"https://www.beatport.com/track/" },
+  "SoundCloud":   { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/soundcloud.svg",   ph:"https://soundcloud.com/" }
+};
+var DSP_ORDER = ["Spotify","Apple Music","Deezer","Amazon Music","YouTube Music","Tidal","Beatport","SoundCloud"];
+
+var dsps = [], dspCounter = 0, currentSlug = "", currentArtwork = "";
+var selectedMoods = new Set();
+
+function slugify(s){ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
+function utmSlug(n){ return n.toLowerCase().replace(/\s+/g,"_"); }
+
+function normalizeAppleMusic(url){
+  try {
+    var u = new URL(url);
+    if(u.hostname === "music.apple.com"){
+      var path = u.pathname.replace(/^\/[a-z]{2}(-[a-zA-Z]+)?\//i,"/");
+      var utms = [];
+      u.searchParams.forEach(function(v,k){ if(k.startsWith("utm_")) utms.push(k+"="+encodeURIComponent(v)); });
+      return "https://geo.music.apple.com" + path + (utms.length ? "?"+utms.join("&") : "");
+    }
+  } catch(e){}
+  return url;
+}
+
+function appendUTM(url, slug, dsp){
+  if(!url || url==="REPLACE_URL") return url;
+  var sep = url.indexOf("?") === -1 ? "?" : "&";
+  return url + sep + "utm_source=fanlinkhub&utm_medium=referral&utm_campaign="+slug+"&utm_content="+utmSlug(dsp);
+}
+
+function getVal(id){ return document.getElementById(id) ? document.getElementById(id).value.trim() : ""; }
+
+function getGenre(){
+  var sel = getVal("genre-primary");
+  if(sel === "__custom__") return getVal("genre-primary-custom");
+  return sel;
+}
+
+function getTrackLang(){
+  var sel = getVal("track-lang");
+  if(sel === "__custom__") return getVal("track-lang-custom");
+  return sel;
+}
+
+function updateSlug(){
+  var artist = getVal("artist"), title = getVal("title"), feat = getVal("feat");
+  var full = feat ? artist+" "+title+" ft "+feat : artist+" "+title;
+  currentSlug = slugify(full);
+  document.getElementById("slug-display").textContent = currentSlug || "-";
+  var ext = getVal("artwork-ext");
+  currentArtwork = currentSlug ? currentSlug+ext : "";
+  document.getElementById("artwork").value = currentArtwork;
+  document.getElementById("artwork-display").textContent = currentArtwork || "-";
+  updateUTMPreviews();
+}
+
+function bindCustomSelect(selectId, customId){
+  var sel = document.getElementById(selectId);
+  var inp = document.getElementById(customId);
+  if(sel && inp) sel.addEventListener("change", function(){
+    inp.style.display = sel.value === "__custom__" ? "block" : "none";
+  });
+}
+bindCustomSelect("genre-primary","genre-primary-custom");
+bindCustomSelect("track-lang","track-lang-custom");
+
+// Mood chips
+document.querySelectorAll(".mood-chip").forEach(function(chip){
+  chip.addEventListener("click", function(){
+    var m = chip.getAttribute("data-mood");
+    if(selectedMoods.has(m)){ selectedMoods.delete(m); chip.classList.remove("active"); }
+    else { selectedMoods.add(m); chip.classList.add("active"); }
+    validateAll();
+  });
+});
+
+document.getElementById("mood-add-btn").addEventListener("click", function(){
+  var inp = document.getElementById("mood-custom-input");
+  var val = inp.value.trim().toLowerCase().replace(/\s+/g,"_");
+  if(!val || selectedMoods.has(val)) return;
+  selectedMoods.add(val);
+  var chip = document.createElement("span");
+  chip.className = "mood-chip active"; chip.setAttribute("data-mood",val); chip.textContent = val;
+  chip.addEventListener("click", function(){ selectedMoods.delete(val); chip.remove(); validateAll(); });
+  document.getElementById("mood-grid").appendChild(chip);
+  inp.value = "";
+  validateAll();
+});
+
+// UTM previews
+function updateUTMPreviews(){
+  document.querySelectorAll(".utm-preview").forEach(function(el){
+    var id = el.getAttribute("data-id");
+    var urlEl = document.querySelector('.dsp-url[data-id="'+id+'"]');
+    var nmEl  = document.querySelector('.dsp-name[data-id="'+id+'"]');
+    if(!urlEl||!nmEl) return;
+    var raw = urlEl.value.trim(), name = nmEl.value||"custom";
+    if(raw && currentSlug){
+      var proc = (name==="Apple Music") ? normalizeAppleMusic(appendUTM(raw,currentSlug,name)) : appendUTM(raw,currentSlug,name);
+      el.textContent = "UTM: "+proc;
+    } else { el.textContent = "UTM: fill URL + release info to preview"; }
+  });
+}
+
+// DSP
+function buildOptions(sel){
+  var h='<option value="">Custom</option>';
+  DSP_ORDER.forEach(function(k){ h+='<option value="'+k+'"'+(sel===k?" selected":"")+'>'+k+'</option>'; });
+  return h;
+}
+
+function renderDSPs(){
+  var c = document.getElementById("dsp-list"); c.innerHTML="";
+  dsps.forEach(function(d,idx){
+    var p = DSP_PRESETS[d.preset]||{}, num=String(idx+1).padStart(2,"0");
+    var el = document.createElement("div"); el.className="dsp-block";
+    el.innerHTML =
+      '<div class="dsp-header"><span class="dsp-num">'+num+'</span><button class="remove-btn" data-remove="'+d.id+'">remove</button></div>'+
+      '<div class="row3" style="margin-bottom:10px">'+
+        '<div><label class="fl">Platform</label><select class="dsp-name" data-id="'+d.id+'">'+buildOptions(d.preset)+'</select></div>'+
+        '<div style="grid-column:span 2"><label class="fl">Logo URL</label><input class="dsp-logo" data-id="'+d.id+'" value="'+(p.logo||"")+'" style="font-family:var(--mono);font-size:11px" /></div>'+
+      '</div>'+
+      '<div><label class="fl">Streaming URL</label><input class="dsp-url" data-id="'+d.id+'" placeholder="'+(p.ph||"https://...")+'" style="font-family:var(--mono);font-size:11px" /></div>'+
+      '<div class="utm-preview" data-id="'+d.id+'">UTM: fill URL + release info to preview</div>'+
+      '<div class="url-error" data-id="'+d.id+'"></div>';
+    c.appendChild(el);
+  });
+  c.querySelectorAll("[data-remove]").forEach(function(b){
+    b.addEventListener("click",function(){ var rid=parseInt(b.getAttribute("data-remove")); dsps=dsps.filter(function(x){return x.id!==rid;}); renderDSPs(); });
+  });
+  c.querySelectorAll(".dsp-name").forEach(function(s){
+    s.addEventListener("change",function(){
+      var id=s.getAttribute("data-id"),val=s.value,p=DSP_PRESETS[val];
+      if(p){ var li=c.querySelector('.dsp-logo[data-id="'+id+'"]'),ui=c.querySelector('.dsp-url[data-id="'+id+'"]'); if(li)li.value=p.logo; if(ui)ui.placeholder=p.ph; }
+      updateUTMPreviews();
+    });
+  });
+  c.querySelectorAll(".dsp-url").forEach(function(u){ u.addEventListener("input",updateUTMPreviews); });
+}
+
+function addDSP(preset){ dsps.push({id:dspCounter++,preset:preset||""}); renderDSPs(); }
+document.getElementById("add-dsp-btn").addEventListener("click",function(){ addDSP(""); });
+
+// Validation
+var BANNED=["REPLACE","EXAMPLE","TODO"];
+function isValidUrl(url){
+  if(!url) return {ok:false,reason:"URL manquante"};
+  for(var i=0;i<BANNED.length;i++){ if(url.toUpperCase().includes(BANNED[i])) return {ok:false,reason:'contient "'+BANNED[i]+'"'}; }
+  try{ var u=new URL(url); if(!u.hostname.includes(".")) return {ok:false,reason:"domaine invalide"}; } catch(e){ return {ok:false,reason:"URL malformée"}; }
+  return {ok:true};
+}
+
+function validateAll(){
+  var errors=[];
+  if(!getVal("artist"))       errors.push("• Artist requis");
+  if(!getVal("title"))        errors.push("• Track title requis");
+  if(!getVal("label"))        errors.push("• Label requis");
+  if(!getVal("release-date")) errors.push("• Release date requise");
+  if(!getGenre())             errors.push("• Genre principal requis");
+  if(!getTrackLang())         errors.push("• Track language requis");
+  if(selectedMoods.size===0) errors.push("• Au moins un mood tag requis");
+
+  var c=document.getElementById("dsp-list");
+  dsps.forEach(function(d){
+    var nmEl=c.querySelector('.dsp-name[data-id="'+d.id+'"]');
+    var urEl=c.querySelector('.dsp-url[data-id="'+d.id+'"]');
+    var erEl=c.querySelector('.url-error[data-id="'+d.id+'"]');
+    if(!urEl) return;
+    var raw=urEl.value.trim(), name=nmEl?nmEl.value||"Custom":"Custom";
+    if(!raw){ urEl.classList.remove("invalid"); if(erEl)erEl.style.display="none"; return; }
+    var res=isValidUrl(raw);
+    if(!res.ok){ urEl.classList.add("invalid"); if(erEl){erEl.textContent="URL "+name+" — "+res.reason; erEl.style.display="block";} errors.push("• "+name+" : "+res.reason); }
+    else { urEl.classList.remove("invalid"); if(erEl)erEl.style.display="none"; }
+  });
+
+  var sumEl=document.getElementById("validation-summary"), btn=document.getElementById("generate-btn");
+  if(errors.length){ sumEl.innerHTML="Erreurs à corriger :<br>"+errors.join("<br>"); sumEl.style.display="block"; btn.disabled=true; }
+  else { sumEl.style.display="none"; btn.disabled=false; }
+  return errors.length===0;
+}
+
+["artist","title","feat","label","release-date"].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el) el.addEventListener("input",function(){ updateSlug(); validateAll(); });
+});
+document.getElementById("genre-primary").addEventListener("change",validateAll);
+document.getElementById("track-lang").addEventListener("change",validateAll);
+document.getElementById("artwork-ext").addEventListener("change",updateSlug);
+
+// Generate
+function generate(){
+  var artist      = getVal("artist")||"Artist";
+  var title       = getVal("title")||"Track Title";
+  var feat        = getVal("feat");
+  var label       = getVal("label")||"ERA Music";
+  var releaseDate = getVal("release-date");
+  var rtype       = getVal("rtype");
+  var gPrimary    = getGenre();
+  var trackLang   = getTrackLang();
+  var moods       = Array.from(selectedMoods);
+  var displayTitle= feat ? title+" (feat. "+feat+")" : title;
+  var slug        = currentSlug || slugify(artist+" "+title);
+  var artwork     = currentArtwork || slug+".webp";
+
+  var c = document.getElementById("dsp-list");
+  var dspData = dsps.map(function(d){
+    var nm=c.querySelector('.dsp-name[data-id="'+d.id+'"]');
+    var lg=c.querySelector('.dsp-logo[data-id="'+d.id+'"]');
+    var ur=c.querySelector('.dsp-url[data-id="'+d.id+'"]');
+    var name=nm?nm.value||"Custom":"Custom";
+    var raw=ur?ur.value.trim():"";
+    if(name==="Apple Music"&&raw) raw=normalizeAppleMusic(raw);
+    var finalUrl=raw?appendUTM(raw,slug,name):"REPLACE_URL";
+    return {name:name,logo:lg?lg.value:"",url:finalUrl};
+  });
+
+  var dspLines = dspData.map(function(d){
+    return '      {\n        name: "'+d.name+'",\n        logo: "'+d.logo+'",\n        url: "'+d.url+'",\n      }';
+  });
+
+  var cfg = [];
+  cfg.push('  slug: "'+slug+'",');
+  cfg.push('  artist: "'+artist+'",');
+  cfg.push('  title: "'+displayTitle+'",');
+  cfg.push('  releaseType: "'+rtype+'",');
+  cfg.push('  artworkUrl: "/artworks/'+artwork+'",');
+  cfg.push('  ogTitle: "'+artist+' - '+displayTitle+'",');
+  cfg.push('  ogDescription: "Listen to '+displayTitle+' by '+artist+', out now on all platforms.",');
+  cfg.push('  dsps: [\n'+dspLines.join(',\n')+'\n  ],');
+  cfg.push('  genrePrimary: "'+gPrimary+'",');
+  cfg.push('  label: "'+label+'",');
+  cfg.push('  releaseDate: "'+releaseDate+'",');
+  cfg.push('  moodTags: ['+moods.map(function(m){return'"'+m+'"';}).join(', ')+'],');
+  cfg.push('  trackLanguage: "'+trackLang+'",');
+
+  var L=[];
+  L.push("## Ajouter une release — tracking V3");
+  L.push("");
+  L.push("Repo de référence : https://github.com/antoinecastaldicontact-cmyk/link-streammusic");
+  L.push("");
+  L.push("### ⚠️ FICHIERS PROTÉGÉS — NE PAS TOUCHER");
+  L.push("");
+  L.push("Ne touche PAS aux fichiers suivants :");
+  L.push("- src/lib/tracking.ts");
+  L.push("- src/lib/dsp-analytics.ts");
+  L.push("- src/pages/ReleasePage.tsx");
+  L.push("- supabase/functions/");
+  L.push("- supabase/migrations/");
+  L.push("- src/integrations/supabase/");
+  L.push("");
+  L.push("Le tracking V3 (Meta CAPI direct via Edge Function Lovable Cloud, fingerprint SHA-256 stable, mood_tags, in_app_browser detection, geo enrichment hashé) est déjà en place et fonctionnel.");
+  L.push("Uniquement modifier src/config/releases.ts pour ajouter ce nouveau ReleaseConfig au tableau releases existant. Respecter strictement l'ordre des champs indiqué et ne pas ajouter de clés undefined/null.");
+  L.push("");
+  L.push("### Modification unique");
+  L.push("");
+  L.push("Dans `src/config/releases.ts`, ajoute l'entrée suivante au **début** du tableau `releases` :");
+  L.push("");
+  L.push("```ts");
+  L.push("{");
+  cfg.forEach(function(l){ L.push(l); });
+  L.push("},");
+  L.push("```");
+  L.push("");
+  L.push("Upload l'artwork `"+artwork+"` dans `public/artworks/`.");
+  L.push("");
+  L.push("### Notes");
+  L.push("- UTM params (utm_source=fanlinkhub, utm_medium=referral, utm_campaign="+slug+") — ne pas modifier");
+  if(dspData.some(function(d){return d.name==="Apple Music";})){
+    L.push("- Apple Music : format geo.music.apple.com (worldwide-compatible) — ne pas convertir");
+  }
+  L.push("");
+  L.push("### Règles absolues");
+  L.push("- consent toujours true en dur dans tous les appels trackEvent");
+  L.push("- useEffect tracking : consent jamais dans le deps array");
+  L.push("- Aucune URL REPLACE/EXAMPLE ne peut être déployée");
+  L.push("- genrePrimary, label, releaseDate, trackLanguage, moodTags toujours présents");
+  L.push("- Pas de clés undefined/null/array vide");
+
+  document.getElementById("output").textContent=L.join("\n");
+  document.getElementById("output-label").textContent="Lovable prompt — V3 — ready to paste";
+  document.getElementById("output-wrap").style.display="block";
+  document.getElementById("output-wrap").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+// Migrate prompt
+function generateMigrate(){
+  var L=[];
+  L.push("## Migrate Apple Music URLs → geo format (all releases)");
+  L.push("");
+  L.push("Repo de référence : https://github.com/antoinecastaldicontact-cmyk/link-streammusic");
+  L.push("");
+  L.push("Uniquement modifier src/config/releases.ts. Ne touche pas à :");
+  L.push("- src/lib/tracking.ts");
+  L.push("- src/lib/dsp-analytics.ts");
+  L.push("- src/pages/ReleasePage.tsx");
+  L.push("- supabase/functions/");
+  L.push("- supabase/migrations/");
+  L.push("- src/integrations/supabase/");
+  L.push("");
+  L.push("### Transform rule");
+  L.push("Pour chaque DSP name === \"Apple Music\" :");
+  L.push("1. music.apple.com → geo.music.apple.com");
+  L.push("2. Supprimer /{locale}/ du path");
+  L.push("3. Supprimer ?i=XXXXXXXXXX");
+  L.push("4. Conserver tous les params UTM");
+  L.push("");
+  L.push("BEFORE: https://music.apple.com/fr/album/superstar/1893973515?i=1893973522&utm_source=fanlinkhub&utm_medium=referral&utm_campaign=artist-superstar&utm_content=apple_music");
+  L.push("AFTER:  https://geo.music.apple.com/album/superstar/1893973515?utm_source=fanlinkhub&utm_medium=referral&utm_campaign=artist-superstar&utm_content=apple_music");
+  L.push("");
+  L.push("Idempotent — sauter les URLs déjà en geo.music.apple.com. Aucun autre changement.");
+
+  document.getElementById("output").textContent=L.join("\n");
+  document.getElementById("output-label").textContent="Prompt migration Apple Music → geo — ready to paste";
+  document.getElementById("output-wrap").style.display="block";
+  document.getElementById("output-wrap").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+// Copy helpers
+function flashCopied(btn){ var o=btn.textContent; btn.textContent="copied"; btn.classList.add("copied"); setTimeout(function(){ btn.textContent=o; btn.classList.remove("copied"); },2000); }
+
+document.getElementById("generate-btn").addEventListener("click",function(){ if(validateAll()) generate(); });
+document.getElementById("migrate-btn").addEventListener("click",generateMigrate);
+document.getElementById("url-copy-btn").addEventListener("click",function(){ if(currentSlug) navigator.clipboard.writeText("fanlinkhub.com/"+currentSlug).then(function(){ flashCopied(document.getElementById("url-copy-btn")); }); });
+document.getElementById("artwork-copy-btn").addEventListener("click",function(){ if(currentArtwork) navigator.clipboard.writeText(currentArtwork).then(function(){ flashCopied(document.getElementById("artwork-copy-btn")); }); });
+document.getElementById("copy-prompt-btn").addEventListener("click",function(){ var t=document.getElementById("output").textContent; if(t) navigator.clipboard.writeText(t).then(function(){ flashCopied(document.getElementById("copy-prompt-btn")); }); });
+
+// Init
+addDSP("Spotify");
+addDSP("Apple Music");
+updateSlug();
+
+})();
+</script>
+</body>
+</html>
