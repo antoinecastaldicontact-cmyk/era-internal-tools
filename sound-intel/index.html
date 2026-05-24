@@ -533,10 +533,11 @@ async function handleRun(){
     }
     if(ig){
       setStatus('running', 'Scraping Instagram...');
-      // Defensive: try audioUrl, fall back to a more generic shape if needed
+      // Schema verified from actor input-schema: audioUrls (array, required), maxResults, downloadVideos
       const igInput = {
-        audioUrl: ig,
-        resultsLimit: max,
+        audioUrls: [ig],
+        maxResults: max,
+        downloadVideos: false,
       };
       const igRaw = await callApify('kinaesthetic_millionaire/instagram-reels-audio-scraper', igInput);
       S.results.push(...normalizeInstagram(igRaw));
@@ -553,7 +554,18 @@ async function handleRun(){
 
 function showErr(msg){
   const el = document.getElementById('errBox');
-  el.textContent = msg;
+  // Parse Apify run ID from error message and surface as clickable diagnostic link
+  const runIdMatch = String(msg).match(/run ID:\s*([a-zA-Z0-9]+)/);
+  if(runIdMatch){
+    const runId = runIdMatch[1];
+    el.innerHTML = `<div>${escapeHtml(msg)}</div>` +
+      `<div style="margin-top:10px;padding-top:10px;border-top:.5px solid rgba(255,80,102,.25)">` +
+      `<a href="https://console.apify.com/actors/runs/${runId}" target="_blank" rel="noopener" style="color:var(--accent2);text-decoration:underline;font-size:10px;letter-spacing:.1em;text-transform:uppercase">→ View run log on Apify console</a>` +
+      `<div style="margin-top:6px;color:var(--text3);font-size:10px;line-height:1.5">Common causes: music URL inaccessible (404 / geo-restricted / typo in slug), the sound has zero UGCs yet, or TikTok rate-limited the actor. Verify the URL opens in your browser first.</div>` +
+      `</div>`;
+  } else {
+    el.textContent = msg;
+  }
   el.style.display = 'block';
 }
 
