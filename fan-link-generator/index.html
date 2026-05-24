@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ERA Fan Link Generator — v16</title>
+<title>ERA Fan Link Generator — v2.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -17,7 +17,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);padding:3rem
 .container{max-width:660px;margin:0 auto}
 .header{display:flex;align-items:center;gap:12px;margin-bottom:3rem}
 .header-badge{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--text-3);background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:3px 8px}
-.header h1{font-size:13px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2);flex:1}
+.header h1{font-size:13px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--text-2)}
 .section{margin-bottom:2rem}
 .section-title{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--text-3);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
 label.fl{font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;display:block}
@@ -36,6 +36,8 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 .copy-bar-value{font-family:var(--mono);font-size:12px;color:var(--text);flex:1;padding:9px 4px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .copy-bar-btn{font-family:var(--mono);font-size:11px;color:var(--text-3);background:transparent;border:none;border-left:1px solid var(--border);padding:9px 14px;cursor:pointer;transition:color .15s;white-space:nowrap}
 .copy-bar-btn:hover{color:var(--text)}
+
+/* Mood multi-select */
 .mood-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
 .mood-chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-3);background:var(--surface);transition:all .15s;user-select:none}
 .mood-chip:hover{border-color:var(--border-hover);color:var(--text-2)}
@@ -44,6 +46,8 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 .mood-custom-wrap input{flex:1}
 .mood-add-btn{font-size:12px;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-3);cursor:pointer;font-family:var(--font);white-space:nowrap;transition:all .15s}
 .mood-add-btn:hover{color:var(--text);border-color:var(--border-hover)}
+
+/* DSP blocks */
 .dsp-block{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;transition:border-color .15s}
 .dsp-block:hover{border-color:var(--border-hover)}
 .dsp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
@@ -55,6 +59,8 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 .utm-preview{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:6px;word-break:break-all;line-height:1.5}
 .url-error{font-family:var(--mono);font-size:10px;color:var(--red);margin-top:5px;display:none}
 .dsp-url.invalid{border-color:var(--red) !important}
+
+/* Bottom */
 .validation-summary{font-family:var(--mono);font-size:11px;color:var(--red);background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:6px;padding:10px 14px;margin-bottom:16px;display:none;line-height:1.6}
 .generate-btn{width:100%;padding:12px;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:var(--accent);border:none;border-radius:6px;color:var(--bg);font-family:var(--font);transition:opacity .15s}
 .generate-btn:hover{opacity:.85}
@@ -68,9 +74,9 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 .output-pre::-webkit-scrollbar{width:4px}
 .output-pre::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .copied{color:var(--green) !important;border-color:var(--green) !important}
-.divider{height:1px;background:var(--border);margin:2.5rem 0}
 .migrate-btn{width:100%;padding:10px;font-size:12px;font-weight:500;letter-spacing:.04em;cursor:pointer;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-3);font-family:var(--font);transition:all .15s;margin-top:10px}
 .migrate-btn:hover{border-color:var(--border-hover);color:var(--text)}
+.divider{height:1px;background:var(--border);margin:2.5rem 0}
 </style>
 </head>
 <body>
@@ -99,8 +105,14 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
       </div>
     </div>
     <div class="row2 field">
-      <div><label class="fl">Label <span class="req">*</span></label><input id="label" placeholder="ERA Music" /></div>
-      <div><label class="fl">Release date <span class="req">*</span></label><input id="release-date" type="date" /></div>
+      <div>
+        <label class="fl">Label <span class="req">*</span></label>
+        <input id="label" placeholder="ERA Music" />
+      </div>
+      <div>
+        <label class="fl">Release date <span class="req">*</span></label>
+        <input id="release-date" type="date" />
+      </div>
     </div>
     <div class="row2 field">
       <div><label class="fl">Artwork ext</label>
@@ -147,7 +159,7 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 
     <div class="field">
       <label class="fl">Track language <span class="req">*</span></label>
-      <select id="track-lang" style="max-width:280px">
+      <select id="track-lang" style="width:auto;min-width:220px">
         <option value="">— choisir —</option>
         <option value="en">en — English</option>
         <option value="fr">fr — Français</option>
@@ -158,7 +170,7 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
         <option value="instrumental">instrumental</option>
         <option value="__custom__">custom...</option>
       </select>
-      <input id="track-lang-custom" class="custom-input" style="max-width:280px" placeholder="code langue libre" />
+      <input id="track-lang-custom" class="custom-input" style="max-width:220px" placeholder="code langue libre" />
     </div>
 
     <div class="field">
@@ -189,7 +201,7 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
   </div>
 
   <div class="validation-summary" id="validation-summary"></div>
-  <button class="generate-btn" id="generate-btn">Generate Lovable Prompt — V3</button>
+  <button class="generate-btn" id="generate-btn">Generate Lovable Prompt — V2.1</button>
 
   <div class="divider"></div>
   <button class="migrate-btn" id="migrate-btn">Générer prompt migration Apple Music → geo (toutes releases)</button>
@@ -207,20 +219,21 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 (function(){
 
 var DSP_PRESETS = {
-  "Spotify":      { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/spotify.svg",       ph:"https://open.spotify.com/track/" },
-  "Apple Music":  { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/applemusic.svg",   ph:"https://music.apple.com/fr/album/title/albumid?i=trackid" },
-  "Deezer":       { logo:"/icons/deezer.webp",                                                   ph:"https://www.deezer.com/track/" },
-  "Amazon Music": { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/amazonmusic.svg",  ph:"https://music.amazon.com/albums/" },
-  "YouTube Music":{ logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/youtubemusic.svg", ph:"https://music.youtube.com/watch?v=" },
-  "Tidal":        { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/tidal.svg",         ph:"https://tidal.com/browse/track/" },
-  "Beatport":     { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/beatport.svg",     ph:"https://www.beatport.com/track/" },
-  "SoundCloud":   { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/soundcloud.svg",   ph:"https://soundcloud.com/" }
+  "Spotify":      { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/spotify.svg",      ph:"https://open.spotify.com/track/" },
+  "Apple Music":  { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/applemusic.svg",  ph:"https://music.apple.com/fr/album/title/albumid?i=trackid" },
+  "Deezer":       { logo:"/icons/deezer.webp",                                                  ph:"https://www.deezer.com/track/" },
+  "Amazon Music": { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/amazonmusic.svg", ph:"https://music.amazon.com/albums/" },
+  "YouTube Music":{ logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/youtubemusic.svg",ph:"https://music.youtube.com/watch?v=" },
+  "Tidal":        { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/tidal.svg",        ph:"https://tidal.com/browse/track/" },
+  "Beatport":     { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/beatport.svg",    ph:"https://www.beatport.com/track/" },
+  "SoundCloud":   { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/soundcloud.svg",  ph:"https://soundcloud.com/" }
 };
 var DSP_ORDER = ["Spotify","Apple Music","Deezer","Amazon Music","YouTube Music","Tidal","Beatport","SoundCloud"];
 
 var dsps = [], dspCounter = 0, currentSlug = "", currentArtwork = "";
 var selectedMoods = new Set();
 
+/* ── helpers ── */
 function slugify(s){ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
 function utmSlug(n){ return n.toLowerCase().replace(/\s+/g,"_"); }
 
@@ -245,9 +258,9 @@ function appendUTM(url, slug, dsp){
 
 function getVal(id){ return document.getElementById(id) ? document.getElementById(id).value.trim() : ""; }
 
-function getGenre(){
-  var sel = getVal("genre-primary");
-  if(sel === "__custom__") return getVal("genre-primary-custom");
+function getGenre(base){
+  var sel = getVal("genre-"+base);
+  if(sel === "__custom__") return getVal("genre-"+base+"-custom");
   return sel;
 }
 
@@ -257,6 +270,7 @@ function getTrackLang(){
   return sel;
 }
 
+/* ── slug / artwork ── */
 function updateSlug(){
   var artist = getVal("artist"), title = getVal("title"), feat = getVal("feat");
   var full = feat ? artist+" "+title+" ft "+feat : artist+" "+title;
@@ -269,17 +283,18 @@ function updateSlug(){
   updateUTMPreviews();
 }
 
+/* ── custom selects ── */
 function bindCustomSelect(selectId, customId){
   var sel = document.getElementById(selectId);
   var inp = document.getElementById(customId);
-  if(sel && inp) sel.addEventListener("change", function(){
+  sel.addEventListener("change", function(){
     inp.style.display = sel.value === "__custom__" ? "block" : "none";
   });
 }
 bindCustomSelect("genre-primary","genre-primary-custom");
 bindCustomSelect("track-lang","track-lang-custom");
 
-// Mood chips
+/* ── mood chips ── */
 document.querySelectorAll(".mood-chip").forEach(function(chip){
   chip.addEventListener("click", function(){
     var m = chip.getAttribute("data-mood");
@@ -302,7 +317,7 @@ document.getElementById("mood-add-btn").addEventListener("click", function(){
   validateAll();
 });
 
-// UTM previews
+/* ── DSP ── */
 function updateUTMPreviews(){
   document.querySelectorAll(".utm-preview").forEach(function(el){
     var id = el.getAttribute("data-id");
@@ -317,7 +332,6 @@ function updateUTMPreviews(){
   });
 }
 
-// DSP
 function buildOptions(sel){
   var h='<option value="">Custom</option>';
   DSP_ORDER.forEach(function(k){ h+='<option value="'+k+'"'+(sel===k?" selected":"")+'>'+k+'</option>'; });
@@ -356,23 +370,23 @@ function renderDSPs(){
 function addDSP(preset){ dsps.push({id:dspCounter++,preset:preset||""}); renderDSPs(); }
 document.getElementById("add-dsp-btn").addEventListener("click",function(){ addDSP(""); });
 
-// Validation
+/* ── validation ── */
 var BANNED=["REPLACE","EXAMPLE","TODO"];
 function isValidUrl(url){
   if(!url) return {ok:false,reason:"URL manquante"};
-  for(var i=0;i<BANNED.length;i++){ if(url.toUpperCase().includes(BANNED[i])) return {ok:false,reason:'contient "'+BANNED[i]+'"'}; }
+  for(var b of BANNED){ if(url.toUpperCase().includes(b)) return {ok:false,reason:'contient "'+b+'"'}; }
   try{ var u=new URL(url); if(!u.hostname.includes(".")) return {ok:false,reason:"domaine invalide"}; } catch(e){ return {ok:false,reason:"URL malformée"}; }
   return {ok:true};
 }
 
 function validateAll(){
   var errors=[];
-  if(!getVal("artist"))       errors.push("• Artist requis");
-  if(!getVal("title"))        errors.push("• Track title requis");
-  if(!getVal("label"))        errors.push("• Label requis");
+  if(!getVal("artist"))     errors.push("• Artist requis");
+  if(!getVal("title"))      errors.push("• Track title requis");
+  if(!getVal("label"))      errors.push("• Label requis");
   if(!getVal("release-date")) errors.push("• Release date requise");
-  if(!getGenre())             errors.push("• Genre principal requis");
-  if(!getTrackLang())         errors.push("• Track language requis");
+  if(!getGenre("primary"))  errors.push("• Genre principal requis");
+  if(!getTrackLang())       errors.push("• Track language requis");
   if(selectedMoods.size===0) errors.push("• Au moins un mood tag requis");
 
   var c=document.getElementById("dsp-list");
@@ -394,15 +408,15 @@ function validateAll(){
   return errors.length===0;
 }
 
-["artist","title","feat","label","release-date"].forEach(function(id){
-  var el=document.getElementById(id);
-  if(el) el.addEventListener("input",function(){ updateSlug(); validateAll(); });
-});
+["artist","title","feat","label","release-date"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ updateSlug(); validateAll(); }); });
 document.getElementById("genre-primary").addEventListener("change",validateAll);
 document.getElementById("track-lang").addEventListener("change",validateAll);
 document.getElementById("artwork-ext").addEventListener("change",updateSlug);
+document.getElementById("artist").addEventListener("input",updateSlug);
+document.getElementById("title").addEventListener("input",updateSlug);
+document.getElementById("feat").addEventListener("input",updateSlug);
 
-// Generate
+/* ── GENERATE ── */
 function generate(){
   var artist      = getVal("artist")||"Artist";
   var title       = getVal("title")||"Track Title";
@@ -410,7 +424,7 @@ function generate(){
   var label       = getVal("label")||"ERA Music";
   var releaseDate = getVal("release-date");
   var rtype       = getVal("rtype");
-  var gPrimary    = getGenre();
+  var gPrimary    = getGenre("primary");
   var trackLang   = getTrackLang();
   var moods       = Array.from(selectedMoods);
   var displayTitle= feat ? title+" (feat. "+feat+")" : title;
@@ -433,6 +447,7 @@ function generate(){
     return '      {\n        name: "'+d.name+'",\n        logo: "'+d.logo+'",\n        url: "'+d.url+'",\n      }';
   });
 
+  /* build ReleaseConfig block with exact field order */
   var cfg = [];
   cfg.push('  slug: "'+slug+'",');
   cfg.push('  artist: "'+artist+'",');
@@ -455,7 +470,7 @@ function generate(){
   L.push("");
   L.push("### ⚠️ FICHIERS PROTÉGÉS — NE PAS TOUCHER");
   L.push("");
-  L.push("Ne touche PAS aux fichiers suivants :");
+  L.push("Ne modifie AUCUN des fichiers suivants :");
   L.push("- src/lib/tracking.ts");
   L.push("- src/lib/dsp-analytics.ts");
   L.push("- src/pages/ReleasePage.tsx");
@@ -464,7 +479,7 @@ function generate(){
   L.push("- src/integrations/supabase/");
   L.push("");
   L.push("Le tracking V3 (Meta CAPI direct via Edge Function Lovable Cloud, fingerprint SHA-256 stable, mood_tags, in_app_browser detection, geo enrichment hashé) est déjà en place et fonctionnel.");
-  L.push("Uniquement modifier src/config/releases.ts pour ajouter ce nouveau ReleaseConfig au tableau releases existant. Respecter strictement l'ordre des champs indiqué et ne pas ajouter de clés undefined/null.");
+  L.push("**Uniquement** modifier `src/config/releases.ts` pour ajouter ce nouveau ReleaseConfig au tableau `releases` existant. Respecter strictement l'ordre des champs indiqué et ne pas ajouter de clés undefined/null.");
   L.push("");
   L.push("### Modification unique");
   L.push("");
@@ -478,18 +493,21 @@ function generate(){
   L.push("");
   L.push("Upload l'artwork `"+artwork+"` dans `public/artworks/`.");
   L.push("");
-  L.push("### Notes");
-  L.push("- UTM params (utm_source=fanlinkhub, utm_medium=referral, utm_campaign="+slug+") — ne pas modifier");
+  L.push("### Notes sur les URLs");
+  L.push("");
+  L.push("- Tous les liens DSP contiennent des UTM (utm_source=fanlinkhub, utm_medium=referral, utm_campaign="+slug+", utm_content={dsp}). Ne pas les modifier.");
   if(dspData.some(function(d){return d.name==="Apple Music";})){
-    L.push("- Apple Music : format geo.music.apple.com (worldwide-compatible) — ne pas convertir");
+    L.push("- Apple Music : format `geo.music.apple.com` (worldwide-compatible, locale et `?i=` strippés). Ne pas convertir.");
   }
   L.push("");
   L.push("### Règles absolues");
-  L.push("- consent toujours true en dur dans tous les appels trackEvent");
-  L.push("- useEffect tracking : consent jamais dans le deps array");
-  L.push("- Aucune URL REPLACE/EXAMPLE ne peut être déployée");
-  L.push("- genrePrimary, label, releaseDate, trackLanguage, moodTags toujours présents");
-  L.push("- Pas de clés undefined/null/array vide");
+  L.push("");
+  L.push("- `consent` est toujours `true` en dur dans tous les appels `trackEvent` — jamais en variable");
+  L.push("- Le `useEffect` tracking ne doit jamais avoir `consent` dans son deps array");
+  L.push("- Aucune entrée avec URL contenant \"REPLACE\" ou \"EXAMPLE\" ne peut être déployée");
+  L.push("- Ne pas réinstaller CookieBanner");
+  L.push("- genrePrimary, label, releaseDate, trackLanguage et moodTags toujours présents (moodTags : minimum 1 valeur)");
+  L.push("- Ne pas ajouter de clés undefined, null, ou array vide");
 
   document.getElementById("output").textContent=L.join("\n");
   document.getElementById("output-label").textContent="Lovable prompt — V3 — ready to paste";
@@ -497,14 +515,16 @@ function generate(){
   document.getElementById("output-wrap").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
-// Migrate prompt
+/* ── MIGRATE PROMPT ── */
 function generateMigrate(){
   var L=[];
   L.push("## Migrate Apple Music URLs → geo format (all releases)");
   L.push("");
+  L.push("### ⚠️ FICHIERS PROTÉGÉS — NE PAS TOUCHER");
+  L.push("");
   L.push("Repo de référence : https://github.com/antoinecastaldicontact-cmyk/link-streammusic");
   L.push("");
-  L.push("Uniquement modifier src/config/releases.ts. Ne touche pas à :");
+  L.push("Uniquement modifier `src/config/releases.ts`. Ne touche pas à :");
   L.push("- src/lib/tracking.ts");
   L.push("- src/lib/dsp-analytics.ts");
   L.push("- src/pages/ReleasePage.tsx");
@@ -513,16 +533,32 @@ function generateMigrate(){
   L.push("- src/integrations/supabase/");
   L.push("");
   L.push("### Transform rule");
-  L.push("Pour chaque DSP name === \"Apple Music\" :");
-  L.push("1. music.apple.com → geo.music.apple.com");
-  L.push("2. Supprimer /{locale}/ du path");
-  L.push("3. Supprimer ?i=XXXXXXXXXX");
-  L.push("4. Conserver tous les params UTM");
   L.push("");
+  L.push("Pour chaque entrée DSP où `name === \"Apple Music\"`, applique cette transformation exacte sur le champ `url` :");
+  L.push("");
+  L.push("1. Remplacer le hostname : `music.apple.com` → `geo.music.apple.com`");
+  L.push("2. Supprimer le segment locale : retirer `/{2-letter-locale}/` (ex: `/fr/`, `/us/`, `/de/`) du path");
+  L.push("3. Supprimer le param track : retirer `?i=XXXXXXXXXX` (ou `&i=XXXXXXXXXX`)");
+  L.push("4. **Conserver tous les paramètres UTM** (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`)");
+  L.push("");
+  L.push("### Exemple");
+  L.push("");
+  L.push("```");
   L.push("BEFORE: https://music.apple.com/fr/album/superstar/1893973515?i=1893973522&utm_source=fanlinkhub&utm_medium=referral&utm_campaign=artist-superstar&utm_content=apple_music");
-  L.push("AFTER:  https://geo.music.apple.com/album/superstar/1893973515?utm_source=fanlinkhub&utm_medium=referral&utm_campaign=artist-superstar&utm_content=apple_music");
   L.push("");
-  L.push("Idempotent — sauter les URLs déjà en geo.music.apple.com. Aucun autre changement.");
+  L.push("AFTER:  https://geo.music.apple.com/album/superstar/1893973515?utm_source=fanlinkhub&utm_medium=referral&utm_campaign=artist-superstar&utm_content=apple_music");
+  L.push("```");
+  L.push("");
+  L.push("### Règles absolues");
+  L.push("");
+  L.push("- Toucher **uniquement** `src/config/releases.ts`, nulle part ailleurs");
+  L.push("- Ne pas modifier Spotify, Deezer, Beatport ni aucun autre DSP");
+  L.push("- Ne pas modifier `name`, `logo`, ni aucun autre champ des entrées DSP");
+  L.push("- Les paramètres UTM doivent rester 100% intacts sur chaque URL migrée");
+  L.push("- Si une URL est déjà au format `geo.music.apple.com`, la sauter (idempotent)");
+  L.push("- Ne pas modifier le tracking (tracking.ts, dsp-analytics.ts, ReleasePage.tsx), le routage, Supabase, ni les clés CAPIG");
+  L.push("");
+  L.push("Applique la transformation à toutes les entrées releases. Aucun autre changement.");
 
   document.getElementById("output").textContent=L.join("\n");
   document.getElementById("output-label").textContent="Prompt migration Apple Music → geo — ready to paste";
@@ -530,7 +566,7 @@ function generateMigrate(){
   document.getElementById("output-wrap").scrollIntoView({behavior:"smooth",block:"start"});
 }
 
-// Copy helpers
+/* ── COPY helpers ── */
 function flashCopied(btn){ var o=btn.textContent; btn.textContent="copied"; btn.classList.add("copied"); setTimeout(function(){ btn.textContent=o; btn.classList.remove("copied"); },2000); }
 
 document.getElementById("generate-btn").addEventListener("click",function(){ if(validateAll()) generate(); });
@@ -539,7 +575,7 @@ document.getElementById("url-copy-btn").addEventListener("click",function(){ if(
 document.getElementById("artwork-copy-btn").addEventListener("click",function(){ if(currentArtwork) navigator.clipboard.writeText(currentArtwork).then(function(){ flashCopied(document.getElementById("artwork-copy-btn")); }); });
 document.getElementById("copy-prompt-btn").addEventListener("click",function(){ var t=document.getElementById("output").textContent; if(t) navigator.clipboard.writeText(t).then(function(){ flashCopied(document.getElementById("copy-prompt-btn")); }); });
 
-// Init
+/* ── init ── */
 addDSP("Spotify");
 addDSP("Apple Music");
 updateSlug();
