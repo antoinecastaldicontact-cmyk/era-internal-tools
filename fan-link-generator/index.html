@@ -221,14 +221,25 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 var DSP_PRESETS = {
   "Spotify":      { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/spotify.svg",      ph:"https://open.spotify.com/track/" },
   "Apple Music":  { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/applemusic.svg",  ph:"https://music.apple.com/fr/album/title/albumid?i=trackid" },
-  "Deezer":       { logo:"/icons/deezer.webp",                                                  ph:"https://www.deezer.com/track/" },
-  "Amazon Music": { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/amazonmusic.svg", ph:"https://music.amazon.com/albums/" },
+  "Deezer":       { logo:"/icons/deezer.webp",                                                  ph:"https://www.deezer.com/track/",         availability:"FRANCE_ONLY",    tracked:true  },
+  "Amazon Music": { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/amazonmusic.svg", ph:"https://music.amazon.com/tracks/",      availability:"EXCEPT_EUROPE",  tracked:true  },
+  "YouTube":      { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/youtube.svg",     ph:"https://www.youtube.com/watch?v=",      availability:"REST_OF_WORLD",  tracked:false },
   "YouTube Music":{ logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/youtubemusic.svg",ph:"https://music.youtube.com/watch?v=" },
   "Tidal":        { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/tidal.svg",        ph:"https://tidal.com/browse/track/" },
   "Beatport":     { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/beatport.svg",    ph:"https://www.beatport.com/track/" },
   "SoundCloud":   { logo:"https://cdn.jsdelivr.net/npm/simple-icons@14/icons/soundcloud.svg",  ph:"https://soundcloud.com/" }
 };
-var DSP_ORDER = ["Spotify","Apple Music","Deezer","Amazon Music","YouTube Music","Tidal","Beatport","SoundCloud"];
+var DSP_ORDER = ["Spotify","Apple Music","Deezer","Amazon Music","YouTube","YouTube Music","Tidal","Beatport","SoundCloud"];
+
+/* Availability presets — labels and how they translate to ReleaseConfig fields */
+var AVAILABILITY_OPTIONS = {
+  "WORLDWIDE":     { label:"🌍 Worldwide",                  emit:function(){ return {}; } },
+  "EXCEPT_EUROPE": { label:"🌍 Worldwide except Europe",    emit:function(){ return {excludeCountries:"EUROPE_COUNTRIES"}; } },
+  "FRANCE_ONLY":   { label:"🇫🇷 France only",                emit:function(){ return {countries:'["FR"]'}; } },
+  "REST_OF_WORLD": { label:"🌎 Rest of World only",         emit:function(){ return {countries:"REST_OF_WORLD_COUNTRIES"}; } },
+  "NORTH_AMERICA": { label:"🇺🇸 North America only",         emit:function(){ return {countries:"NORTH_AMERICA_COUNTRIES"}; } }
+};
+var AVAILABILITY_ORDER = ["WORLDWIDE","EXCEPT_EUROPE","FRANCE_ONLY","REST_OF_WORLD","NORTH_AMERICA"];
 
 var dsps = [], dspCounter = 0, currentSlug = "", currentArtwork = "";
 var selectedMoods = new Set();
@@ -247,6 +258,58 @@ function normalizeAppleMusic(url){
       return "https://geo.music.apple.com" + path + (utms.length ? "?"+utms.join("&") : "");
     }
   } catch(e){}
+  return url;
+}
+
+/* Strip Amazon query params (marketplaceId, musicTerritory, ref, etc.).
+   Amazon auto-redirects to the visitor's marketplace when no params are set. */
+function normalizeAmazon(url){
+  try {
+    var u = new URL(url);
+    if(u.hostname === "music.amazon.com" || u.hostname.endsWith(".amazon.com")){
+      return u.origin + u.pathname;
+    }
+  } catch(e){}
+  return url;
+}
+
+/* Strip Deezer locale prefix (/us/, /fr/, etc.). Deezer auto-resolves
+   to the visitor's locale when no prefix is set. */
+function normalizeDeezer(url){
+  try {
+    var u = new URL(url);
+    if(u.hostname === "www.deezer.com" || u.hostname === "deezer.com"){
+      var path = u.pathname.replace(/^\/[a-z]{2}\//i,"/");
+      return u.origin + path + (u.search || "");
+    }
+  } catch(e){}
+  return url;
+}
+
+/* Strip YouTube tracking params (si, feature, t, etc.) but keep v=. */
+function normalizeYouTube(url){
+  try {
+    var u = new URL(url);
+    if(u.hostname === "youtu.be"){
+      // Convert short form to canonical watch?v=
+      var id = u.pathname.replace(/^\//,"");
+      return "https://www.youtube.com/watch?v=" + id;
+    }
+    if(u.hostname.endsWith("youtube.com")){
+      var v = u.searchParams.get("v");
+      if(v) return "https://www.youtube.com/watch?v=" + v;
+    }
+  } catch(e){}
+  return url;
+}
+
+/* Apply the right normalizer based on DSP name */
+function normalizeUrl(url, dspName){
+  if(!url) return url;
+  if(dspName === "Apple Music") return normalizeAppleMusic(url);
+  if(dspName === "Amazon Music") return normalizeAmazon(url);
+  if(dspName === "Deezer") return normalizeDeezer(url);
+  if(dspName === "YouTube") return normalizeYouTube(url);
   return url;
 }
 
@@ -326,7 +389,7 @@ function updateUTMPreviews(){
     if(!urlEl||!nmEl) return;
     var raw = urlEl.value.trim(), name = nmEl.value||"custom";
     if(raw && currentSlug){
-      var proc = (name==="Apple Music") ? normalizeAppleMusic(appendUTM(raw,currentSlug,name)) : appendUTM(raw,currentSlug,name);
+      var proc = appendUTM(normalizeUrl(raw, name), currentSlug, name);
       el.textContent = "UTM: "+proc;
     } else { el.textContent = "UTM: fill URL + release info to preview"; }
   });
@@ -338,10 +401,34 @@ function buildOptions(sel){
   return h;
 }
 
+function buildAvailabilityOptions(sel){
+  var h='';
+  AVAILABILITY_ORDER.forEach(function(k){
+    h+='<option value="'+k+'"'+(sel===k?" selected":"")+'>'+AVAILABILITY_OPTIONS[k].label+'</option>';
+  });
+  return h;
+}
+
+function defaultAvailability(presetName){
+  var p = DSP_PRESETS[presetName];
+  if(p && p.availability) return p.availability;
+  return "WORLDWIDE";
+}
+
+function defaultTracked(presetName){
+  var p = DSP_PRESETS[presetName];
+  if(p && p.tracked === false) return false;
+  return true;
+}
+
 function renderDSPs(){
   var c = document.getElementById("dsp-list"); c.innerHTML="";
   dsps.forEach(function(d,idx){
     var p = DSP_PRESETS[d.preset]||{}, num=String(idx+1).padStart(2,"0");
+    // Initialize availability and tracked from preset defaults if not yet set on this DSP instance
+    if(d.availability === undefined) d.availability = defaultAvailability(d.preset);
+    if(d.tracked === undefined)      d.tracked      = defaultTracked(d.preset);
+
     var el = document.createElement("div"); el.className="dsp-block";
     el.innerHTML =
       '<div class="dsp-header"><span class="dsp-num">'+num+'</span><button class="remove-btn" data-remove="'+d.id+'">remove</button></div>'+
@@ -350,6 +437,11 @@ function renderDSPs(){
         '<div style="grid-column:span 2"><label class="fl">Logo URL</label><input class="dsp-logo" data-id="'+d.id+'" value="'+(p.logo||"")+'" style="font-family:var(--mono);font-size:11px" /></div>'+
       '</div>'+
       '<div><label class="fl">Streaming URL</label><input class="dsp-url" data-id="'+d.id+'" placeholder="'+(p.ph||"https://...")+'" style="font-family:var(--mono);font-size:11px" /></div>'+
+      '<div class="row3" style="margin-top:10px">'+
+        '<div><label class="fl">Availability</label><select class="dsp-avail" data-id="'+d.id+'">'+buildAvailabilityOptions(d.availability)+'</select></div>'+
+        '<div><label class="fl">Tracking</label><label style="display:flex;align-items:center;gap:6px;font-size:12px;padding-top:6px"><input type="checkbox" class="dsp-tracked" data-id="'+d.id+'"'+(d.tracked?" checked":"")+' /> Send clicks to Meta</label></div>'+
+        '<div></div>'+
+      '</div>'+
       '<div class="utm-preview" data-id="'+d.id+'">UTM: fill URL + release info to preview</div>'+
       '<div class="url-error" data-id="'+d.id+'"></div>';
     c.appendChild(el);
@@ -360,14 +452,66 @@ function renderDSPs(){
   c.querySelectorAll(".dsp-name").forEach(function(s){
     s.addEventListener("change",function(){
       var id=s.getAttribute("data-id"),val=s.value,p=DSP_PRESETS[val];
-      if(p){ var li=c.querySelector('.dsp-logo[data-id="'+id+'"]'),ui=c.querySelector('.dsp-url[data-id="'+id+'"]'); if(li)li.value=p.logo; if(ui)ui.placeholder=p.ph; }
+      // Update related fields: logo placeholder, URL placeholder, AND reset availability/tracked to the new preset's defaults
+      var li=c.querySelector('.dsp-logo[data-id="'+id+'"]');
+      var ui=c.querySelector('.dsp-url[data-id="'+id+'"]');
+      var ai=c.querySelector('.dsp-avail[data-id="'+id+'"]');
+      var ti=c.querySelector('.dsp-tracked[data-id="'+id+'"]');
+      if(p){
+        if(li) li.value=p.logo;
+        if(ui) ui.placeholder=p.ph;
+      }
+      // Reset to the preset's geo/tracking defaults (smart defaults Option B)
+      var dspObj = dsps.find(function(x){return x.id===parseInt(id);});
+      if(dspObj){
+        dspObj.preset = val;
+        dspObj.availability = defaultAvailability(val);
+        dspObj.tracked = defaultTracked(val);
+      }
+      if(ai) ai.value = dspObj ? dspObj.availability : "WORLDWIDE";
+      if(ti) ti.checked = dspObj ? dspObj.tracked : true;
       updateUTMPreviews();
     });
   });
-  c.querySelectorAll(".dsp-url").forEach(function(u){ u.addEventListener("input",updateUTMPreviews); });
+  c.querySelectorAll(".dsp-url").forEach(function(u){
+    u.addEventListener("input",updateUTMPreviews);
+    // Auto-normalize on paste/blur for cleaner UX
+    u.addEventListener("blur",function(){
+      var id=u.getAttribute("data-id");
+      var nm=c.querySelector('.dsp-name[data-id="'+id+'"]');
+      var name=nm?nm.value:"";
+      var raw=u.value.trim();
+      if(raw && name){
+        var normalized=normalizeUrl(raw,name);
+        if(normalized!==raw){ u.value=normalized; updateUTMPreviews(); }
+      }
+    });
+  });
+  c.querySelectorAll(".dsp-avail").forEach(function(s){
+    s.addEventListener("change",function(){
+      var id=parseInt(s.getAttribute("data-id"));
+      var dspObj = dsps.find(function(x){return x.id===id;});
+      if(dspObj) dspObj.availability = s.value;
+    });
+  });
+  c.querySelectorAll(".dsp-tracked").forEach(function(ck){
+    ck.addEventListener("change",function(){
+      var id=parseInt(ck.getAttribute("data-id"));
+      var dspObj = dsps.find(function(x){return x.id===id;});
+      if(dspObj) dspObj.tracked = ck.checked;
+    });
+  });
 }
 
-function addDSP(preset){ dsps.push({id:dspCounter++,preset:preset||""}); renderDSPs(); }
+function addDSP(preset){
+  dsps.push({
+    id: dspCounter++,
+    preset: preset||"",
+    availability: defaultAvailability(preset||""),
+    tracked: defaultTracked(preset||"")
+  });
+  renderDSPs();
+}
 document.getElementById("add-dsp-btn").addEventListener("click",function(){ addDSP(""); });
 
 /* ── validation ── */
@@ -438,13 +582,49 @@ function generate(){
     var ur=c.querySelector('.dsp-url[data-id="'+d.id+'"]');
     var name=nm?nm.value||"Custom":"Custom";
     var raw=ur?ur.value.trim():"";
-    if(name==="Apple Music"&&raw) raw=normalizeAppleMusic(raw);
+    if(raw) raw=normalizeUrl(raw,name);
     var finalUrl=raw?appendUTM(raw,slug,name):"REPLACE_URL";
-    return {name:name,logo:lg?lg.value:"",url:finalUrl};
+    return {
+      name: name,
+      logo: lg?lg.value:"",
+      url: finalUrl,
+      availability: d.availability||"WORLDWIDE",
+      tracked: d.tracked!==false
+    };
   });
 
+  /* Translate availability symbolic value (e.g. "EUROPE_COUNTRIES") to spread syntax
+     (e.g. "[...EUROPE_COUNTRIES]"). Literal arrays (starting with "[") are passed through. */
+  function toCountriesExpr(v){ return v.charAt(0)==="[" ? v : "[..."+v+"]"; }
+
   var dspLines = dspData.map(function(d){
-    return '      {\n        name: "'+d.name+'",\n        logo: "'+d.logo+'",\n        url: "'+d.url+'",\n      }';
+    var lines = [
+      '        name: "'+d.name+'"',
+      '        logo: "'+d.logo+'"',
+      '        url: "'+d.url+'"'
+    ];
+    var avail = AVAILABILITY_OPTIONS[d.availability];
+    if(avail){
+      var emitted = avail.emit();
+      if(emitted.countries)        lines.push('        countries: '+toCountriesExpr(emitted.countries));
+      if(emitted.excludeCountries) lines.push('        excludeCountries: '+toCountriesExpr(emitted.excludeCountries));
+    }
+    if(d.tracked===false) lines.push('        tracked: false');
+    return '      {\n'+lines.join(',\n')+',\n      }';
+  });
+
+  /* Detect whether the generated config references geo constants from releases.ts */
+  var usesEuropeConst = dspData.some(function(d){
+    var a=AVAILABILITY_OPTIONS[d.availability]; if(!a) return false;
+    var e=a.emit(); return (e.countries==="EUROPE_COUNTRIES")||(e.excludeCountries==="EUROPE_COUNTRIES");
+  });
+  var usesRowConst = dspData.some(function(d){
+    var a=AVAILABILITY_OPTIONS[d.availability]; if(!a) return false;
+    var e=a.emit(); return (e.countries==="REST_OF_WORLD_COUNTRIES")||(e.excludeCountries==="REST_OF_WORLD_COUNTRIES");
+  });
+  var usesNaConst = dspData.some(function(d){
+    var a=AVAILABILITY_OPTIONS[d.availability]; if(!a) return false;
+    var e=a.emit(); return (e.countries==="NORTH_AMERICA_COUNTRIES")||(e.excludeCountries==="NORTH_AMERICA_COUNTRIES");
   });
 
   /* build ReleaseConfig block with exact field order */
@@ -464,7 +644,7 @@ function generate(){
   cfg.push('  trackLanguage: "'+trackLang+'",');
 
   var L=[];
-  L.push("## Ajouter une release — tracking V3");
+  L.push("## Ajouter une release — tracking V3 + géo-ciblage V4");
   L.push("");
   L.push("Repo de référence : https://github.com/antoinecastaldicontact-cmyk/link-streammusic");
   L.push("");
@@ -473,13 +653,25 @@ function generate(){
   L.push("Ne modifie AUCUN des fichiers suivants :");
   L.push("- src/lib/tracking.ts");
   L.push("- src/lib/dsp-analytics.ts");
+  L.push("- src/lib/visitor-country.ts");
   L.push("- src/pages/ReleasePage.tsx");
   L.push("- supabase/functions/");
   L.push("- supabase/migrations/");
   L.push("- src/integrations/supabase/");
   L.push("");
-  L.push("Le tracking V3 (Meta CAPI direct via Edge Function Lovable Cloud, fingerprint SHA-256 stable, mood_tags, in_app_browser detection, geo enrichment hashé) est déjà en place et fonctionnel.");
+  L.push("Le tracking V3 (Meta CAPI direct via Edge Function Lovable Cloud, fingerprint SHA-256 stable, mood_tags, in_app_browser detection, geo enrichment hashé) ET le système de géo-ciblage DSP V4 (Edge Function visitor-country, hook useVisitorCountry, helper filterDspsByCountry, constantes EUROPE_COUNTRIES / NORTH_AMERICA_COUNTRIES / REST_OF_WORLD_COUNTRIES dans releases.ts) sont déjà en place et fonctionnels.");
   L.push("**Uniquement** modifier `src/config/releases.ts` pour ajouter ce nouveau ReleaseConfig au tableau `releases` existant. Respecter strictement l'ordre des champs indiqué et ne pas ajouter de clés undefined/null.");
+  if(usesEuropeConst || usesRowConst || usesNaConst){
+    L.push("");
+    L.push("### ⚠️ PRÉ-REQUIS — constantes géo");
+    L.push("");
+    L.push("Ce ReleaseConfig utilise les constantes suivantes exportées depuis `src/config/releases.ts` :");
+    if(usesEuropeConst) L.push("- `EUROPE_COUNTRIES` (31 pays — France incluse — pour l'exclusion zone Europe)");
+    if(usesRowConst)    L.push("- `REST_OF_WORLD_COUNTRIES` (Latam + APAC + MENA + Sub-Saharan Africa + Eastern Europe non-EU + Central Asia)");
+    if(usesNaConst)     L.push("- `NORTH_AMERICA_COUNTRIES` (US, CA)");
+    L.push("");
+    L.push("Ces constantes doivent déjà exister dans le fichier. Si ce n'est pas le cas, NE PAS générer le ReleaseConfig — signaler le problème.");
+  }
   L.push("");
   L.push("### Modification unique");
   L.push("");
