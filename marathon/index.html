@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amsterdam · Préparation marathon</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050507;--bg2:#0c0c10;--bg3:#13131a;
+  --border:#1e1e2a;--border2:#2a2a3d;
+  --text:#e8e8f0;--text2:#8080a8;--text3:#3d3d58;
+  --ember:#ff6b3d;--ember2:#ffa285;
+  --green:#00e5a0;
+  --mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,255,255,.014) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.014) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:940px;margin:0 auto;padding:64px 28px 80px}
+
+/* ---------- header ---------- */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--text3);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.eyebrow::after{content:'';flex:1;height:.5px;background:var(--border)}
+h1{font-size:clamp(30px,5.4vw,46px);font-weight:300;letter-spacing:-.02em;line-height:1.04;margin-bottom:8px}
+h1 b{font-weight:600;color:var(--ember2)}
+.race-date{font-family:var(--mono);font-size:12px;color:var(--text2);letter-spacing:.06em;margin-bottom:26px}
+.meta-strip{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:56px}
+.chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--text2);background:var(--bg2);border:.5px solid var(--border);border-radius:6px;padding:7px 12px}
+.chip b{color:var(--text);font-weight:500}
+.chip.count{color:var(--ember2);border-color:#3d2318}
+
+/* ---------- sections ---------- */
+.section-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.16em;text-transform:uppercase;margin:52px 0 18px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:'';flex:1;height:.5px;background:var(--border)}
+
+/* ---------- build chart ---------- */
+.build{background:var(--bg2);border:.5px solid var(--border);border-radius:14px;padding:26px 26px 16px}
+.build-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:22px}
+.build-title{font-size:14px;font-weight:500}
+.build-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase}
+.bars{display:grid;grid-template-columns:repeat(15,1fr);gap:6px;align-items:end;height:150px}
+.bar-col{position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:100%;cursor:default}
+.bar{background:linear-gradient(180deg,var(--border2),var(--border));border-radius:3px 3px 0 0;min-height:2px;transition:background .15s}
+.bar-col.done .bar{background:linear-gradient(180deg,var(--ember),#a83c1d)}
+.bar-col.now .bar{background:linear-gradient(180deg,var(--ember2),var(--ember));box-shadow:0 0 18px rgba(255,107,61,.25)}
+.bar-col.empty .bar{background:var(--bg3);border:.5px dashed var(--border);border-bottom:none}
+.bar-km{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;color:var(--text2);white-space:nowrap;opacity:0}
+.bar-col.done .bar-km,.bar-col.now .bar-km{opacity:1}
+.bar-col.now .bar-km{color:var(--ember2)}
+.bar-labels{display:grid;grid-template-columns:repeat(15,1fr);gap:6px;margin-top:10px;padding-bottom:6px}
+.bar-label{font-family:var(--mono);font-size:9px;color:var(--text3);text-align:center;letter-spacing:.04em}
+.bar-label.now{color:var(--ember2)}
+.bar-label.race{color:var(--text)}
+.bar-col:hover .tip{opacity:1;pointer-events:auto}
+.tip{position:absolute;bottom:calc(100% + 24px);left:50%;transform:translateX(-50%);background:var(--bg3);border:.5px solid var(--border2);border-radius:8px;padding:9px 12px;font-family:var(--mono);font-size:10px;color:var(--text2);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s;z-index:5;line-height:1.7}
+.tip b{color:var(--text)}
+
+/* ---------- stat cards ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:var(--bg2);border:.5px solid var(--border);border-radius:12px;padding:18px 18px 15px}
+.stat-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:10px}
+.stat-value{font-size:26px;font-weight:500;letter-spacing:-.01em;line-height:1}
+.stat-value small{font-size:13px;color:var(--text2);font-weight:400;margin-left:2px}
+.stat-delta{font-family:var(--mono);font-size:10px;margin-top:9px;color:var(--text3)}
+.stat-delta.up{color:var(--green)}
+.stat-delta.down{color:var(--ember2)}
+
+/* ---------- sessions ---------- */
+.week-group{margin-bottom:34px}
+.week-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;padding-bottom:10px;border-bottom:.5px solid var(--border);margin-bottom:4px}
+.week-name{font-size:13px;font-weight:500}
+.week-name span{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:8px;letter-spacing:.06em}
+.week-total{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.05em}
+.session{display:grid;grid-template-columns:52px 1fr auto;gap:14px;align-items:center;padding:13px 4px;border-bottom:.5px solid var(--border)}
+.session:last-child{border-bottom:none}
+.s-date{font-family:var(--mono);font-size:10px;color:var(--text3);line-height:1.5;text-transform:capitalize}
+.s-main{min-width:0}
+.s-name{font-size:13.5px;font-weight:500;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:4px;border:.5px solid var(--border2);color:var(--text2)}
+.badge.long{color:var(--ember2);border-color:#3d2318}
+.badge.workout{color:var(--green);border-color:#123527}
+.badge.race{color:var(--text);border-color:var(--border2);background:var(--bg3)}
+.s-metrics{display:flex;gap:16px;font-family:var(--mono);font-size:11px;color:var(--text2);text-align:right;flex-shrink:0}
+.s-metrics b{color:var(--text);font-weight:500}
+.s-metrics .m{display:flex;flex-direction:column;gap:3px;align-items:flex-end}
+.s-metrics .m span{font-size:8.5px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
+.session.cross{opacity:.5}
+.session.cross .s-name{font-weight:400}
+
+/* ---------- states ---------- */
+.state{text-align:center;padding:70px 20px;color:var(--text2);font-size:13px}
+.state .spinner{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--ember);border-radius:50%;margin:0 auto 16px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.state code{font-family:var(--mono);font-size:11px;color:var(--text3);display:block;margin-top:10px}
+
+.footer{margin-top:70px;padding-top:22px;border-top:.5px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.06em;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+@media (max-width:640px){
+  .wrap{padding:44px 18px 60px}
+  .bars{height:110px}
+  .bar-km{display:none}
+  .bar-label:not(.now):not(.race){visibility:hidden}
+  .s-metrics{gap:10px}
+  .s-metrics .m:nth-child(3){display:none}
+  .session{grid-template-columns:44px 1fr auto;gap:10px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Préparation marathon · Suivi</div>
+  <h1>Amsterdam, <b>18 octobre 2026</b></h1>
+  <div class="race-date" id="countdown"></div>
+  <div class="meta-strip">
+    <div class="chip count" id="chip-countdown">—</div>
+    <div class="chip">Objectif <b>2h45 – 2h50</b></div>
+    <div class="chip">Allure cible <b>3:54 – 4:01 /km</b></div>
+    <div class="chip">Plan <b>15 semaines</b></div>
+  </div>
+
+  <div id="app">
+    <div class="state"><div class="spinner"></div>Chargement des données Strava…</div>
+  </div>
+
+  <div class="footer">
+    <div>Données Strava · mise à jour automatique</div>
+    <div id="updated"></div>
+  </div>
+</div>
+
+<script>
+const RACE = new Date(2026, 9, 18);          // 18 oct 2026
+const PLAN_START = new Date(2026, 6, 6);      // lundi 6 juillet 2026, S1
+const WEEKS = 15;
+
+const fmtKm = m => (m / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+const fmtTime = s => {
+  const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60);
+  return h > 0 ? `${h}h${String(m).padStart(2, '0')}` : `${m} min`;
+};
+const fmtPace = mps => {
+  if (!mps) return '—';
+  const spk = 1000 / mps;
+  const m = Math.floor(spk / 60), s = Math.round(spk % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+const parseLocal = iso => new Date(iso.replace('Z', ''));
+const weekIndex = d => Math.floor((d - PLAN_START) / (7 * 864e5)); // 0-based, négatif = avant prépa
+const isRun = a => (a.sport_type || '').includes('Run');
+
+const WORKOUT_BADGE = { 1: ['race', 'Course'], 2: ['long', 'Sortie longue'], 3: ['workout', 'Séance'] };
+
+function weekLabel(i) {
+  const start = new Date(PLAN_START.getTime() + i * 7 * 864e5);
+  const end = new Date(start.getTime() + 6 * 864e5);
+  const f = d => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return `${f(start)} – ${f(end)}`;
+}
+
+function aggregate(acts) {
+  const w = { km: 0, time: 0, dplus: 0, runs: 0, hrSum: 0, hrN: 0, spdSum: 0, spdN: 0 };
+  for (const a of acts) {
+    if (!isRun(a)) continue;
+    w.km += a.distance || 0;
+    w.time += a.moving_time || 0;
+    w.dplus += a.total_elevation_gain || 0;
+    w.runs++;
+    if (a.average_heartrate) { w.hrSum += a.average_heartrate; w.hrN++; }
+    if (a.average_speed && a.distance) { w.spdSum += a.average_speed * a.distance; w.spdN += a.distance; }
+  }
+  return w;
+}
+
+function render(data) {
+  const acts = data.activities.slice().sort((a, b) => parseLocal(b.start_date_local) - parseLocal(a.start_date_local));
+  const byWeek = new Map();
+  for (const a of acts) {
+    const i = weekIndex(parseLocal(a.start_date_local));
+    if (!byWeek.has(i)) byWeek.set(i, []);
+    byWeek.get(i).push(a);
+  }
+
+  const today = new Date();
+  const nowWeek = weekIndex(today);
+  const app = document.getElementById('app');
+  let html = '';
+
+  /* ----- la construction : 15 semaines ----- */
+  const weekAgg = [];
+  for (let i = 0; i < WEEKS; i++) weekAgg.push(aggregate(byWeek.get(i) || []));
+  const maxKm = Math.max(...weekAgg.map(w => w.km), 1);
+
+  html += `<div class="section-label">La construction</div>
+  <div class="build">
+    <div class="build-head">
+      <div class="build-title">Volume hebdomadaire — course à pied</div>
+      <div class="build-sub">S1 → S15 · km / semaine</div>
+    </div>
+    <div class="bars">`;
+  for (let i = 0; i < WEEKS; i++) {
+    const w = weekAgg[i];
+    const h = Math.max((w.km / maxKm) * 100, 2);
+    const cls = i === nowWeek ? 'now' : (i < nowWeek && w.km > 0 ? 'done' : (i < nowWeek ? 'done' : 'empty'));
+    html += `<div class="bar-col ${cls}">
+      <div class="tip"><b>Semaine ${i + 1}</b> · ${weekLabel(i)}<br>${fmtKm(w.km)} km · ${fmtTime(w.time)} · ${Math.round(w.dplus)} m D+</div>
+      <div class="bar-km">${w.km > 0 ? fmtKm(w.km) : ''}</div>
+      <div class="bar" style="height:${h}%"></div>
+    </div>`;
+  }
+  html += `</div><div class="bar-labels">`;
+  for (let i = 0; i < WEEKS; i++) {
+    const cls = i === nowWeek ? 'now' : (i === WEEKS - 1 ? 'race' : '');
+    html += `<div class="bar-label ${cls}">${i === WEEKS - 1 ? 'AMS' : 'S' + (i + 1)}</div>`;
+  }
+  html += `</div></div>`;
+
+  /* ----- cette semaine ----- */
+  const cur = weekAgg[nowWeek] || aggregate([]);
+  const prev = weekAgg[nowWeek - 1] || aggregate([]);
+  const delta = (c, p, unit, inverse) => {
+    if (!p) return '';
+    const d = c - p;
+    const cls = (inverse ? d < 0 : d > 0) ? 'up' : 'down';
+    const sign = d > 0 ? '+' : '−';
+    return `<div class="stat-delta ${cls}">${sign}${Math.abs(unit === 'km' ? d / 1000 : d).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} ${unit} vs S${nowWeek}</div>`;
+  };
+
+  if (nowWeek >= 0 && nowWeek < WEEKS) {
+    const avgHr = cur.hrN ? Math.round(cur.hrSum / cur.hrN) : null;
+    const avgPace = cur.spdN ? fmtPace(cur.spdSum / cur.spdN) : '—';
+    html += `<div class="section-label">Semaine ${nowWeek + 1} en cours · ${weekLabel(nowWeek)}</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-label">Volume</div><div class="stat-value">${fmtKm(cur.km)}<small>km</small></div>${delta(cur.km, prev.km, 'km')}</div>
+      <div class="stat"><div class="stat-label">Temps</div><div class="stat-value">${fmtTime(cur.time)}</div></div>
+      <div class="stat"><div class="stat-label">Dénivelé</div><div class="stat-value">${Math.round(cur.dplus)}<small>m D+</small></div></div>
+      <div class="stat"><div class="stat-label">Séances</div><div class="stat-value">${cur.runs}</div></div>
+      <div class="stat"><div class="stat-label">Allure moy.</div><div class="stat-value">${avgPace}<small>/km</small></div></div>
+      <div class="stat"><div class="stat-label">FC moy.</div><div class="stat-value">${avgHr ?? '—'}<small>${avgHr ? 'bpm' : ''}</small></div></div>
+    </div>`;
+  }
+
+  /* ----- totaux prépa ----- */
+  const tot = aggregate(acts.filter(a => weekIndex(parseLocal(a.start_date_local)) >= 0));
+  html += `<div class="section-label">Depuis le début du plan</div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Cumul</div><div class="stat-value">${fmtKm(tot.km)}<small>km</small></div></div>
+    <div class="stat"><div class="stat-label">Heures</div><div class="stat-value">${fmtTime(tot.time)}</div></div>
+    <div class="stat"><div class="stat-label">Dénivelé</div><div class="stat-value">${Math.round(tot.dplus)}<small>m D+</small></div></div>
+    <div class="stat"><div class="stat-label">Séances</div><div class="stat-value">${tot.runs}</div></div>
+  </div>`;
+
+  /* ----- séances ----- */
+  html += `<div class="section-label">Séances</div>`;
+  const weekKeys = [...byWeek.keys()].sort((a, b) => b - a);
+  for (const wi of weekKeys) {
+    const list = byWeek.get(wi);
+    const agg = aggregate(list);
+    const title = wi >= 0 ? `Semaine ${wi + 1}` : 'Avant prépa';
+    html += `<div class="week-group">
+      <div class="week-head">
+        <div class="week-name">${title}<span>${wi >= 0 ? weekLabel(wi) : ''}</span></div>
+        <div class="week-total">${fmtKm(agg.km)} km · ${fmtTime(agg.time)} · ${Math.round(agg.dplus)} m D+</div>
+      </div>`;
+    for (const a of list) {
+      const d = parseLocal(a.start_date_local);
+      const run = isRun(a);
+      const badge = run ? WORKOUT_BADGE[a.workout_type] : null;
+      html += `<div class="session ${run ? '' : 'cross'}">
+        <div class="s-date">${d.toLocaleDateString('fr-FR', { weekday: 'short' })}<br>${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</div>
+        <div class="s-main">
+          <div class="s-name">${(a.name || 'Activité').replace(/</g, '&lt;')}</div>
+          <div class="s-tags">
+            ${badge ? `<span class="badge ${badge[0]}">${badge[1]}</span>` : ''}
+            ${!run ? `<span class="badge">${a.sport_type}</span>` : ''}
+          </div>
+        </div>
+        <div class="s-metrics">
+          <div class="m"><b>${fmtKm(a.distance || 0)} km</b><span>dist</span></div>
+          <div class="m"><b>${run ? fmtPace(a.average_speed) : fmtTime(a.moving_time || 0)}</b><span>${run ? '/km' : 'temps'}</span></div>
+          <div class="m"><b>${a.average_heartrate ? Math.round(a.average_heartrate) : '—'}</b><span>bpm</span></div>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  app.innerHTML = html;
+  document.getElementById('updated').textContent =
+    'Mise à jour ' + new Date(data.updated_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+/* countdown */
+(function () {
+  const days = Math.max(Math.ceil((RACE - new Date()) / 864e5), 0);
+  document.getElementById('chip-countdown').innerHTML = `J − <b>${days}</b>`;
+  const wk = weekIndex(new Date());
+  document.getElementById('countdown').textContent =
+    wk >= 0 && wk < WEEKS ? `Semaine ${wk + 1} sur ${WEEKS} du plan` : '';
+})();
+
+fetch('/api/strava')
+  .then(r => r.json().then(j => ({ ok: r.ok, j })))
+  .then(({ ok, j }) => {
+    if (!ok) throw new Error(j.message || j.error || 'Erreur API');
+    render(j);
+  })
+  .catch(err => {
+    document.getElementById('app').innerHTML =
+      `<div class="state">Impossible de charger les données pour le moment.<br>Réessayez dans quelques minutes.<code>${String(err.message).replace(/</g, '&lt;')}</code></div>`;
+  });
+</script>
+</body>
+</html>
