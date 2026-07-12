@@ -109,6 +109,18 @@ h1 b{font-weight:600;color:var(--ember2)}
   .s-metrics .m:nth-child(3){display:none}
   .session{grid-template-columns:44px 1fr auto;gap:10px}
 }
+
+/* ---------- courbe FC ---------- */
+.session.clickable{cursor:pointer}
+.session.clickable:hover .s-name{color:var(--ember2)}
+.chev{font-family:var(--mono);font-size:9px;color:var(--text3);margin-left:6px;display:inline-block;transition:transform .15s}
+.session.open .chev{transform:rotate(90deg);color:var(--ember2)}
+.hr-panel{display:none;padding:6px 4px 18px;border-bottom:.5px solid var(--border)}
+.hr-panel.show{display:block}
+.hr-head{display:flex;gap:16px;font-family:var(--mono);font-size:10px;color:var(--text2);margin-bottom:10px;flex-wrap:wrap}
+.hr-head b{color:var(--ember2);font-weight:500}
+.hr-svg{width:100%;height:auto;display:block}
+.hr-msg{font-family:var(--mono);font-size:10px;color:var(--text3);padding:10px 0}
 </style>
 </head>
 <body>
@@ -153,7 +165,16 @@ const parseLocal = iso => new Date(iso.replace('Z', ''));
 const weekIndex = d => Math.floor((d - PLAN_START) / (7 * 864e5)); // 0-based, négatif = avant prépa
 const isRun = a => (a.sport_type || '').includes('Run');
 
-const WORKOUT_BADGE = { 1: ['race', 'Course'], 2: ['long', 'Sortie longue'], 3: ['workout', 'Séance'] };
+function classify(a) {
+  const n = (a.name || '').toLowerCase();
+  if (a.workout_type === 1) return ['race', 'Course'];
+  if (/seuil|tempo/.test(n)) return ['workout', 'Seuil'];
+  if (/allure|\bas\s?42/.test(n)) return ['workout', 'Allure marathon'];
+  if (/\d\s*[x\u00d7]|vma|inter|fractionn|@\s?\d/.test(n)) return ['workout', 'Intervalles'];
+  if (a.workout_type === 2 || /longue/.test(n) || (a.distance || 0) >= 15000) return ['long', 'Sortie longue'];
+  if (/footing|r[\u00e9e]cup|easy/.test(n)) return ['', 'Footing'];
+  return null;
+}
 
 function weekLabel(i) {
   const start = new Date(PLAN_START.getTime() + i * 7 * 864e5);
@@ -269,11 +290,11 @@ function render(data) {
     for (const a of list) {
       const d = parseLocal(a.start_date_local);
       const run = isRun(a);
-      const badge = run ? WORKOUT_BADGE[a.workout_type] : null;
-      html += `<div class="session ${run ? '' : 'cross'}">
+      const badge = run ? classify(a) : null;
+      html += `<div class="session ${run ? 'clickable' : 'cross'}" data-id="${a.id}">
         <div class="s-date">${d.toLocaleDateString('fr-FR', { weekday: 'short' })}<br>${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</div>
         <div class="s-main">
-          <div class="s-name">${(a.name || 'Activité').replace(/</g, '&lt;')}</div>
+          <div class="s-name">${(a.name || 'Activité').replace(/</g, '&lt;')}${run ? '<span class="chev">\u25b8 FC</span>' : ''}</div>
           <div class="s-tags">
             ${badge ? `<span class="badge ${badge[0]}">${badge[1]}</span>` : ''}
             ${!run ? `<span class="badge">${a.sport_type}</span>` : ''}
@@ -282,9 +303,10 @@ function render(data) {
         <div class="s-metrics">
           <div class="m"><b>${fmtKm(a.distance || 0)} km</b><span>dist</span></div>
           <div class="m"><b>${run ? fmtPace(a.average_speed) : fmtTime(a.moving_time || 0)}</b><span>${run ? '/km' : 'temps'}</span></div>
-          <div class="m"><b>${a.average_heartrate ? Math.round(a.average_heartrate) : '—'}</b><span>bpm</span></div>
+          <div class="m"><b>${a.average_heartrate ? Math.round(a.average_heartrate) : (a.suffer_score ?? '—')}</b><span>${a.average_heartrate ? 'bpm' : 'effort'}</span></div>
         </div>
       </div>`;
+      if (run) html += `<div class="hr-panel" id="hr-${a.id}"></div>`;
     }
     html += `</div>`;
   }
@@ -293,6 +315,97 @@ function render(data) {
   document.getElementById('updated').textContent =
     'Mise à jour ' + new Date(data.updated_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
+
+
+/* ---- Instantané Strava du 12 juillet 2026 — sert de fallback si /api/strava est indisponible ---- */
+const EMBEDDED = { updated_at: '2026-07-12T00:00:00Z', snapshot: true, activities: [
+ {id:18758288777,name:"Course à pied en soirée",sport_type:"Run",start_date_local:"2026-06-02T18:15:27",distance:7977,moving_time:2409,total_elevation_gain:25,average_speed:3.311,suffer_score:46},
+ {id:18768584079,name:"Course à pied dans l'après-midi",sport_type:"Run",start_date_local:"2026-06-03T13:18:53",distance:3251,moving_time:905,total_elevation_gain:21,average_speed:3.592,suffer_score:27},
+ {id:18786408059,name:"4 × 1k @ 3'50",sport_type:"Run",workout_type:3,start_date_local:"2026-06-04T18:19:02",distance:7440,moving_time:1825,total_elevation_gain:28,average_speed:4.077,suffer_score:71},
+ {id:18813961391,name:"Trail — reprise D+",sport_type:"Run",start_date_local:"2026-06-06T19:25:05",distance:5889,moving_time:2197,total_elevation_gain:301,average_speed:2.680,suffer_score:63},
+ {id:18827391191,name:"Randonnée",sport_type:"Hike",start_date_local:"2026-06-07T15:50:07",distance:14606,moving_time:10712,total_elevation_gain:541},
+ {id:18839027370,name:"Sortie vélo",sport_type:"Ride",start_date_local:"2026-06-08T15:13:57",distance:52243,moving_time:9977,total_elevation_gain:859,average_speed:5.236},
+ {id:18840521275,name:"Course à pied le soir",sport_type:"Run",start_date_local:"2026-06-08T19:29:54",distance:9400,moving_time:2766,total_elevation_gain:0,average_speed:3.398},
+ {id:18862686048,name:"Course à pied en soirée",sport_type:"Run",start_date_local:"2026-06-08T19:48:41",distance:5104,moving_time:1598,total_elevation_gain:184,average_speed:3.194,suffer_score:71},
+ {id:18862686332,name:"Allure marathon — jambes",sport_type:"Run",start_date_local:"2026-06-10T11:39:24",distance:12679,moving_time:3303,total_elevation_gain:51,average_speed:3.839,suffer_score:138},
+ {id:18903901945,name:"Course à pied du midi",sport_type:"Run",start_date_local:"2026-06-12T12:53:00",distance:9000,moving_time:3075,total_elevation_gain:0,average_speed:2.927},
+ {id:18903895223,name:"Course à pied dans l'après-midi",sport_type:"Run",start_date_local:"2026-06-13T15:14:20",distance:5000,moving_time:1776,total_elevation_gain:0,average_speed:2.815},
+ {id:18920439834,name:"Course à pied en soirée",sport_type:"Run",start_date_local:"2026-06-14T18:13:53",distance:8436,moving_time:2935,total_elevation_gain:0,average_speed:2.874,suffer_score:101},
+ {id:18920357350,name:"Course à pied le soir",sport_type:"Run",start_date_local:"2026-06-14T18:18:49",distance:10500,moving_time:2947,total_elevation_gain:0,average_speed:3.563},
+ {id:18949666945,name:"Course à pied de nuit",sport_type:"Run",workout_type:2,start_date_local:"2026-06-16T21:58:40",distance:15704,moving_time:5104,total_elevation_gain:80,average_speed:3.077,suffer_score:90},
+ {id:19001135818,name:"Tapis — 5k @ 3'40",sport_type:"Run",workout_type:3,start_date_local:"2026-06-20T20:42:52",distance:7800,moving_time:1935,total_elevation_gain:0,average_speed:4.031},
+ {id:19014787172,name:"Course à pied le soir",sport_type:"Run",start_date_local:"2026-06-21T20:56:41",distance:10000,moving_time:3192,total_elevation_gain:0,average_speed:3.133},
+ {id:19064224558,name:"Course à pied en soirée",sport_type:"Run",start_date_local:"2026-06-25T19:30:09",distance:10126,moving_time:3134,total_elevation_gain:237,average_speed:3.231,suffer_score:82},
+ {id:19088107390,name:"Course à pied le soir",sport_type:"Run",start_date_local:"2026-06-27T18:34:20",distance:10252,moving_time:3063,total_elevation_gain:250,average_speed:3.347},
+ {id:19121749310,name:"Course à pied du midi",sport_type:"Run",start_date_local:"2026-06-30T12:58:26",distance:8046,moving_time:2682,total_elevation_gain:195,average_speed:3.000},
+ {id:19136901069,name:"Randonnée",sport_type:"Hike",start_date_local:"2026-07-01T12:15:19",distance:2739,moving_time:2795,total_elevation_gain:227},
+ {id:19156356529,name:"Footing — retour de Grèce",sport_type:"Run",start_date_local:"2026-07-02T23:44:42",distance:5642,moving_time:1934,total_elevation_gain:13,average_speed:2.917,average_heartrate:137,max_heartrate:148,suffer_score:8},
+ {id:19166843461,name:"4 × 1k @ 3'50 — top départ prépa",sport_type:"Run",workout_type:3,start_date_local:"2026-07-03T19:25:51",distance:12660,moving_time:3693,total_elevation_gain:48,average_speed:3.428,average_heartrate:178,max_heartrate:200,suffer_score:152},
+ {id:19186016065,name:"Sortie longue",sport_type:"Run",workout_type:2,start_date_local:"2026-07-05T09:54:47",distance:15588,moving_time:4907,total_elevation_gain:44,average_speed:3.177,average_heartrate:167,max_heartrate:179,suffer_score:144},
+ {id:19215809435,name:"4 × 1k @ 3'45 r2'",sport_type:"Run",workout_type:3,start_date_local:"2026-07-07T16:11:34",distance:9246,moving_time:3070,total_elevation_gain:0,average_speed:3.012,average_heartrate:167,max_heartrate:192,suffer_score:92},
+ {id:19234189083,name:"Course à pied de nuit",sport_type:"Run",start_date_local:"2026-07-08T21:49:51",distance:9481,moving_time:3058,total_elevation_gain:46,average_speed:3.101,average_heartrate:157,max_heartrate:169,suffer_score:60},
+ {id:19247714427,name:"Course à pied de nuit",sport_type:"Run",start_date_local:"2026-07-09T21:33:29",distance:6646,moving_time:2131,total_elevation_gain:17,average_speed:3.119,average_heartrate:152,max_heartrate:163,suffer_score:27}
+]};
+
+/* ---- Flux FC embarqués (prépa, snapshot 12 juil.) — fallback si /api/streams indisponible ---- */
+const STREAMS = {
+ "19156356529": {t:[0,17,34,52,69,86,103,120,137,155,172,189,206,223,241,258,275,281,377,378,395,412,430,447,464,481,498,516,533,550,567,584,601,619,636,653,670,687,705,722,739,756,773,791,808,825,842,859,876,894,911,928,945,962,980,997,1014,1032,1048,1065,1083,1100,1117,1134,1151,1169,1186,1203,1220,1237,1254,1272,1289,1306,1323,1340,1358,1375,1392,1409,1426,1444,1461,1478,1495,1512,1529,1547,1564,1581,1598,1615,1633,1650,1667,1684,1701,1718,1736,1753,1770,1787,1804,1822,1839,1856,1873,1890,1908,1925,1942,1959,1976,1993,2011,2031,2045],hr:[141,141,141,141,141,141,141,140,142,142,142,143,143,143,143,143,143,141,86,86,106,126,135,139,146,139,134,135,128,129,135,135,134,135,131,131,131,131,131,131,128,132,133,135,135,135,135,131,129,129,131,133,133,135,134,136,137,136,137,138,139,138,137,138,138,137,139,140,142,132,133,132,132,140,138,137,138,134,136,135,140,141,140,138,139,138,140,140,141,140,140,138,139,139,143,145,144,140,139,133,135,136,139,139,139,140,139,142,142,142,141,141,142,144,144,144,126]},
+ "19166843461": {t:[0,33,66,99,132,165,198,232,265,298,310,364,397,430,463,496,529,562,595,628,662,695,728,761,794,827,860,893,926,959,992,1025,1058,1091,1125,1158,1191,1224,1257,1290,1323,1356,1389,1422,1455,1488,1521,1555,1588,1621,1654,1687,1720,1753,1786,1819,1852,1885,1918,1951,1985,2018,2051,2084,2117,2150,2183,2216,2249,2282,2304,2348,2381,2415,2448,2481,2514,2547,2580,2613,2646,2679,2712,2733,2872,2878,2911,2944,2977,3010,3043,3076,3109,3142,3175,3208,3241,3274,3308,3341,3374,3407,3440,3472,3506,3539,3572,3605,3638,3671,3704,3738,3771,3804,3837,3870,3903,3936],hr:[151,164,167,170,173,173,170,171,171,175,175,151,165,174,175,172,173,173,172,173,173,172,170,173,173,175,171,173,173,173,172,176,176,175,176,175,175,182,184,183,184,186,189,190,190,187,182,176,174,174,177,178,180,183,185,189,190,192,192,192,191,190,178,168,173,179,181,181,180,181,183,183,174,187,191,193,193,194,195,195,189,165,150,164,146,145,168,177,180,179,177,179,182,184,183,181,187,190,193,195,196,196,198,191,169,153,145,139,147,157,168,173,173,166,170,174,178,178]},
+ "19186016065": {t:[0,43,86,129,172,215,258,301,344,380,430,473,516,559,602,645,688,731,774,817,860,903,946,989,1032,1075,1118,1161,1204,1247,1290,1333,1376,1419,1462,1505,1548,1591,1634,1677,1720,1763,1806,1849,1892,1935,1978,2021,2064,2107,2165,2193,2236,2277,2322,2365,2408,2451,2494,2537,2581,2624,2651,2710,2753,2796,2839,2882,2925,2968,3011,3054,3097,3140,3183,3226,3269,3312,3355,3398,3441,3484,3527,3570,3613,3656,3699,3742,3785,3828,3871,3914,3957,4000,4043,4086,4129,4172,4215,4270,4301,4344,4387,4430,4473,4516,4559,4602,4645,4688,4731,4774,4817,4860,4903,4946,4989,5032,5075,5118],hr:[113,159,157,162,167,168,171,168,167,165,145,155,162,165,167,163,167,167,166,167,165,169,167,167,168,166,170,168,167,168,171,167,167,163,163,164,167,164,163,170,169,167,165,166,167,167,168,166,168,172,148,167,173,174,158,155,162,164,166,168,170,170,173,145,161,168,169,172,172,169,167,170,174,170,168,166,166,168,170,166,168,167,173,168,167,169,170,171,169,171,170,171,170,168,167,168,170,171,170,155,157,165,168,171,172,171,170,174,173,172,173,174,160,167,174,176,176,174,175,178]},
+ "19215809435": {t:[0,26,53,78,105,131,157,183,209,236,262,288,314,341,366,393,419,445,471,498,524,550,576,602,628,654,681,707,733,759,786,812,838,864,890,917,942,969,995,1021,1047,1074,1100,1126,1152,1178,1205,1230,1257,1283,1309,1335,1362,1388,1413,1440,1466,1493,1518,1545,1571,1597,1623,1650,1676,1703,1728,1754,1781,1806,1833,1862,1885,1911,1938,1964,1991,2016,2042,2069,2095,2121,2147,2173,2199,2215,2252,2279,2304,2330,2357,2383,2409,2435,2461,2488,2514,2540,2566,2592,2619,2644,2671,2697,2723,2749,2776,2802,2828,2854,2880,2907,2932,2959,2985,3011,3037,3064,3090,3116],hr:[126,138,146,150,153,160,159,163,162,162,162,166,166,165,164,164,166,167,167,166,166,167,164,168,167,166,166,167,167,167,167,168,166,166,168,175,178,179,181,182,184,184,184,182,173,164,155,154,166,175,179,182,184,186,186,187,188,184,173,162,160,156,168,179,183,185,187,187,189,189,190,180,174,166,162,159,168,180,184,187,188,190,192,192,192,192,179,167,165,160,157,155,154,157,152,154,151,149,151,151,150,156,156,156,154,149,150,149,153,151,156,157,156,154,149,151,153,153,149,145]},
+ "19234189083": {t:[0,26,51,77,103,129,154,180,206,232,257,283,309,335,360,386,412,438,463,489,515,541,566,592,618,643,669,695,721,746,772,798,824,849,875,901,927,952,978,1004,1030,1055,1081,1107,1133,1158,1184,1210,1235,1261,1287,1313,1338,1364,1390,1416,1441,1467,1493,1519,1544,1570,1596,1622,1647,1673,1699,1725,1750,1776,1802,1828,1853,1879,1905,1930,1956,1982,2008,2033,2059,2085,2111,2136,2162,2188,2214,2239,2265,2291,2317,2342,2368,2394,2420,2445,2471,2497,2522,2548,2574,2600,2625,2651,2677,2703,2728,2754,2780,2806,2831,2857,2883,2909,2934,2960,2986,3012,3037,3063],hr:[108,130,139,145,145,145,150,155,154,151,160,159,159,157,162,163,160,161,161,161,153,160,160,158,154,156,157,158,156,156,160,153,160,162,160,161,164,167,162,154,158,165,166,162,151,149,148,149,151,150,150,148,149,149,150,156,159,155,155,158,155,144,149,153,160,157,160,162,162,164,155,164,161,162,162,159,162,156,158,157,160,156,155,156,160,157,157,157,156,159,158,157,163,161,160,159,161,159,162,163,157,156,157,160,156,155,158,161,158,161,156,162,163,167,166,164,165,164,167,161]},
+ "19247714427": {t:[0,18,36,54,72,90,107,125,143,161,179,197,215,233,251,269,287,304,322,340,358,376,394,412,430,448,466,484,501,519,537,555,573,591,609,627,645,663,680,698,716,734,752,770,788,806,824,842,860,877,895,913,931,949,967,985,1003,1021,1039,1057,1074,1092,1110,1128,1146,1164,1182,1200,1218,1236,1254,1271,1289,1307,1325,1343,1361,1379,1397,1415,1433,1451,1468,1486,1504,1522,1540,1558,1576,1594,1612,1630,1647,1665,1683,1701,1719,1737,1755,1773,1791,1809,1827,1844,1862,1880,1898,1916,1934,1952,1970,1988,2006,2024,2041,2059,2077,2095,2113,2131],hr:[90,122,135,139,142,144,144,145,144,142,149,150,147,145,143,144,148,148,149,149,153,153,149,147,149,151,151,150,150,148,148,150,148,146,145,147,149,149,152,153,153,157,152,152,155,153,151,148,151,153,153,150,154,152,152,157,154,155,156,157,155,158,154,154,156,157,156,154,156,152,157,156,160,163,161,161,157,160,155,152,151,150,149,149,149,149,153,154,157,153,156,155,159,157,158,154,152,151,149,150,149,148,145,146,148,146,150,152,152,157,157,158,162,162,162,160,162,162,158,158]}
+};
+
+function drawHR(panel, t, hr) {
+  const W = 640, H = 150, P = { l: 34, r: 8, t: 12, b: 20 };
+  const min = Math.min(...hr), max = Math.max(...hr);
+  const avg = Math.round(hr.reduce((s, v) => s + v, 0) / hr.length);
+  const lo = Math.max(min - 6, 60), hi = max + 6;
+  const x = i => P.l + (t[i] / t[t.length - 1]) * (W - P.l - P.r);
+  const y = v => P.t + (1 - (v - lo) / (hi - lo)) * (H - P.t - P.b);
+  let path = '';
+  for (let i = 0; i < hr.length; i++) path += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(hr[i]).toFixed(1);
+  const dur = t[t.length - 1];
+  const fmtT = s => Math.floor(s / 60) + "'";
+  const gridVals = [lo + (hi - lo) * .25, lo + (hi - lo) * .5, lo + (hi - lo) * .75].map(Math.round);
+  let grid = '';
+  for (const g of gridVals) grid += `<line x1="${P.l}" x2="${W - P.r}" y1="${y(g)}" y2="${y(g)}" stroke="var(--border)" stroke-width=".5"/><text x="${P.l - 6}" y="${y(g) + 3}" text-anchor="end" font-size="8" fill="var(--text3)" font-family="JetBrains Mono">${g}</text>`;
+  panel.innerHTML = `
+    <div class="hr-head"><span>FC moy <b>${avg}</b> bpm</span><span>max <b>${max}</b></span><span>min <b>${min}</b></span><span>durée <b>${fmtT(dur)}</b></span></div>
+    <svg class="hr-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Courbe de fréquence cardiaque">
+      ${grid}
+      <line x1="${P.l}" x2="${W - P.r}" y1="${y(avg)}" y2="${y(avg)}" stroke="var(--ember)" stroke-width=".6" stroke-dasharray="3 4" opacity=".55"/>
+      <path d="${path}" fill="none" stroke="var(--ember)" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+      <text x="${W - P.r}" y="${H - 6}" text-anchor="end" font-size="8" fill="var(--text3)" font-family="JetBrains Mono">${fmtT(dur)}</text>
+      <text x="${P.l}" y="${H - 6}" font-size="8" fill="var(--text3)" font-family="JetBrains Mono">0'</text>
+    </svg>`;
+}
+
+async function loadHR(id, panel) {
+  const local = STREAMS[id];
+  if (local) return drawHR(panel, local.t, local.hr);
+  panel.innerHTML = '<div class="hr-msg">Chargement de la courbe…</div>';
+  try {
+    const r = await fetch('/api/streams?id=' + id);
+    const j = await r.json();
+    if (!r.ok || !j.heartrate || !j.time) throw new Error();
+    drawHR(panel, j.time, j.heartrate);
+  } catch (e) {
+    panel.innerHTML = '<div class="hr-msg">Courbe indisponible pour cette séance (pas de FC enregistrée ou API hors ligne).</div>';
+  }
+}
+
+document.getElementById('app').addEventListener('click', (e) => {
+  const row = e.target.closest('.session.clickable');
+  if (!row) return;
+  const id = row.dataset.id;
+  const panel = document.getElementById('hr-' + id);
+  if (!panel) return;
+  const open = panel.classList.toggle('show');
+  row.classList.toggle('open', open);
+  if (open && !panel.innerHTML) loadHR(id, panel);
+});
 
 /* countdown */
 (function () {
@@ -303,16 +416,24 @@ function render(data) {
     wk >= 0 && wk < WEEKS ? `Semaine ${wk + 1} sur ${WEEKS} du plan` : '';
 })();
 
-fetch('/api/strava')
-  .then(r => r.json().then(j => ({ ok: r.ok, j })))
-  .then(({ ok, j }) => {
-    if (!ok) throw new Error(j.message || j.error || 'Erreur API');
+function useSnapshot() {
+  render(EMBEDDED);
+  document.getElementById('updated').textContent = 'Instantané du 12 juil. 2026';
+}
+
+(async () => {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 6000);
+    const r = await fetch('/api/strava', { signal: ctrl.signal });
+    clearTimeout(t);
+    const j = await r.json();
+    if (!r.ok || !j.activities || !j.activities.length) throw new Error(j.message || 'API indisponible');
     render(j);
-  })
-  .catch(err => {
-    document.getElementById('app').innerHTML =
-      `<div class="state">Impossible de charger les données pour le moment.<br>Réessayez dans quelques minutes.<code>${String(err.message).replace(/</g, '&lt;')}</code></div>`;
-  });
+  } catch (e) {
+    useSnapshot(); // hors-ligne, file://, ou env vars manquantes → données embarquées
+  }
+})();
 </script>
 </body>
 </html>

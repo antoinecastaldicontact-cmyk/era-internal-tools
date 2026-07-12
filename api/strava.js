@@ -3,7 +3,7 @@
 // activités depuis le début de la prépa, et ne renvoie QUE des champs
 // whitelistés : aucune coordonnée GPS, aucune polyline, aucune localisation.
 
-const PLAN_FETCH_AFTER = Math.floor(Date.UTC(2026, 5, 22) / 1000); // 22 juin 2026
+const PLAN_FETCH_AFTER = Math.floor(Date.UTC(2026, 5, 1) / 1000); // 1er juin 2026
 
 const FIELD_WHITELIST = [
   'id',
