@@ -108,8 +108,9 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
       <div>
         <label class="fl">Label <span class="req">*</span></label>
         <select id="label">
-          <option value="ERA Music">ERA Music</option>
-          <option value="CR2 Records">CR2 Records</option>
+          <option value="ERA Music">ERA Music &nbsp;(ad account ERA)</option>
+          <option value="CR2 Records">CR2 Records &nbsp;(ad account CR2)</option>
+          <option value="129">129 &nbsp;(ad account 129 — non configure)</option>
         </select>
       </div>
       <div>
@@ -249,10 +250,22 @@ var dsps = [], dspCounter = 0, currentSlug = "", currentBaseSlug = "", currentAr
 /* Labels clients — prefixe d'URL applique aux NOUVELLES releases uniquement.
    ERA = racine (prefixe vide) : les liens existants ne doivent jamais bouger. */
 var LABELS = {
-  "ERA Music":   { prefix: "" },
-  "CR2 Records": { prefix: "cr2" }
+  "ERA Music":   { prefix: "",    dsps: [],            pending:false },
+  "CR2 Records": { prefix: "cr2", dsps: ["Beatport"],  pending:false },
+  "129":         { prefix: "129", dsps: [],            pending:true  }
 };
-function getLabelPrefix(){ var l = LABELS[getVal("label")]; return l ? l.prefix : ""; }
+function getLabelCfg(){ return LABELS[getVal("label")] || LABELS["ERA Music"]; }
+function getLabelPrefix(){ return getLabelCfg().prefix; }
+
+/* Ajoute les DSP imposes par le label s'ils ne sont pas deja presents.
+   N'enleve jamais un DSP ajoute a la main. */
+function ensureLabelDsps(){
+  var want = getLabelCfg().dsps || [];
+  want.forEach(function(name){
+    var already = dsps.some(function(d){ return d.preset === name; });
+    if(!already) addDSP(name);
+  });
+}
 var selectedMoods = new Set();
 
 /* ── helpers ── */
@@ -541,6 +554,7 @@ function validateAll(){
   if(!getVal("artist"))     errors.push("• Artist requis");
   if(!getVal("title"))      errors.push("• Track title requis");
   if(!getVal("label"))      errors.push("• Label requis");
+  if(getLabelCfg().pending)  errors.push("• "+getVal("label")+" : ad account / pixel pas encore configure — setup a faire avant de generer");
   if(!getVal("release-date")) errors.push("• Release date requise");
   if(!getGenre("primary"))  errors.push("• Genre principal requis");
   if(!getTrackLang())       errors.push("• Track language requis");
@@ -566,7 +580,7 @@ function validateAll(){
 }
 
 ["artist","title","feat","label","release-date"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ updateSlug(); validateAll(); }); });
-document.getElementById("label").addEventListener("change",function(){ updateSlug(); validateAll(); });
+document.getElementById("label").addEventListener("change",function(){ ensureLabelDsps(); updateSlug(); validateAll(); });
 document.getElementById("genre-primary").addEventListener("change",validateAll);
 document.getElementById("track-lang").addEventListener("change",validateAll);
 document.getElementById("artwork-ext").addEventListener("change",updateSlug);
