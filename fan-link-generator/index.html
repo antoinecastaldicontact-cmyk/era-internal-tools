@@ -107,7 +107,10 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
     <div class="row2 field">
       <div>
         <label class="fl">Label <span class="req">*</span></label>
-        <input id="label" placeholder="ERA Music" />
+        <select id="label">
+          <option value="ERA Music">ERA Music</option>
+          <option value="CR2 Records">CR2 Records</option>
+        </select>
       </div>
       <div>
         <label class="fl">Release date <span class="req">*</span></label>
@@ -241,7 +244,15 @@ var AVAILABILITY_OPTIONS = {
 };
 var AVAILABILITY_ORDER = ["WORLDWIDE","EXCEPT_EUROPE","FRANCE_ONLY","REST_OF_WORLD","NORTH_AMERICA"];
 
-var dsps = [], dspCounter = 0, currentSlug = "", currentArtwork = "";
+var dsps = [], dspCounter = 0, currentSlug = "", currentBaseSlug = "", currentArtwork = "";
+
+/* Labels clients — prefixe d'URL applique aux NOUVELLES releases uniquement.
+   ERA = racine (prefixe vide) : les liens existants ne doivent jamais bouger. */
+var LABELS = {
+  "ERA Music":   { prefix: "" },
+  "CR2 Records": { prefix: "cr2" }
+};
+function getLabelPrefix(){ var l = LABELS[getVal("label")]; return l ? l.prefix : ""; }
 var selectedMoods = new Set();
 
 /* ── helpers ── */
@@ -337,10 +348,12 @@ function getTrackLang(){
 function updateSlug(){
   var artist = getVal("artist"), title = getVal("title"), feat = getVal("feat");
   var full = feat ? artist+" "+title+" ft "+feat : artist+" "+title;
-  currentSlug = slugify(full);
+  currentBaseSlug = slugify(full);
+  var pfx = getLabelPrefix();
+  currentSlug = currentBaseSlug ? (pfx ? pfx+"/"+currentBaseSlug : currentBaseSlug) : "";
   document.getElementById("slug-display").textContent = currentSlug || "-";
   var ext = getVal("artwork-ext");
-  currentArtwork = currentSlug ? currentSlug+ext : "";
+  currentArtwork = currentBaseSlug ? currentBaseSlug+ext : "";
   document.getElementById("artwork").value = currentArtwork;
   document.getElementById("artwork-display").textContent = currentArtwork || "-";
   updateUTMPreviews();
@@ -388,8 +401,8 @@ function updateUTMPreviews(){
     var nmEl  = document.querySelector('.dsp-name[data-id="'+id+'"]');
     if(!urlEl||!nmEl) return;
     var raw = urlEl.value.trim(), name = nmEl.value||"custom";
-    if(raw && currentSlug){
-      var proc = appendUTM(normalizeUrl(raw, name), currentSlug, name);
+    if(raw && currentBaseSlug){
+      var proc = appendUTM(normalizeUrl(raw, name), currentBaseSlug, name);
       el.textContent = "UTM: "+proc;
     } else { el.textContent = "UTM: fill URL + release info to preview"; }
   });
@@ -553,6 +566,7 @@ function validateAll(){
 }
 
 ["artist","title","feat","label","release-date"].forEach(function(id){ document.getElementById(id).addEventListener("input",function(){ updateSlug(); validateAll(); }); });
+document.getElementById("label").addEventListener("change",function(){ updateSlug(); validateAll(); });
 document.getElementById("genre-primary").addEventListener("change",validateAll);
 document.getElementById("track-lang").addEventListener("change",validateAll);
 document.getElementById("artwork-ext").addEventListener("change",updateSlug);
