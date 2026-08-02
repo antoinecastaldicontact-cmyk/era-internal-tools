@@ -250,9 +250,9 @@ var dsps = [], dspCounter = 0, currentSlug = "", currentBaseSlug = "", currentAr
 /* Labels clients — prefixe d'URL applique aux NOUVELLES releases uniquement.
    ERA = racine (prefixe vide) : les liens existants ne doivent jamais bouger. */
 var LABELS = {
-  "ERA Music":   { prefix: "",    dsps: [],            pending:false },
-  "CR2 Records": { prefix: "cr2", dsps: ["Beatport"],  pending:false },
-  "129":         { prefix: "129", dsps: [],            pending:true  }
+  "ERA Music":   { prefix: "",    dsps: [],            pending:false, pixel:"1272936565032247", capiSecret:"META_CAPIG_TOKEN",     account:"ERA Music" },
+  "CR2 Records": { prefix: "cr2", dsps: ["Beatport"],  pending:false, pixel:"1932831854052584", capiSecret:"META_CAPIG_TOKEN_CR2", account:"CR2 Records" },
+  "129":         { prefix: "129", dsps: [],            pending:true,  pixel:"",                 capiSecret:"",                     account:"129 (agence)" }
 };
 function getLabelCfg(){ return LABELS[getVal("label")] || LABELS["ERA Music"]; }
 function getLabelPrefix(){ return getLabelCfg().prefix; }
@@ -621,6 +621,14 @@ function generate(){
     };
   });
 
+  /* Un DSP sans URL n'a pas a figurer dans le ReleaseConfig : on retire la ligne. */
+  var skipped = dspData.filter(function(d){ return d.url==="REPLACE_URL"; }).map(function(d){ return d.name; });
+  dspData = dspData.filter(function(d){ return d.url!=="REPLACE_URL"; });
+  if(dspData.length===0){
+    alert("Aucun DSP avec une URL : impossible de generer le prompt.");
+    return;
+  }
+
   /* Translate availability symbolic value (e.g. "EUROPE_COUNTRIES") to spread syntax
      (e.g. "[...EUROPE_COUNTRIES]"). Literal arrays (starting with "[") are passed through. */
   function toCountriesExpr(v){ return v.charAt(0)==="[" ? v : "[..."+v+"]"; }
@@ -675,6 +683,27 @@ function generate(){
   L.push("## Ajouter une release — tracking V3 + géo-ciblage V4");
   L.push("");
   L.push("Repo de référence : https://github.com/antoinecastaldicontact-cmyk/link-streammusic");
+  L.push("");
+  var lc = LABELS[label] || LABELS["ERA Music"];
+  L.push("### 🎯 LABEL ET DESTINATION DU TRACKING");
+  L.push("");
+  L.push("| | |");
+  L.push("|---|---|");
+  L.push("| Label | **"+label+"** |");
+  L.push("| Pixel Meta / dataset | **"+(lc.pixel||"NON CONFIGURÉ")+"** |");
+  L.push("| Secret du token CAPI | `"+(lc.capiSecret||"NON CONFIGURÉ")+"` |");
+  L.push("| Préfixe d'URL | "+(lc.prefix ? "`"+lc.prefix+"/`" : "aucun (racine)")+" |");
+  L.push("| Compte publicitaire | "+lc.account+" |");
+  L.push("");
+  L.push("Cette release doit envoyer ses événements **navigateur ET serveur** vers le pixel `"+(lc.pixel||"?")+"` uniquement. N'initialise jamais le pixel d'un autre label sur cette page.");
+  if(lc.prefix){
+    L.push("");
+    L.push("⚠️ Le slug **doit** commencer par `"+lc.prefix+"/`. Sans ce préfixe, la résolution du label retombe silencieusement sur ERA Music et les conversions de ce client partiraient dans le mauvais dataset.");
+  }
+  if(skipped.length){
+    L.push("");
+    L.push("_DSP écartés faute d'URL : "+skipped.join(", ")+"._");
+  }
   L.push("");
   L.push("### ⚠️ FICHIERS PROTÉGÉS — NE PAS TOUCHER");
   L.push("");
@@ -743,6 +772,27 @@ function generateMigrate(){
   L.push("### ⚠️ FICHIERS PROTÉGÉS — NE PAS TOUCHER");
   L.push("");
   L.push("Repo de référence : https://github.com/antoinecastaldicontact-cmyk/link-streammusic");
+  L.push("");
+  var lc = LABELS[label] || LABELS["ERA Music"];
+  L.push("### 🎯 LABEL ET DESTINATION DU TRACKING");
+  L.push("");
+  L.push("| | |");
+  L.push("|---|---|");
+  L.push("| Label | **"+label+"** |");
+  L.push("| Pixel Meta / dataset | **"+(lc.pixel||"NON CONFIGURÉ")+"** |");
+  L.push("| Secret du token CAPI | `"+(lc.capiSecret||"NON CONFIGURÉ")+"` |");
+  L.push("| Préfixe d'URL | "+(lc.prefix ? "`"+lc.prefix+"/`" : "aucun (racine)")+" |");
+  L.push("| Compte publicitaire | "+lc.account+" |");
+  L.push("");
+  L.push("Cette release doit envoyer ses événements **navigateur ET serveur** vers le pixel `"+(lc.pixel||"?")+"` uniquement. N'initialise jamais le pixel d'un autre label sur cette page.");
+  if(lc.prefix){
+    L.push("");
+    L.push("⚠️ Le slug **doit** commencer par `"+lc.prefix+"/`. Sans ce préfixe, la résolution du label retombe silencieusement sur ERA Music et les conversions de ce client partiraient dans le mauvais dataset.");
+  }
+  if(skipped.length){
+    L.push("");
+    L.push("_DSP écartés faute d'URL : "+skipped.join(", ")+"._");
+  }
   L.push("");
   L.push("Uniquement modifier `src/config/releases.ts`. Ne touche pas à :");
   L.push("- src/lib/tracking.ts");
