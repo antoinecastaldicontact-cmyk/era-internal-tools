@@ -33,7 +33,8 @@ async function graph(version, token, path) {
 }
 
 export default async function handler(req, res) {
-  const { META_ACCESS_TOKEN, REPORT_ADMIN_SECRET } = process.env;
+  const { META_ACCESS_TOKEN, META_ACCESS_TOKEN_2, REPORT_ADMIN_SECRET } = process.env;
+  const TOKENS = [META_ACCESS_TOKEN, META_ACCESS_TOKEN_2].filter(Boolean);
   const version = process.env.META_API_VERSION || 'v21.0';
 
   if (!META_ACCESS_TOKEN || !REPORT_ADMIN_SECRET) {
@@ -62,15 +63,21 @@ export default async function handler(req, res) {
     const insightFields = 'reach,impressions,spend,cpm,ctr,frequency,actions';
 
     const campaigns = await Promise.all(ids.map(async (id) => {
-      const meta = await graph(version, META_ACCESS_TOKEN, `${id}?fields=name,status,start_time`);
+      // Résout le token qui a accès à cette campagne (ERA ou agence)
+      let TOK = null, meta = null, lastErr = null;
+      for (const t of TOKENS) {
+        try { meta = await graph(version, t, `${id}?fields=name,status,start_time`); TOK = t; break; }
+        catch (e) { lastErr = e; }
+      }
+      if (!TOK) throw lastErr;
       const since = meta.start_time ? meta.start_time.split('T')[0] : '2020-01-01';
       const tr = `since=${since}&until=${end}`;
       const [totals, daily, countries, ads, adLinks] = await Promise.all([
-        graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=${insightFields}&${tr}`),
-        graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=${insightFields}&time_increment=1&${tr}&limit=400`),
-        graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=${insightFields}&breakdowns=country&${tr}&limit=100`),
-        graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=ad_id,ad_name,spend,impressions,reach,actions&level=ad&${tr}&limit=60`),
-        graph(version, META_ACCESS_TOKEN, `${id}/ads?fields=id,preview_shareable_link&limit=200`).catch(() => ({ data: [] })),
+        graph(version, TOK, `${id}/insights?fields=${insightFields}&${tr}`),
+        graph(version, TOK, `${id}/insights?fields=${insightFields}&time_increment=1&${tr}&limit=400`),
+        graph(version, TOK, `${id}/insights?fields=${insightFields}&breakdowns=country&${tr}&limit=100`),
+        graph(version, TOK, `${id}/insights?fields=ad_id,ad_name,spend,impressions,reach,actions&level=ad&${tr}&limit=60`),
+        graph(version, TOK, `${id}/ads?fields=id,preview_shareable_link&limit=200`).catch(() => ({ data: [] })),
       ]);
       const linkById = {};
       for (const a of (adLinks.data || [])) if (a.preview_shareable_link) linkById[a.id] = a.preview_shareable_link;

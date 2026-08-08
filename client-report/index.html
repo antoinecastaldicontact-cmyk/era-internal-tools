@@ -56,6 +56,8 @@ svg text{font-family:'DM Mono',monospace}
 .ads-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
 .ad-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:border-color .15s}
 .ad-card:hover{border-color:var(--border2)}
+.ad-card.win{border-color:rgba(255,107,53,.45);background:linear-gradient(165deg,rgba(255,107,53,.09),var(--bg2) 55%)}
+.ad-card.win .ad-rank{letter-spacing:.06em}
 .ad-rank{font-family:'Syne',sans-serif;font-weight:800;font-size:11px;color:var(--accent);margin-bottom:6px}
 .ad-name{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;line-height:1.35;margin-bottom:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:32px}
 .ad-m{display:flex;justify-content:space-between;font-size:11px;padding:3px 0}
@@ -294,21 +296,43 @@ function renderCountries(){
   }).join('');
 }
 
+function adCard(a, i, winner){
+  const cpr=a.vc>0?a.spend/a.vc:0;
+  return `<div class="ad-card${winner?' win':''}">
+    <div class="ad-rank">${winner?'★ WINNER #'+(i+1):'#'+(i+1)}</div>
+    <div class="ad-name" title="${esc(a.name)}">${esc(a.name)}</div>
+    <div class="ad-m"><span class="ad-ml">Dépense</span><span class="ad-mv" style="color:var(--accent)">${fmt.m(a.spend)}</span></div>
+    <div class="ad-m"><span class="ad-ml">Résultats</span><span class="ad-mv">${fmt.n(a.vc)}</span></div>
+    <div class="ad-m"><span class="ad-ml">CPR</span><span class="ad-mv" style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</span></div>
+    <div class="ad-m"><span class="ad-ml">Impressions</span><span class="ad-mv">${fmt.n(a.impressions)}</span></div>
+    ${a.preview?`<a class="ad-view" href="${esc(a.preview)}" target="_blank" rel="noopener">Voir la publicité ↗</a>`:''}
+  </div>`;
+}
 function renderAds(){
-  const ads=mergedAds().slice(0,8);
-  if(!ads.length) return '<div style="color:var(--text3);font-size:12px">Aucune donnée</div>';
-  return ads.map((a,i)=>{
-    const cpr=a.vc>0?a.spend/a.vc:0;
-    return `<div class="ad-card">
-      <div class="ad-rank">#${i+1}</div>
-      <div class="ad-name" title="${esc(a.name)}">${esc(a.name)}</div>
-      <div class="ad-m"><span class="ad-ml">Dépense</span><span class="ad-mv" style="color:var(--accent)">${fmt.m(a.spend)}</span></div>
-      <div class="ad-m"><span class="ad-ml">Résultats</span><span class="ad-mv">${fmt.n(a.vc)}</span></div>
-      <div class="ad-m"><span class="ad-ml">CPR</span><span class="ad-mv" style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</span></div>
-      <div class="ad-m"><span class="ad-ml">Impressions</span><span class="ad-mv">${fmt.n(a.impressions)}</span></div>
-      ${a.preview?`<a class="ad-view" href="${esc(a.preview)}" target="_blank" rel="noopener">Voir la publicité ↗</a>`:''}
-    </div>`;
-  }).join('');
+  const all=mergedAds();
+  if(!all.length) return '<div style="color:var(--text3);font-size:12px">Aucune donnée</div>';
+  // Winners = pubs jugeables (dépense significative) au meilleur coût par résultat
+  const judgeable=all.filter(a=>a.vc>0&&a.spend>=10);
+  const winners=[...judgeable].sort((x,y)=>(x.spend/x.vc)-(y.spend/y.vc)).slice(0,4);
+  const wset=new Set(winners);
+  const rest=all.filter(a=>!wset.has(a)).sort((x,y)=>{
+    const cx=x.vc>0?x.spend/x.vc:Infinity, cy=y.vc>0?y.spend/y.vc:Infinity;
+    return cx-cy;
+  });
+  const top = winners.length ? winners : all.slice(0,4);
+  const topHtml = top.map((a,i)=>adCard(a,i,winners.length>0)).join('');
+  const restHtml = rest.length ? `
+    <div style="grid-column:1/-1">
+      <button class="toggle" id="adsMoreBtn" onclick="toggleAdsRest()" style="width:100%;padding:10px">▾ Afficher les ${rest.length} autres publicités (triées par CPR)</button>
+      <div id="adsRest" style="display:none;margin-top:12px" class="ads-grid">${rest.map((a,i)=>adCard(a,top.length+i,false)).join('')}</div>
+    </div>` : '';
+  return topHtml + restHtml;
+}
+function toggleAdsRest(){
+  const el=document.getElementById('adsRest'), btn=document.getElementById('adsMoreBtn');
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'grid';
+  btn.textContent=(open?'▾ Afficher':'▴ Masquer')+btn.textContent.slice(btn.textContent.indexOf(' les'));
 }
 
 function renderDailyTable(daily){

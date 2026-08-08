@@ -793,8 +793,14 @@ async function clientLink() {
   const btn = document.getElementById('clBtn');
   btn.textContent = '… génération';
   try {
-    const title = prompt('Titre affiché au client :', c.name) ?? c.name;
-    const r = await fetch(`/api/meta-sign?key=${encodeURIComponent(key)}&c=${c.id}&t=${encodeURIComponent(title)}`);
+    // Détecte la campagne jumelle du même track (EXPLORE ↔ SCALE) pour un rapport combiné
+    const baseName = n => n.replace(/\s*[-–—(]*\s*(EXPLORE|SCALE)[\s\S]*$/i,'').trim();
+    const base = baseName(c.name);
+    const sib = base ? S.campaigns.find(o => o.id !== c.id && /(EXPLORE|SCALE)/i.test(o.name) && baseName(o.name) === base) : null;
+    let ids = [c.id];
+    if (sib && confirm(`Campagne jumelle détectée : « ${sib.name} ».\nL'inclure dans le même rapport (EXPLORE + SCALE combinés) ?`)) ids.push(sib.id);
+    const title = prompt('Titre affiché au client :', ids.length > 1 ? base : c.name) ?? c.name;
+    const r = await fetch(`/api/meta-sign?key=${encodeURIComponent(key)}&c=${ids.join(',')}&t=${encodeURIComponent(title)}`);
     const d = await r.json();
     if (!r.ok) {
       if (r.status === 403) localStorage.removeItem('era_admin_key');
