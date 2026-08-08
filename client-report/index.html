@@ -163,7 +163,8 @@ function mergedAds(){
 
 function chartSVG(rows){
   if(!rows.length) return '<div style="color:var(--text3);font-size:12px">Aucune donnée</div>';
-  const W=Math.max(640,rows.length*22), H=210, padL=8, padR=8, padT=14, padB=26;
+  const showVals=rows.length<=35; // valeurs journalières lisibles jusqu'à ~35 barres
+  const W=Math.max(640,rows.length*(showVals?34:22)), H=showVals?236:210, padL=8, padR=8, padT=showVals?30:14, padB=26;
   const iw=W-padL-padR, ih=H-padT-padB;
   const maxSpend=Math.max(...rows.map(r=>r.spend),0.01);
   const cprs=rows.map(r=>r.vc>0?r.spend/r.vc:null);
@@ -174,10 +175,15 @@ function chartSVG(rows){
     const x=padL+(i+0.5)*(iw/rows.length);
     const bh=(r.spend/maxSpend)*ih;
     bars+=`<rect x="${(x-bw/2).toFixed(1)}" y="${(padT+ih-bh).toFixed(1)}" width="${bw}" height="${Math.max(bh,1).toFixed(1)}" rx="2.5" fill="rgba(255,107,53,.75)"><title>${r.date} · ${r.spend.toFixed(2)} € · ${r.vc} VC</title></rect>`;
+    if(showVals&&r.spend>0){
+      const sl=r.spend>=100?Math.round(r.spend)+'€':r.spend.toFixed(r.spend>=10?0:1)+'€';
+      bars+=`<text x="${x.toFixed(1)}" y="${(padT+ih-bh-5).toFixed(1)}" font-size="8.5" fill="#ff8c5a" text-anchor="middle" font-weight="500">${sl}</text>`;
+    }
     if(cprs[i]!=null){
       const y=padT+ih-(cprs[i]/maxCpr)*ih;
       line+=(line?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';
       dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.4" fill="#60a5fa"><title>${r.date} · CPR ${cprs[i].toFixed(3)} €</title></circle>`;
+      if(showVals) dots+=`<text x="${x.toFixed(1)}" y="${(y+13).toFixed(1)}" font-size="8" fill="#60a5fa" text-anchor="middle">${cprs[i].toFixed(2)}</text>`;
     }
     const step=Math.ceil(rows.length/10);
     if(i%step===0) labels+=`<text x="${x.toFixed(1)}" y="${H-8}" font-size="9" fill="#5a5a62" text-anchor="middle">${fmt.d(r.date)}</text>`;
@@ -185,7 +191,7 @@ function chartSVG(rows){
   return `<div class="chart-wrap"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
     ${bars}<path d="${line}" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linejoin="round"/>${dots}${labels}
   </svg></div>
-  <div class="legend"><span><i style="background:var(--accent)"></i>Dépense / jour</span><span><i style="background:var(--blue)"></i>Coût par résultat (CPR)</span></div>`;
+  <div class="legend"><span><i style="background:var(--accent)"></i>Dépense / jour (valeur en €)</span><span><i style="background:var(--blue)"></i>Coût par résultat — CPR (€)</span></div>`;
 }
 
 function render(){
