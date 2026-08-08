@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Rapport de campagne · ERA</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0b;--bg2:#111113;--bg3:#1a1a1e;
+  --border:#252528;--border2:#2e2e33;
+  --text:#f0f0f2;--text2:#8b8b96;--text3:#5a5a62;
+  --accent:#ff6b35;--accent2:#ff8c5a;
+  --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--blue:#60a5fa;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;line-height:1.5}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 50% -10%,rgba(255,107,53,.08),transparent);pointer-events:none}
+.wrap{max-width:1060px;margin:0 auto;padding:40px 24px 80px;position:relative}
+.brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;letter-spacing:.03em}
+.logo span{color:var(--accent)}
+.live{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.12em;color:var(--text2);text-transform:uppercase}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.6s infinite}
+.live.off .dot{background:var(--text3);animation:none}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+.hero-kicker{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(26px,4.5vw,42px);line-height:1.08;letter-spacing:-.01em;margin-bottom:12px}
+.hero-sub{color:var(--text2);font-size:12px;display:flex;gap:14px;flex-wrap:wrap;margin-bottom:40px}
+.section{margin-top:44px}
+.sec-ttl{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.sec-ttl::after{content:'';flex:1;height:1px;background:var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi.hl{border-color:rgba(255,107,53,.4);background:linear-gradient(160deg,rgba(255,107,53,.10),var(--bg2) 60%)}
+.kpi-l{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:9px}
+.kpi-v{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;letter-spacing:-.01em}
+.kpi-s{font-size:10px;color:var(--text3);margin-top:5px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+.chart-wrap{width:100%;overflow-x:auto}
+svg text{font-family:'DM Mono',monospace}
+.legend{display:flex;gap:18px;font-size:10px;color:var(--text3);margin-top:10px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{text-align:left;padding:8px 10px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.data-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text2);font-size:12px}
+.data-table td.num{color:var(--text)}
+.data-table td.bold{color:var(--text);font-weight:500}
+.data-table tr:last-child td{border-bottom:none}
+.cbar-row{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:7px 0}
+.cbar-track{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.cbar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px}
+.cbar-meta{font-size:11px;color:var(--text2);white-space:nowrap}
+.cbar-cc{font-family:'Syne',sans-serif;font-weight:700;font-size:12px}
+.ads-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.ad-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:border-color .15s}
+.ad-card:hover{border-color:var(--border2)}
+.ad-rank{font-family:'Syne',sans-serif;font-weight:800;font-size:11px;color:var(--accent);margin-bottom:6px}
+.ad-name{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;line-height:1.35;margin-bottom:11px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:32px}
+.ad-m{display:flex;justify-content:space-between;font-size:11px;padding:3px 0}
+.ad-ml{color:var(--text3)}
+.ad-mv{color:var(--text);font-weight:500}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700}
+.toggle{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:5px 13px;border-radius:20px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:10px;letter-spacing:.05em}
+.toggle.active{background:rgba(255,107,53,.15);border-color:var(--accent);color:var(--accent)}
+.split-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.split-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.split-name{font-family:'Syne',sans-serif;font-weight:700;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.split-rows{display:flex;flex-direction:column;gap:5px}
+.split-r{display:flex;justify-content:space-between;font-size:11px}
+.split-r span:first-child{color:var(--text3)}
+.footer{margin-top:70px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:10px;color:var(--text3);letter-spacing:.05em}
+.state{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+.spinner{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{background:#1a0a0a;border:1px solid #3d1212;border-radius:8px;padding:14px 18px;color:var(--red);font-size:12px;max-width:440px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@media(max-width:640px){.wrap{padding:28px 16px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="state"><div class="spinner"></div><div style="color:var(--text3);font-size:12px;letter-spacing:.08em">CHARGEMENT DES DONNÉES LIVE…</div></div>
+</div>
+
+<script>
+const qs = new URLSearchParams(location.search);
+const P = { c: qs.get('c')||'', t: qs.get('t')||'', sig: qs.get('sig')||'' };
+
+const fmt = {
+  m:  v => v!=null && v!=='' ? parseFloat(v).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €' : '—',
+  n:  v => v ? parseInt(v).toLocaleString('fr-FR') : '0',
+  cpr:v => parseFloat(v).toFixed(3)+' €',
+  fr: v => parseFloat(v||0).toFixed(2),
+  p:  v => v ? parseFloat(v).toFixed(2)+' %' : '—',
+  d:  s => { if(!s) return '—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}); },
+};
+function esc(t){return String(t??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function getVC(actions){
+  if(!actions) return 0;
+  for (const t of ['offsite_conversion.fb_pixel_view_content','view_content']){
+    const a = actions.find(x=>x.action_type===t||x.action_type.includes(t));
+    if(a) return parseInt(a.value)||0;
+  }
+  return 0;
+}
+function cprColor(cpr){ return cpr<=0?'var(--text3)':cpr<0.20?'var(--green)':cpr<=0.30?'var(--yellow)':'var(--red)'; }
+
+let DATA=null, dailyMode='30';
+
+async function boot(){
+  const app=document.getElementById('app');
+  if(!P.c||!P.sig){
+    app.innerHTML=`<div class="state"><div class="err">Lien de rapport incomplet. Demande un nouveau lien à ton contact ERA.</div></div>`;
+    return;
+  }
+  try{
+    const r=await fetch(`/api/meta-report?c=${encodeURIComponent(P.c)}&t=${encodeURIComponent(P.t)}&sig=${encodeURIComponent(P.sig)}`);
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.message||'Erreur serveur');
+    DATA=d;
+    render();
+  }catch(e){
+    app.innerHTML=`<div class="state"><div class="err">⚠ ${esc(e.message)}</div><div style="color:var(--text3);font-size:11px">Si le problème persiste, contacte ton référent ERA.</div></div>`;
+  }
+}
+
+function mergedDaily(){
+  const byDate={};
+  for(const c of DATA.campaigns) for(const d of c.daily){
+    const k=d.date_start;
+    byDate[k]=byDate[k]||{date:k,spend:0,vc:0,impressions:0};
+    byDate[k].spend+=parseFloat(d.spend||0);
+    byDate[k].vc+=getVC(d.actions);
+    byDate[k].impressions+=parseInt(d.impressions||0);
+  }
+  return Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date));
+}
+function mergedCountries(){
+  const byC={};
+  for(const c of DATA.campaigns) for(const r of c.countries){
+    const k=r.country||'—';
+    byC[k]=byC[k]||{country:k,spend:0,vc:0,impressions:0};
+    byC[k].spend+=parseFloat(r.spend||0);
+    byC[k].vc+=getVC(r.actions);
+    byC[k].impressions+=parseInt(r.impressions||0);
+  }
+  return Object.values(byC).sort((a,b)=>b.spend-a.spend);
+}
+function mergedAds(){
+  const all=[];
+  for(const c of DATA.campaigns) for(const a of c.ads){
+    all.push({name:a.name,spend:parseFloat(a.spend||0),impressions:parseInt(a.impressions||0),vc:getVC(a.actions)});
+  }
+  return all.sort((a,b)=>b.spend-a.spend);
+}
+
+function chartSVG(rows){
+  if(!rows.length) return '<div style="color:var(--text3);font-size:12px">Aucune donnée</div>';
+  const W=Math.max(640,rows.length*22), H=210, padL=8, padR=8, padT=14, padB=26;
+  const iw=W-padL-padR, ih=H-padT-padB;
+  const maxSpend=Math.max(...rows.map(r=>r.spend),0.01);
+  const cprs=rows.map(r=>r.vc>0?r.spend/r.vc:null);
+  const maxCpr=Math.max(...cprs.filter(v=>v!=null),0.01);
+  const bw=Math.min(14,(iw/rows.length)*0.6);
+  let bars='',line='',dots='',labels='';
+  rows.forEach((r,i)=>{
+    const x=padL+(i+0.5)*(iw/rows.length);
+    const bh=(r.spend/maxSpend)*ih;
+    bars+=`<rect x="${(x-bw/2).toFixed(1)}" y="${(padT+ih-bh).toFixed(1)}" width="${bw}" height="${Math.max(bh,1).toFixed(1)}" rx="2.5" fill="rgba(255,107,53,.75)"><title>${r.date} · ${r.spend.toFixed(2)} € · ${r.vc} VC</title></rect>`;
+    if(cprs[i]!=null){
+      const y=padT+ih-(cprs[i]/maxCpr)*ih;
+      line+=(line?'L':'M')+x.toFixed(1)+' '+y.toFixed(1)+' ';
+      dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.4" fill="#60a5fa"><title>${r.date} · CPR ${cprs[i].toFixed(3)} €</title></circle>`;
+    }
+    const step=Math.ceil(rows.length/10);
+    if(i%step===0) labels+=`<text x="${x.toFixed(1)}" y="${H-8}" font-size="9" fill="#5a5a62" text-anchor="middle">${fmt.d(r.date)}</text>`;
+  });
+  return `<div class="chart-wrap"><svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+    ${bars}<path d="${line}" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-linejoin="round"/>${dots}${labels}
+  </svg></div>
+  <div class="legend"><span><i style="background:var(--accent)"></i>Dépense / jour</span><span><i style="background:var(--blue)"></i>Coût par résultat (CPR)</span></div>`;
+}
+
+function render(){
+  const cs=DATA.campaigns;
+  const anyLive=cs.some(c=>c.status==='ACTIVE');
+  const title=P.t||cs.map(c=>c.name).join(' + ');
+  const spend=cs.reduce((s,c)=>s+parseFloat(c.totals?.spend||0),0);
+  const impr=cs.reduce((s,c)=>s+parseInt(c.totals?.impressions||0),0);
+  const reach=cs.reduce((s,c)=>s+parseInt(c.totals?.reach||0),0);
+  const vc=cs.reduce((s,c)=>s+getVC(c.totals?.actions),0);
+  const cpr=vc>0?spend/vc:0;
+  const cpm=impr>0?spend/impr*1000:0;
+  const starts=cs.map(c=>c.start_time).filter(Boolean).sort();
+  const since=starts[0]?new Date(starts[0]).toLocaleDateString('fr-FR'):'—';
+  const daily=mergedDaily();
+  const rows30=daily.slice(-30);
+
+  document.getElementById('app').innerHTML=`
+  <div class="brand">
+    <div class="logo">ERA <span>ADS</span></div>
+    <div class="live ${anyLive?'':'off'}"><span class="dot"></span>${anyLive?'Campagne en direct':'Campagne en pause'}</div>
+  </div>
+
+  <div class="hero-kicker">Rapport de campagne</div>
+  <h1>${esc(title)}</h1>
+  <div class="hero-sub">
+    <span>Depuis le ${since}</span>
+    <span>·</span>
+    <span>${cs.length>1?cs.length+' campagnes':'1 campagne'}</span>
+    <span>·</span>
+    <span>Données Meta Ads actualisées en continu</span>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi hl"><div class="kpi-l">Dépense totale</div><div class="kpi-v" style="color:var(--accent)">${fmt.m(spend)}</div></div>
+    <div class="kpi"><div class="kpi-l">Résultats (View Content)</div><div class="kpi-v">${fmt.n(vc)}</div><div class="kpi-s">clics qualifiés vers l'écoute</div></div>
+    <div class="kpi"><div class="kpi-l">Coût par résultat</div><div class="kpi-v" style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</div></div>
+    <div class="kpi"><div class="kpi-l">Impressions</div><div class="kpi-v">${fmt.n(impr)}</div></div>
+    <div class="kpi"><div class="kpi-l">Portée</div><div class="kpi-v">${fmt.n(reach)}</div>${cs.length>1?'<div class="kpi-s">cumul des campagnes</div>':''}</div>
+    <div class="kpi"><div class="kpi-l">CPM</div><div class="kpi-v" style="color:var(--blue)">${cpm>0?fmt.m(cpm):'—'}</div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-ttl">Performance quotidienne
+      <span style="display:flex;gap:6px;margin-left:auto">
+        <button class="toggle ${dailyMode==='30'?'active':''}" onclick="setDaily('30')">30 J</button>
+        <button class="toggle ${dailyMode==='all'?'active':''}" onclick="setDaily('all')">Tout</button>
+      </span>
+    </div>
+    <div class="card" id="chartCard">${chartSVG(dailyMode==='30'?rows30:daily)}</div>
+  </div>
+
+  ${cs.length>1?`
+  <div class="section">
+    <div class="sec-ttl">Détail par campagne</div>
+    <div class="split-grid">
+      ${cs.map(c=>{
+        const s=parseFloat(c.totals?.spend||0), v=getVC(c.totals?.actions), r=v>0?s/v:0;
+        const col=c.status==='ACTIVE'?'var(--green)':'var(--yellow)';
+        return `<div class="split-card">
+          <div class="split-name">${esc(c.name)}<span class="badge" style="background:${c.status==='ACTIVE'?'rgba(34,197,94,.12)':'rgba(245,158,11,.12)'};color:${col}">${c.status==='ACTIVE'?'ACTIVE':'PAUSE'}</span></div>
+          <div class="split-rows">
+            <div class="split-r"><span>Dépense</span><b>${fmt.m(s)}</b></div>
+            <div class="split-r"><span>Résultats</span><b>${fmt.n(v)}</b></div>
+            <div class="split-r"><span>CPR</span><b style="color:${cprColor(r)}">${r>0?fmt.cpr(r):'—'}</b></div>
+            <div class="split-r"><span>Portée</span><b>${fmt.n(c.totals?.reach)}</b></div>
+            <div class="split-r"><span>Fréquence</span><b>${fmt.fr(c.totals?.frequency)}</b></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`:''}
+
+  <div class="section">
+    <div class="sec-ttl">Meilleurs pays</div>
+    <div class="card">${renderCountries()}</div>
+  </div>
+
+  <div class="section">
+    <div class="sec-ttl">Publicités les plus performantes</div>
+    <div class="ads-grid">${renderAds()}</div>
+  </div>
+
+  <div class="section">
+    <div class="sec-ttl">Journal quotidien</div>
+    <div class="card" style="padding:6px 14px;max-height:420px;overflow-y:auto">${renderDailyTable(daily)}</div>
+  </div>
+
+  <div class="footer">
+    <span>ERA MUSIC · rapport généré en direct depuis Meta Ads</span>
+    <span>Dernière actualisation : ${new Date(DATA.generated_at).toLocaleString('fr-FR')}</span>
+  </div>`;
+}
+
+function setDaily(m){ dailyMode=m; render(); }
+
+function renderCountries(){
+  const rows=mergedCountries().slice(0,8);
+  if(!rows.length) return '<div style="color:var(--text3);font-size:12px">Aucune donnée</div>';
+  const max=rows[0].spend||1;
+  return rows.map(r=>{
+    const cpr=r.vc>0?r.spend/r.vc:0;
+    return `<div class="cbar-row">
+      <div class="cbar-cc">${esc(r.country).toUpperCase()}</div>
+      <div class="cbar-track"><div class="cbar-fill" style="width:${Math.max(3,(r.spend/max*100)).toFixed(1)}%"></div></div>
+      <div class="cbar-meta">${fmt.m(r.spend)} · ${fmt.n(r.vc)} rés. · <span style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderAds(){
+  const ads=mergedAds().slice(0,8);
+  if(!ads.length) return '<div style="color:var(--text3);font-size:12px">Aucune donnée</div>';
+  return ads.map((a,i)=>{
+    const cpr=a.vc>0?a.spend/a.vc:0;
+    return `<div class="ad-card">
+      <div class="ad-rank">#${i+1}</div>
+      <div class="ad-name" title="${esc(a.name)}">${esc(a.name)}</div>
+      <div class="ad-m"><span class="ad-ml">Dépense</span><span class="ad-mv" style="color:var(--accent)">${fmt.m(a.spend)}</span></div>
+      <div class="ad-m"><span class="ad-ml">Résultats</span><span class="ad-mv">${fmt.n(a.vc)}</span></div>
+      <div class="ad-m"><span class="ad-ml">CPR</span><span class="ad-mv" style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</span></div>
+      <div class="ad-m"><span class="ad-ml">Impressions</span><span class="ad-mv">${fmt.n(a.impressions)}</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDailyTable(daily){
+  if(!daily.length) return '<div style="color:var(--text3);font-size:12px;padding:10px">Aucune donnée</div>';
+  const rows=[...daily].reverse().map(d=>{
+    const cpr=d.vc>0?d.spend/d.vc:0;
+    return `<tr><td class="bold">${d.date}</td><td class="num">${fmt.m(d.spend)}</td><td class="num">${fmt.n(d.impressions)}</td><td class="num">${fmt.n(d.vc)}</td><td class="num" style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</td></tr>`;
+  }).join('');
+  return `<table class="data-table"><thead><tr><th>Date</th><th>Dépense</th><th>Impressions</th><th>Résultats</th><th>CPR</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+boot();
+</script>
+</body>
+</html>

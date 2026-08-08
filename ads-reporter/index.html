@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ERA Ads Reporter v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0b;--bg2:#111113;--bg3:#1a1a1e;
+  --border:#252528;--border2:#2e2e33;
+  --text:#f0f0f2;--text2:#8b8b96;--text3:#5a5a62;
+  --accent:#ff6b35;--accent2:#ff8c5a;
+  --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--blue:#60a5fa;--purple:#a78bfa;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* NAV */
+.topnav{display:flex;align-items:center;padding:0 20px;height:46px;border-bottom:1px solid var(--border);flex-shrink:0;gap:20px}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:14px;letter-spacing:.03em}
+.logo span{color:var(--accent)}
+.nav-links{display:flex;gap:2px}
+.nav-btn{background:none;border:none;color:var(--text3);padding:5px 13px;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;transition:all .15s;letter-spacing:.02em}
+.nav-btn:hover{color:var(--text2);background:var(--bg3)}
+.nav-btn.active{color:var(--accent);background:rgba(255,107,53,.1)}
+.acct-badge{margin-left:auto;font-size:10px;color:var(--text3);letter-spacing:.04em}
+.acct-badge b{color:var(--accent)}
+
+/* VIEWS */
+.view{display:none;flex:1;overflow:hidden;flex-direction:column}
+.view.active{display:flex}
+
+/* ──────────── DASHBOARD ──────────── */
+.dash-header{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.filter-pill{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:5px 14px;border-radius:20px;cursor:pointer;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.05em;transition:all .15s}
+.filter-pill.active{background:rgba(255,107,53,.15);border-color:var(--accent);color:var(--accent)}
+.dash-body{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:14px 16px}
+.kpi-lbl{font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+.kpi-val{font-family:'Syne',sans-serif;font-weight:800;font-size:22px}
+.kpi-sub{font-size:10px;color:var(--text3);margin-top:4px}
+.delta{font-size:11px;margin-left:8px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:14px 16px}
+.chart-card.wide{grid-column:span 3}
+.chart-ttl{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:10px}
+
+/* TAGS */
+.tag-era{background:rgba(255,107,53,.15);color:var(--accent);border:1px solid rgba(255,107,53,.3);padding:2px 8px;border-radius:3px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;transition:all .1s}
+.tag-client{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3);padding:2px 8px;border-radius:3px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;transition:all .1s}
+.tag-none{background:var(--bg3);color:var(--text3);border:1px solid var(--border2);padding:2px 8px;border-radius:3px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;transition:all .1s}
+.tag-era:hover,.tag-client:hover,.tag-none:hover{opacity:.75}
+.tag-mini{font-size:9px;padding:1px 6px;border-radius:2px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;letter-spacing:.03em}
+.tm-era{background:rgba(255,107,53,.2);color:var(--accent)}
+.tm-client{background:rgba(96,165,250,.2);color:var(--blue)}
+.tm-none{background:var(--bg3);color:var(--text3)}
+
+/* CAMP TABLE */
+.camp-table{width:100%;border-collapse:collapse}
+.camp-table th{text-align:left;padding:8px 12px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.camp-table td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.camp-table td.num{color:var(--text);font-family:'DM Mono',monospace;font-size:12px}
+.camp-table td.cname{color:var(--text);cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;font-size:12px}
+.camp-table td.cname:hover{color:var(--accent)}
+.camp-table tr:hover td{background:var(--bg3)}
+.sbar{background:var(--bg3);border-radius:2px;height:3px;margin-top:4px}
+.sbar-fill{background:var(--accent);height:3px;border-radius:2px;opacity:.7}
+.section-header{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+.section-header-top{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.section-ttl{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+
+/* ──────────── CAMPAIGNS VIEW ──────────── */
+.camp-layout{display:grid;grid-template-columns:240px 1fr;flex:1;overflow:hidden}
+.sidebar{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-hdr{padding:12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sidebar-ttl{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--text3);text-transform:uppercase}
+.camp-list{flex:1;overflow-y:auto;padding:6px}
+.camp-item{padding:9px 10px;border-radius:5px;cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:all .15s;display:flex;align-items:flex-start;gap:6px}
+.camp-item:hover{background:var(--bg3);border-color:var(--border)}
+.camp-item.active{background:var(--bg3);border-color:var(--accent)}
+.camp-item-info{flex:1;min-width:0}
+.camp-item-name{font-family:'Syne',sans-serif;font-weight:600;font-size:11px;color:var(--text);line-height:1.3;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.camp-item-meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.slabel{font-size:10px;color:var(--text3)}
+.main-panel{display:flex;flex-direction:column;overflow:hidden}
+.camp-hdr{padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between}
+.camp-ttl{font-family:'Syne',sans-serif;font-weight:800;font-size:16px}
+.kpi-bar{padding:12px 20px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(6,1fr);gap:10px;flex-shrink:0}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:10px 12px}
+.kpi-l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.kpi-v{font-family:'Syne',sans-serif;font-weight:700;font-size:16px}
+.tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:10px 15px;font-size:12px;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:.02em}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--text2)}
+.tab-content{flex:1;overflow-y:auto;padding:16px 20px}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{text-align:left;padding:7px 10px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.data-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2);font-size:12px}
+.data-table td.num{color:var(--text)}
+.data-table td.bold{color:var(--text);font-weight:500}
+.data-table tr:hover td{background:var(--bg2)}
+
+/* CREATIVES */
+.creatives-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.crea-card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;overflow:hidden;transition:border-color .15s}
+.crea-card:hover{border-color:var(--accent)}
+.crea-placeholder{width:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:28px}
+.crea-info{padding:10px}
+.crea-name{font-family:'Syne',sans-serif;font-weight:600;font-size:11px;color:var(--text);margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crea-metrics{display:flex;flex-direction:column;gap:3px}
+.crea-m{display:flex;justify-content:space-between;font-size:10px}
+.crea-ml{color:var(--text3)}
+.crea-mv{color:var(--text);font-weight:500}
+.crea-link{display:block;text-align:center;padding:7px;background:var(--bg3);color:var(--accent);font-size:11px;font-family:'Syne',sans-serif;font-weight:700;text-decoration:none;margin-top:8px;border-radius:3px;transition:background .15s}
+.crea-link:hover{background:rgba(255,107,53,.15)}
+
+/* REPORT */
+.report-section{display:flex;flex-direction:column;gap:14px}
+.report-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.inp-grp label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px}
+.inp-grp input,.inp-grp select,.inp-grp textarea{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:9px 11px;font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border-color .15s}
+.inp-grp input:focus,.inp-grp select:focus,.inp-grp textarea:focus{border-color:var(--accent)}
+.inp-grp textarea{min-height:90px;resize:vertical;line-height:1.6}
+.inp-grp select option{background:var(--bg3)}
+.gen-btn{background:var(--accent);color:#fff;border:none;padding:11px;border-radius:5px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;width:100%;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.gen-btn:hover:not(:disabled){background:var(--accent2)}
+.gen-btn:disabled{opacity:.4;cursor:not-allowed}
+.report-out{background:var(--bg2);border:1px solid var(--border2);border-radius:5px;padding:14px;white-space:pre-wrap;line-height:1.8;color:var(--text2);font-size:12px;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:4px 10px;border-radius:3px;font-size:10px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ──────────── COMPETITORS ──────────── */
+.comp-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.comp-add{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px}
+.comp-form-row{display:grid;grid-template-columns:1fr 1fr 80px auto;gap:10px;align-items:end;margin-top:12px}
+.add-btn{background:var(--accent);color:#fff;border:none;padding:9px 16px;border-radius:4px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;transition:background .15s;height:38px}
+.add-btn:hover{background:var(--accent2)}
+.comp-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.comp-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.comp-card-hdr{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.comp-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px}
+.comp-actions{display:flex;gap:8px}
+.load-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:5px 12px;border-radius:3px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;transition:all .15s}
+.load-btn:hover{border-color:var(--accent);color:var(--accent)}
+.rm-btn{background:none;border:1px solid var(--border2);color:var(--text3);padding:5px 10px;border-radius:3px;font-size:11px;cursor:pointer;transition:all .15s}
+.rm-btn:hover{border-color:var(--red);color:var(--red)}
+.comp-ads-list{padding:12px 14px;display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto}
+.ad-row{background:var(--bg3);border-radius:5px;padding:10px;display:flex;gap:10px;align-items:flex-start}
+.ad-row-info{flex:1}
+.ad-headline{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;color:var(--text);margin-bottom:5px;line-height:1.3}
+.ad-meta{font-size:11px;color:var(--text3);display:flex;gap:12px;flex-wrap:wrap}
+.ad-snap{flex-shrink:0;background:var(--bg2);border:1px solid var(--border2);color:var(--accent);padding:5px 10px;border-radius:3px;font-size:10px;text-decoration:none;font-family:'Syne',sans-serif;font-weight:700;transition:all .15s;white-space:nowrap}
+.ad-snap:hover{background:rgba(255,107,53,.1)}
+.comp-empty{padding:20px;text-align:center;color:var(--text3);font-size:12px}
+
+/* UTILS */
+.spinner{width:13px;height:13px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{background:#1a0a0a;border:1px solid #3d1212;border-radius:5px;padding:11px 14px;color:var(--red);font-size:12px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);gap:10px}
+.loading{padding:20px;text-align:center;color:var(--text3);font-size:12px}
+.pulse{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="logo">ERA <span>ADS</span></div>
+  <div class="nav-links">
+    <button class="nav-btn" id="btn-dashboard" onclick="switchView('dashboard')">Dashboard</button>
+    <button class="nav-btn" id="btn-campaigns" onclick="switchView('campaigns')">Campagnes</button>
+    <button class="nav-btn" id="btn-competitors" onclick="switchView('competitors')">Concurrents</button>
+  </div>
+  <div class="acct-badge">act_ <b>1909983676326333</b> · <span style="cursor:pointer;text-decoration:underline" onclick="clearToken()">token</span></div>
+</nav>
+
+<!-- ════════════ DASHBOARD ════════════ -->
+<div id="v-dashboard" class="view">
+  <div class="dash-header">
+    <div class="filter-pill active" id="pill-all" onclick="setFilter('all')">Tout</div>
+    <div class="filter-pill" id="pill-ERA" onclick="setFilter('ERA')">ERA</div>
+    <div class="filter-pill" id="pill-CLIENT" onclick="setFilter('CLIENT')">Clients</div>
+    <div style="margin-left:auto;font-size:11px;color:var(--text3)" id="dash-period"></div>
+  </div>
+  <div class="dash-body" id="dash-body">
+    <div class="loading pulse">Chargement du dashboard...</div>
+  </div>
+</div>
+
+<!-- ════════════ CAMPAIGNS ════════════ -->
+<div id="v-campaigns" class="view">
+  <div class="camp-layout">
+    <div class="sidebar">
+      <div class="sidebar-hdr"><div class="sidebar-ttl">Campagnes</div></div>
+      <div class="camp-list" id="campList"><div class="loading pulse">Chargement...</div></div>
+    </div>
+    <div class="main-panel" id="mainPanel">
+      <div class="empty-state">
+        <div style="font-size:32px;opacity:.25">◎</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--text2)">Sélectionne une campagne</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ COMPETITORS ════════════ -->
+<div id="v-competitors" class="view">
+  <div class="comp-body">
+    <div class="comp-add">
+      <div class="section-ttl">Ajouter un concurrent</div>
+      <div class="comp-form-row">
+        <div class="inp-grp"><label>Nom</label><input type="text" id="compName" placeholder="ex: DistroKid"/></div>
+        <div class="inp-grp"><label>Page ID Facebook</label><input type="text" id="compPageId" placeholder="ex: 104174614632332"/></div>
+        <div class="inp-grp"><label>Pays</label><input type="text" id="compCountry" value="FR"/></div>
+        <button class="add-btn" onclick="addCompetitor()">+ Ajouter</button>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:10px">💡 Trouve le Page ID dans l'URL de la page Facebook du concurrent (ex: facebook.com/pagename → utilise la <a href="https://www.facebook.com/ads/library" target="_blank" style="color:var(--accent)">Ad Library</a> pour trouver l'ID exact)</div>
+    </div>
+    <div class="comp-cards-grid" id="compCards"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════
+const TOKEN = localStorage.getItem('era_meta_token') || '';
+const ACCOUNT = "act_1909983676326333";
+const BASE = "https://graph.facebook.com/v19.0";
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+const S = {
+  view: 'dashboard',
+  campaigns: [],
+  tags: JSON.parse(localStorage.getItem('era_tags') || '{}'),
+  dashFilter: 'all',
+  weeklyRows: [],        // level=campaign weekly rows
+  campCache: {},         // id → {totals, daily, countries}
+  creaCache: {},         // id → [{id,name,spend,vc,impressions}]
+  selectedCamp: null,
+  activeTab: 'daily',
+  competitors: JSON.parse(localStorage.getItem('era_comps') || '[]'),
+};
+
+// ════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════
+const fmt = {
+  m:  v => v != null ? parseFloat(v).toFixed(2)+'€' : '—',
+  m2: v => parseFloat(v||0).toFixed(2)+'€',
+  n:  v => v ? parseInt(v).toLocaleString('fr-FR') : '0',
+  p:  v => v ? parseFloat(v).toFixed(2)+'%' : '—',
+  cpr:v => parseFloat(v).toFixed(3)+'€',
+  fr: v => parseFloat(v||0).toFixed(2),
+};
+const today = () => new Date().toISOString().split('T')[0];
+const weeksAgo = n => { const d=new Date(); d.setDate(d.getDate()-n*7); return d.toISOString().split('T')[0]; };
+const weekLabel = s => { if(!s)return''; const d=new Date(s+'T00:00:00'); return `${d.getDate()}/${d.getMonth()+1}`; };
+
+function getAction(actions, types) {
+  if (!actions) return 0;
+  const ts = Array.isArray(types) ? types : [types];
+  for (const t of ts) {
+    const a = actions.find(x => x.action_type === t || x.action_type.includes(t));
+    if (a) return parseInt(a.value) || 0;
+  }
+  return 0;
+}
+
+async function api(path) {
+  const sep = path.includes('?') ? '&' : '?';
+  const r = await fetch(`${BASE}/${path}${sep}access_token=${TOKEN}`);
+  const d = await r.json();
+  if (d.error) throw new Error(d.error.message);
+  return d;
+}
+
+function saveTags() { localStorage.setItem('era_tags', JSON.stringify(S.tags)); }
+function saveComps() { localStorage.setItem('era_comps', JSON.stringify(S.competitors)); }
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ════════════════════════════════════════════════
+// TAGS
+// ════════════════════════════════════════════════
+function cycleTag(id) {
+  const cur = S.tags[id];
+  if (!cur) S.tags[id] = 'ERA';
+  else if (cur === 'ERA') S.tags[id] = 'CLIENT';
+  else delete S.tags[id];
+  saveTags();
+  renderCampList();
+  if (S.view === 'dashboard') renderDash();
+  if (S.view === 'campaigns' && S.selectedCamp?.id === id) renderCampMain();
+}
+
+function tagHtml(id, mini=false) {
+  const t = S.tags[id];
+  if (mini) {
+    if (t==='ERA')    return `<span class="tag-mini tm-era" onclick="event.stopPropagation();cycleTag('${id}')">ERA</span>`;
+    if (t==='CLIENT') return `<span class="tag-mini tm-client" onclick="event.stopPropagation();cycleTag('${id}')">CLIENT</span>`;
+    return `<span class="tag-mini tm-none" onclick="event.stopPropagation();cycleTag('${id}')">—</span>`;
+  }
+  if (t==='ERA')    return `<span class="tag-era" onclick="cycleTag('${id}')">ERA</span>`;
+  if (t==='CLIENT') return `<span class="tag-client" onclick="cycleTag('${id}')">CLIENT</span>`;
+  return `<span class="tag-none" onclick="cycleTag('${id}')">+ Tag</span>`;
+}
+
+// ════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════
+function switchView(v) {
+  S.view = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById(`v-${v}`).classList.add('active');
+  document.getElementById(`btn-${v}`).classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════
+function tokenGate() {
+  document.getElementById('dash-body').innerHTML = `
+    <div style="max-width:460px;margin:60px auto;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:22px">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px;margin-bottom:8px">Token Meta requis</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:14px">Le token n'est jamais stocké dans le code — il reste dans <b>ce navigateur uniquement</b> (localStorage). Colle un token utilisateur système avec permission <b>ads_read</b>.</div>
+      <div class="inp-grp"><input type="password" id="tokIn" placeholder="EAAB..."/></div>
+      <button class="gen-btn" style="margin-top:12px" onclick="saveToken()">Enregistrer et charger</button>
+    </div>`;
+}
+function saveToken() {
+  const v = document.getElementById('tokIn').value.trim();
+  if (!v) return;
+  localStorage.setItem('era_meta_token', v);
+  location.reload();
+}
+function clearToken() {
+  localStorage.removeItem('era_meta_token');
+  location.reload();
+}
+
+async function init() {
+  switchView('dashboard');
+  if (!TOKEN) { tokenGate(); return; }
+  try {
+    const d = await api(`${ACCOUNT}/campaigns?fields=id,name,status,objective,start_time,stop_time&limit=50`);
+    S.campaigns = d.data || [];
+    renderCampList();
+    await loadWeeklyData();
+    renderDash();
+    renderComps();
+  } catch(e) {
+    document.getElementById('dash-body').innerHTML = `<div class="err">⚠ ${e.message}</div>`;
+  }
+}
+
+async function loadWeeklyData() {
+  const since = weeksAgo(12);
+  const end = today();
+  const fields = 'campaign_id,campaign_name,reach,impressions,spend,actions,frequency';
+  const d = await api(`${ACCOUNT}/insights?level=campaign&fields=${fields}&time_increment=7&since=${since}&until=${end}&limit=500`);
+  S.weeklyRows = d.data || [];
+  document.getElementById('dash-period').textContent = `12 sem. · ${since} → ${end}`;
+}
+
+// ════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════
+function setFilter(f) {
+  S.dashFilter = f;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById(`pill-${f}`).classList.add('active');
+  renderDash();
+}
+
+function filteredRows() {
+  if (S.dashFilter === 'all') return S.weeklyRows;
+  const valid = new Set(S.campaigns.filter(c => S.tags[c.id] === S.dashFilter).map(c => c.id));
+  return S.weeklyRows.filter(r => valid.has(r.campaign_id));
+}
+
+function aggregateWeeks(rows) {
+  const map = {};
+  rows.forEach(r => {
+    const w = r.date_start;
+    if (!map[w]) map[w] = { date: w, spend: 0, impressions: 0, reach: 0, vc: 0 };
+    map[w].spend += parseFloat(r.spend||0);
+    map[w].impressions += parseInt(r.impressions||0);
+    map[w].reach += parseInt(r.reach||0);
+    map[w].vc += getAction(r.actions, ['view_content','offsite_conversion.fb_pixel_view_content']);
+  });
+  return Object.values(map)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .map(w => ({
+      ...w,
+      cpr: w.vc > 0 ? w.spend / w.vc : 0,
+      frequency: w.reach > 0 ? w.impressions / w.reach : 0
+    }));
+}
+
+function aggregateCamps(rows) {
+  const map = {};
+  rows.forEach(r => {
+    const id = r.campaign_id;
+    if (!map[id]) map[id] = { id, name: r.campaign_name, spend: 0, impressions: 0, reach: 0, vc: 0 };
+    map[id].spend += parseFloat(r.spend||0);
+    map[id].impressions += parseInt(r.impressions||0);
+    map[id].reach += parseInt(r.reach||0);
+    map[id].vc += getAction(r.actions, ['view_content','offsite_conversion.fb_pixel_view_content']);
+  });
+  return Object.values(map).sort((a,b) => b.spend - a.spend);
+}
+
+function renderDash() {
+  const rows = filteredRows();
+  const weeks = aggregateWeeks(rows);
+  const camps = aggregateCamps(rows);
+  const lastW = weeks[weeks.length-1] || {};
+  const prevW = weeks[weeks.length-2] || {};
+  const totalSpend = weeks.reduce((s,w)=>s+w.spend,0);
+  const cprWeeks = weeks.filter(w=>w.cpr>0);
+  const avgCPR = cprWeeks.length ? cprWeeks.reduce((s,w)=>s+w.cpr,0)/cprWeeks.length : 0;
+  const totalVC = weeks.reduce((s,w)=>s+w.vc,0);
+  const maxSpend = Math.max(...camps.map(c=>c.spend), 1);
+
+  function delta(cur, prev, inverse=false) {
+    if (!prev) return '';
+    const pct = ((cur-prev)/prev*100).toFixed(0);
+    const pos = inverse ? parseFloat(pct)<0 : parseFloat(pct)>0;
+    const col = pos ? 'var(--green)' : 'var(--red)';
+    return `<span class="delta" style="color:${col}">${parseFloat(pct)>0?'+':''}${pct}%</span>`;
+  }
+
+  const rows_html = camps.map(c => {
+    const cpr = c.vc > 0 ? c.spend/c.vc : 0;
+    const pct = (c.spend/maxSpend*100).toFixed(1);
+    return `<tr>
+      <td class="cname" onclick="goCamp('${c.id}')">${c.name}</td>
+      <td>${tagHtml(c.id)}</td>
+      <td class="num"><div>${fmt.m2(c.spend)}</div><div class="sbar"><div class="sbar-fill" style="width:${pct}%"></div></div></td>
+      <td class="num">${cpr>0?fmt.cpr(cpr):'—'}</td>
+      <td class="num">${fmt.n(c.reach)}</td>
+      <td class="num">${fmt.n(c.vc)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('dash-body').innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-lbl">Spend (sem. courante)</div>
+        <div class="kpi-val" style="color:var(--accent)">${fmt.m2(lastW.spend||0)}${delta(lastW.spend,prevW.spend)}</div>
+        <div class="kpi-sub">Total période: ${fmt.m2(totalSpend)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">CPR moyen (View Content)</div>
+        <div class="kpi-val" style="color:var(--blue)">${avgCPR>0?fmt.cpr(avgCPR):'—'}${delta(lastW.cpr,prevW.cpr,true)}</div>
+        <div class="kpi-sub">Total View Content: ${fmt.n(totalVC)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Fréquence (sem. courante)</div>
+        <div class="kpi-val" style="color:${(lastW.frequency||0)>3?'var(--yellow)':'var(--green)'}">${fmt.fr(lastW.frequency)}</div>
+        <div class="kpi-sub">Impressions: ${fmt.n(lastW.impressions||0)}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Campagnes (12 sem.)</div>
+        <div class="kpi-val">${camps.length}</div>
+        <div class="kpi-sub">${S.campaigns.filter(c=>S.tags[c.id]==='ERA').length} ERA · ${S.campaigns.filter(c=>S.tags[c.id]==='CLIENT').length} Clients</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card wide">
+        <div class="chart-ttl">💰 Spend hebdomadaire</div>
+        ${barChart(weeks,'spend','var(--accent)',v=>v.toFixed(0)+'€')}
+      </div>
+      <div class="chart-card">
+        <div class="chart-ttl">📉 CPR · €/View Content</div>
+        ${weeks.some(w=>w.cpr>0) ? lineChart(weeks,'cpr','var(--blue)',v=>v.toFixed(2)+'€') : '<div style="color:var(--text3);font-size:12px;padding:16px 0">Aucun View Content tracké</div>'}
+      </div>
+      <div class="chart-card">
+        <div class="chart-ttl">🔁 Fréquence hebdo</div>
+        ${lineChart(weeks,'frequency','var(--purple)',v=>v.toFixed(1))}
+      </div>
+      <div class="chart-card">
+        <div class="chart-ttl">👁 Impressions hebdo</div>
+        ${lineChart(weeks,'impressions','var(--green)',v=>(v/1000).toFixed(0)+'k')}
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-header-top">
+        <div class="section-ttl">Performance par campagne · 12 semaines</div>
+        <div style="font-size:11px;color:var(--text3)">Clique sur un tag pour le modifier · Clique sur le nom pour accéder au détail</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="camp-table">
+          <thead><tr><th>Campagne</th><th>Tag</th><th>Spend</th><th>CPR</th><th>Reach</th><th>View Content</th></tr></thead>
+          <tbody>${rows_html || '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Aucune donnée · Taguer des campagnes pour les filtrer</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════
+function barChart(weeks, key, color, fmtY) {
+  if (!weeks.length) return '<div style="color:var(--text3);font-size:12px;padding:16px 0">Aucune donnée</div>';
+  const vals = weeks.map(w => parseFloat(w[key]||0));
+  const max = Math.max(...vals, 1);
+  const W=600,H=150,pL=46,pB=22,pT=10,pR=10;
+  const cW=W-pL-pR, cH=H-pT-pB, n=weeks.length;
+  const step=cW/n, bW=Math.min(step*.6,38);
+  let out='', xl='', ya='';
+  [0,.25,.5,.75,1].forEach(p=>{
+    const y=pT+cH*(1-p);
+    ya+=`<line x1="${pL}" y1="${y.toFixed(0)}" x2="${W-pR}" y2="${y.toFixed(0)}" stroke="#1c1c20" stroke-width="1"/>`;
+    ya+=`<text x="${pL-4}" y="${(y+3).toFixed(0)}" text-anchor="end" fill="#5a5a62" font-size="9">${fmtY(max*p)}</text>`;
+  });
+  vals.forEach((v,i)=>{
+    const bH=Math.max((v/max)*cH, v>0?2:0);
+    const x=pL+i*step+(step-bW)/2, y=pT+cH-bH;
+    out+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bW.toFixed(1)}" height="${bH.toFixed(1)}" fill="${color}" rx="2" opacity="0.85"/>`;
+    if(n<=14||i%2===0) xl+=`<text x="${(pL+i*step+step/2).toFixed(1)}" y="${H-4}" text-anchor="middle" fill="#5a5a62" font-size="9">${weekLabel(weeks[i].date)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">${ya}${out}${xl}</svg>`;
+}
+
+function lineChart(weeks, key, color, fmtY) {
+  if (!weeks.length) return '<div style="color:var(--text3);font-size:12px;padding:16px 0">Aucune donnée</div>';
+  const vals = weeks.map(w => parseFloat(w[key]||0));
+  const max = Math.max(...vals, 1);
+  const W=600,H=120,pL=46,pB=22,pT=10,pR=10;
+  const cW=W-pL-pR, cH=H-pT-pB, n=weeks.length;
+  const step=n>1?cW/(n-1):cW;
+  const pts=vals.map((v,i)=>({x:pL+i*step, y:pT+cH-(v/max)*cH}));
+  const path=pts.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const area=`${path} L${pts[pts.length-1].x.toFixed(1)},${pT+cH} L${pts[0].x.toFixed(1)},${pT+cH} Z`;
+  let ya='',dots='',xl='';
+  [0,.5,1].forEach(p=>{
+    const y=pT+cH*(1-p);
+    ya+=`<line x1="${pL}" y1="${y.toFixed(0)}" x2="${W-pR}" y2="${y.toFixed(0)}" stroke="#1c1c20" stroke-width="1"/>`;
+    ya+=`<text x="${pL-4}" y="${(y+3).toFixed(0)}" text-anchor="end" fill="#5a5a62" font-size="9">${fmtY(max*p)}</text>`;
+  });
+  pts.forEach((p,i)=>{
+    dots+=`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.5" fill="${color}"/>`;
+    if(n<=14||i%2===0) xl+=`<text x="${p.x.toFixed(1)}" y="${H-4}" text-anchor="middle" fill="#5a5a62" font-size="9">${weekLabel(weeks[i].date)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+    ${ya}<path d="${area}" fill="${color}" opacity="0.08"/>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${xl}</svg>`;
+}
+
+// ════════════════════════════════════════════════
+// CAMPAIGNS
+// ════════════════════════════════════════════════
+function renderCampList() {
+  const el = document.getElementById('campList');
+  if (!el || !S.campaigns.length) { if(el) el.innerHTML='<div class="loading">Aucune campagne</div>'; return; }
+  el.innerHTML = S.campaigns.map(c => {
+    const col = c.status==='ACTIVE'?'#22c55e':c.status==='PAUSED'?'#f59e0b':'#5a5a62';
+    return `<div class="camp-item ${S.selectedCamp?.id===c.id?'active':''}" onclick="selectCamp('${c.id}')">
+      <div class="camp-item-info">
+        <div class="camp-item-name">${c.name}</div>
+        <div class="camp-item-meta">
+          <div class="sdot" style="background:${col}"></div>
+          <div class="slabel">${c.status}</div>
+          ${tagHtml(c.id,true)}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function goCamp(id) {
+  switchView('campaigns');
+  selectCamp(id);
+}
+
+async function selectCamp(id) {
+  const camp = S.campaigns.find(c=>c.id===id);
+  if (!camp) return;
+  if (S.view !== 'campaigns') switchView('campaigns');
+  S.selectedCamp = camp;
+  S.activeTab = 'daily';
+  renderCampList();
+  const panel = document.getElementById('mainPanel');
+  panel.innerHTML = `<div class="empty-state"><div class="spinner"></div><div style="color:var(--text3);font-size:12px;margin-top:8px">Chargement...</div></div>`;
+  if (S.campCache[id]) { renderCampMain(); return; }
+  try {
+    const fields = 'reach,impressions,spend,cpc,cpm,ctr,actions,clicks,frequency';
+    const end = today();
+    const since = camp.start_time ? camp.start_time.split('T')[0] : '2020-01-01';
+    const tr = `since=${since}&until=${end}`;
+    const [tot,daily,countries] = await Promise.all([
+      api(`${id}/insights?fields=${fields}&${tr}`),
+      api(`${id}/insights?fields=${fields}&time_increment=1&${tr}&limit=200`),
+      api(`${id}/insights?fields=${fields}&breakdowns=country&${tr}&limit=200`)
+    ]);
+    S.campCache[id] = {
+      totals: tot.data?.[0] || null,
+      daily: daily.data || [],
+      countries: (countries.data||[]).sort((a,b)=>parseFloat(b.spend||0)-parseFloat(a.spend||0))
+    };
+    renderCampMain();
+  } catch(e) {
+    panel.innerHTML = `<div style="padding:20px"><div class="err">⚠ ${e.message}</div></div>`;
+  }
+}
+
+function renderCampMain() {
+  const c = S.selectedCamp;
+  const { totals:t } = S.campCache[c.id] || {};
+  const col = c.status==='ACTIVE'?'#22c55e':c.status==='PAUSED'?'#f59e0b':'#5a5a62';
+  const vc = t ? getAction(t.actions,['view_content','offsite_conversion.fb_pixel_view_content']) : 0;
+  const cpr = t && vc>0 ? parseFloat(t.spend)/vc : 0;
+  const kpis = t ? `
+    <div class="kpi"><div class="kpi-l">Spend</div><div class="kpi-v" style="color:var(--accent)">${fmt.m(t.spend)}</div></div>
+    <div class="kpi"><div class="kpi-l">Reach</div><div class="kpi-v">${fmt.n(t.reach)}</div></div>
+    <div class="kpi"><div class="kpi-l">CPM</div><div class="kpi-v" style="color:var(--blue)">${fmt.m(t.cpm)}</div></div>
+    <div class="kpi"><div class="kpi-l">CPR</div><div class="kpi-v" style="color:${cpr>.5?'var(--yellow)':'var(--green)'}">${cpr>0?fmt.cpr(cpr):'—'}</div></div>
+    <div class="kpi"><div class="kpi-l">Fréquence</div><div class="kpi-v" style="color:${parseFloat(t.frequency||0)>3?'var(--yellow)':'var(--text)'}">${fmt.fr(t.frequency)}</div></div>
+    <div class="kpi"><div class="kpi-l">View Content</div><div class="kpi-v">${fmt.n(vc)}</div></div>
+  ` : `<div style="color:var(--text3);font-size:12px;padding:10px">Aucune donnée</div>`;
+  document.getElementById('mainPanel').innerHTML = `
+    <div class="camp-hdr">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div class="camp-ttl">${c.name}</div>${tagHtml(c.id)}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:${col}20;color:${col};padding:3px 10px;border-radius:3px;font-size:10px;font-family:'Syne',sans-serif;font-weight:600">${c.status}</span>
+          ${c.objective?`<span style="background:var(--bg3);border:1px solid var(--border2);padding:3px 10px;border-radius:3px;font-size:10px;color:var(--text3)">${c.objective}</span>`:''}
+          ${c.start_time?`<span style="background:var(--bg3);border:1px solid var(--border2);padding:3px 10px;border-radius:3px;font-size:10px;color:var(--text3)">Depuis ${new Date(c.start_time).toLocaleDateString('fr-FR')}</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="kpi-bar">${kpis}</div>
+    <div style="padding:0 20px 4px"><button class="load-btn" id="clBtn" onclick="clientLink()">🔗 Générer le lien client</button></div>
+    <div class="tabs">
+      <div class="tab ${S.activeTab==='daily'?'active':''}" onclick="switchTab('daily',this)">Daily</div>
+      <div class="tab ${S.activeTab==='countries'?'active':''}" onclick="switchTab('countries',this)">Pays</div>
+      <div class="tab ${S.activeTab==='events'?'active':''}" onclick="switchTab('events',this)">Events</div>
+      <div class="tab ${S.activeTab==='creatives'?'active':''}" onclick="switchTab('creatives',this)">✦ Top Créas</div>
+      <div class="tab ${S.activeTab==='report'?'active':''}" onclick="switchTab('report',this)">📧 Report</div>
+    </div>
+    <div class="tab-content" id="tabContent">${renderTab()}</div>`;
+}
+
+function switchTab(tab, el) {
+  S.activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('tabContent').innerHTML = renderTab();
+}
+
+function renderTab() {
+  const id = S.selectedCamp?.id;
+  if (!id) return '';
+  const { totals:t, daily, countries } = S.campCache[id] || {};
+
+  if (S.activeTab==='daily') {
+    if (!daily?.length) return '<div style="color:var(--text3)">Aucune donnée daily</div>';
+    const rows = [...daily].reverse().map(d=>{
+      const vc=getAction(d.actions,['view_content','offsite_conversion.fb_pixel_view_content']);
+      const cpr=vc>0?fmt.cpr(parseFloat(d.spend||0)/vc):'—';
+      return `<tr>
+        <td class="bold">${d.date_start}</td>
+        <td class="num">${fmt.m2(d.spend)}</td>
+        <td class="num">${fmt.n(d.reach)}</td>
+        <td class="num">${fmt.n(d.impressions)}</td>
+        <td class="num">${fmt.m(d.cpm)}</td>
+        <td class="num">${fmt.fr(d.frequency)}</td>
+        <td class="num">${fmt.n(vc)}</td>
+        <td class="num">${cpr}</td>
+      </tr>`;
+    }).join('');
+    return `<table class="data-table"><thead><tr><th>Date</th><th>Spend</th><th>Reach</th><th>Impressions</th><th>CPM</th><th>Fréq.</th><th>View Content</th><th>CPR</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  if (S.activeTab==='countries') {
+    if (!countries?.length) return '<div style="color:var(--text3)">Aucune donnée</div>';
+    const rows = countries.map(c=>{
+      const vc=getAction(c.actions,['view_content','offsite_conversion.fb_pixel_view_content']);
+      const cpr=vc>0?fmt.cpr(parseFloat(c.spend||0)/vc):'—';
+      return `<tr><td class="bold">${c.country||'—'}</td><td class="num">${fmt.m2(c.spend)}</td><td class="num">${fmt.n(c.reach)}</td><td class="num">${fmt.m(c.cpm)}</td><td class="num">${fmt.n(vc)}</td><td class="num">${cpr}</td></tr>`;
+    }).join('');
+    return `<table class="data-table"><thead><tr><th>Pays</th><th>Spend</th><th>Reach</th><th>CPM</th><th>View Content</th><th>CPR</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  if (S.activeTab==='events') {
+    if (!t?.actions?.length) return '<div style="color:var(--text3)">Aucun event</div>';
+    const rows=t.actions.map(a=>`<tr><td class="bold">${a.action_type}</td><td class="num">${fmt.n(a.value)}</td></tr>`).join('');
+    return `<table class="data-table"><thead><tr><th>Event</th><th>Volume</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  if (S.activeTab==='creatives') {
+    const cached = S.creaCache[id];
+    if (cached) return renderCreas(cached);
+    loadCreatives(id);
+    return `<div style="display:flex;align-items:center;gap:10px;color:var(--text3);font-size:12px"><div class="spinner"></div> Chargement des créas...</div>`;
+  }
+
+  if (S.activeTab==='report') {
+    return `<div class="report-section">
+      <div class="report-row">
+        <div class="inp-grp"><label>Nom du client</label><input type="text" id="clientName" placeholder="ex: Jey Vazz"/></div>
+        <div class="inp-grp"><label>Langue</label><select id="rLang"><option value="fr">Français</option><option value="en">English</option></select></div>
+      </div>
+      <div class="inp-grp"><label>Ton analyse qualitative</label><textarea id="commentary" placeholder="ex: La créa vidéo surperforme sur les 18-24 ans. CPR en hausse cette semaine, à surveiller..."></textarea></div>
+      <div class="inp-grp"><label>Instructions spécifiques</label><input type="text" id="instructions" placeholder="ex: mettre l'accent sur le CPR, rester très concis..."/></div>
+      <button class="gen-btn" onclick="generateReport()" id="genBtn">📧 Générer le report client</button>
+      <div id="repOut" style="display:none"><div class="report-out" id="repText"></div></div>
+    </div>`;
+  }
+  return '';
+}
+
+// ════════════════════════════════════════════════
+// TOP CREATIVES
+// ════════════════════════════════════════════════
+async function loadCreatives(campId) {
+  try {
+    const c = S.selectedCamp;
+    const end = today();
+    const since = c.start_time ? c.start_time.split('T')[0] : '2020-01-01';
+    const tr = `since=${since}&until=${end}`;
+    const res = await api(`${campId}/insights?fields=ad_id,ad_name,spend,impressions,reach,actions&level=ad&${tr}&limit=50`);
+    const ads = (res.data||[])
+      .map(a=>({id:a.ad_id,name:a.ad_name,spend:parseFloat(a.spend||0),impressions:parseInt(a.impressions||0),reach:parseInt(a.reach||0),vc:getAction(a.actions,['view_content','offsite_conversion.fb_pixel_view_content'])}))
+      .sort((a,b)=>b.spend-a.spend)
+      .slice(0,12);
+    S.creaCache[campId] = ads;
+    if (S.selectedCamp?.id===campId && S.activeTab==='creatives') {
+      document.getElementById('tabContent').innerHTML = renderCreas(ads);
+    }
+  } catch(e) {
+    if (S.activeTab==='creatives') document.getElementById('tabContent').innerHTML = `<div class="err">⚠ ${e.message}</div>`;
+  }
+}
+
+function renderCreas(ads) {
+  if (!ads.length) return '<div style="color:var(--text3)">Aucune pub trouvée sur cette période</div>';
+  const acctId = ACCOUNT.replace('act_','');
+  return `<div class="creatives-grid">${ads.map(a=>{
+    const cpr = a.vc>0 ? fmt.cpr(a.spend/a.vc) : '—';
+    const url = `https://adsmanager.facebook.com/adsmanager/manage/ads?act=${acctId}&selected_ad_ids=${a.id}`;
+    return `<div class="crea-card">
+      <div class="crea-placeholder">🎨</div>
+      <div class="crea-info">
+        <div class="crea-name" title="${a.name}">${a.name}</div>
+        <div class="crea-metrics">
+          <div class="crea-m"><span class="crea-ml">Spend</span><span class="crea-mv" style="color:var(--accent)">${fmt.m2(a.spend)}</span></div>
+          <div class="crea-m"><span class="crea-ml">View Content</span><span class="crea-mv">${fmt.n(a.vc)}</span></div>
+          <div class="crea-m"><span class="crea-ml">CPR</span><span class="crea-mv" style="color:var(--blue)">${cpr}</span></div>
+          <div class="crea-m"><span class="crea-ml">Impressions</span><span class="crea-mv">${fmt.n(a.impressions)}</span></div>
+        </div>
+        <a class="crea-link" href="${url}" target="_blank">Voir dans Ads Manager →</a>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ════════════════════════════════════════════════
+// LIEN CLIENT (rapport partageable signé)
+// ════════════════════════════════════════════════
+async function clientLink() {
+  const c = S.selectedCamp;
+  if (!c) return;
+  let key = localStorage.getItem('era_admin_key');
+  if (!key) {
+    key = prompt('Clé admin (REPORT_ADMIN_SECRET définie sur Vercel) — stockée dans ce navigateur :');
+    if (!key) return;
+    localStorage.setItem('era_admin_key', key.trim());
+    key = key.trim();
+  }
+  const btn = document.getElementById('clBtn');
+  btn.textContent = '… génération';
+  try {
+    const title = prompt('Titre affiché au client :', c.name) ?? c.name;
+    const r = await fetch(`/api/meta-sign?key=${encodeURIComponent(key)}&c=${c.id}&t=${encodeURIComponent(title)}`);
+    const d = await r.json();
+    if (!r.ok) {
+      if (r.status === 403) localStorage.removeItem('era_admin_key');
+      throw new Error(d.message || 'Erreur');
+    }
+    await navigator.clipboard.writeText(d.url);
+    btn.textContent = '✓ Lien copié';
+    setTimeout(()=>btn.textContent='🔗 Générer le lien client', 2500);
+  } catch(e) {
+    btn.textContent = '🔗 Générer le lien client';
+    alert('Erreur : ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════════
+// REPORT GENERATION
+// ════════════════════════════════════════════════
+async function generateReport() {
+  const btn = document.getElementById('genBtn');
+  const id = S.selectedCamp?.id;
+  const { totals:t, daily, countries } = S.campCache[id] || {};
+  if (!t) return;
+  btn.disabled=true; btn.innerHTML='<div class="spinner"></div> Génération...';
+  const clientName = document.getElementById('clientName')?.value||'';
+  const lang = document.getElementById('rLang')?.value||'fr';
+  const commentary = document.getElementById('commentary')?.value||'';
+  const instructions = document.getElementById('instructions')?.value||'';
+  const vc = getAction(t.actions,['view_content','offsite_conversion.fb_pixel_view_content']);
+  const cpr = vc>0?(parseFloat(t.spend)/vc).toFixed(3):null;
+  const topC = (countries||[]).slice(0,5).map(c=>{
+    const cvc=getAction(c.actions,['view_content','offsite_conversion.fb_pixel_view_content']);
+    return `${c.country}: ${fmt.m2(c.spend)} spend · ${fmt.n(cvc)} VC · CPM ${fmt.m(c.cpm)}`;
+  }).join('\n');
+  const ctx = `Campagne: ${S.selectedCamp.name}
+Statut: ${S.selectedCamp.status}
+Période: ${daily?.[0]?.date_start||'?'} → ${daily?.[daily.length-1]?.date_stop||'?'} (${daily?.length||0} jours)
+Spend: ${fmt.m(t.spend)} | Reach: ${fmt.n(t.reach)} | CPM: ${fmt.m(t.cpm)} | Fréquence: ${fmt.fr(t.frequency)}
+View Content: ${fmt.n(vc)} | CPR: ${cpr?cpr+'€':'—'}
+Top pays:\n${topC}
+Analyse gestionnaire: ${commentary}
+Instructions: ${instructions}`;
+  try {
+    const prompt = `Tu es expert Meta Ads. Rédige un email de reporting ${lang==='fr'?'en français':'in English'} pour ${clientName||'le client'}. Structure: Résumé 2-3 phrases / KPIs clés / Ce qui performe vs points d'attention / 2-3 recommandations actionnables. Pas de ligne d'objet. Ton: expert, direct, accessible.\n${ctx}`;
+    const res = await fetch('/api/report-ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+    const data=await res.json();
+    if(data.error) throw new Error(data.message||data.error);
+    const text=data.text||'';
+    document.getElementById('repOut').style.display='block';
+    document.getElementById('repText').innerHTML=`<button class="copy-btn" onclick="copyRep()">Copier</button>${escHtml(text)}`;
+    document.getElementById('repOut').scrollIntoView({behavior:'smooth'});
+  } catch(e) {
+    document.getElementById('repOut').style.display='block';
+    document.getElementById('repText').innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
+  }
+  btn.disabled=false; btn.innerHTML='📧 Générer le report client';
+}
+
+function copyRep() {
+  const text=document.getElementById('repText').innerText.replace('Copier','').trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    document.querySelector('.copy-btn').textContent='✓ Copié';
+    setTimeout(()=>document.querySelector('.copy-btn').textContent='Copier',2000);
+  });
+}
+
+// ════════════════════════════════════════════════
+// COMPETITORS
+// ════════════════════════════════════════════════
+function addCompetitor() {
+  const name=document.getElementById('compName').value.trim();
+  const pageId=document.getElementById('compPageId').value.trim();
+  const country=document.getElementById('compCountry').value.trim()||'FR';
+  if (!name||!pageId) { alert('Nom et Page ID requis'); return; }
+  S.competitors.push({name,pageId,country,ads:[]});
+  saveComps();
+  document.getElementById('compName').value='';
+  document.getElementById('compPageId').value='';
+  renderComps();
+}
+
+function removeComp(i) {
+  S.competitors.splice(i,1);
+  saveComps();
+  renderComps();
+}
+
+async function loadCompAds(i) {
+  const comp = S.competitors[i];
+  const adsEl = document.getElementById(`cads-${i}`);
+  if (!adsEl) return;
+  adsEl.innerHTML='<div class="comp-empty"><div class="spinner"></div> Chargement...</div>';
+  try {
+    const fields='id,page_name,ad_creative_bodies,ad_creative_link_titles,ad_delivery_start_time,ad_snapshot_url,impressions,spend';
+    const res = await api(`ads_archive?search_page_ids=${comp.pageId}&ad_reached_country=${comp.country}&ad_active_status=ACTIVE&fields=${fields}&limit=15`);
+    const ads = res.data||[];
+    S.competitors[i].ads=ads;
+    saveComps();
+    if (!ads.length) { adsEl.innerHTML='<div class="comp-empty">Aucune pub active trouvée</div>'; return; }
+    adsEl.innerHTML=ads.map(ad=>{
+      const headline=(ad.ad_creative_link_titles?.[0]||ad.ad_creative_bodies?.[0]||'Sans titre').substring(0,90);
+      const since=ad.ad_delivery_start_time?new Date(ad.ad_delivery_start_time).toLocaleDateString('fr-FR'):'—';
+      const imp=ad.impressions?`${(ad.impressions.lower_bound||0).toLocaleString('fr-FR')}–${(ad.impressions.upper_bound||0).toLocaleString('fr-FR')}`:'—';
+      const spend=ad.spend?`${ad.spend.lower_bound||0}€–${ad.spend.upper_bound||0}€`:'—';
+      return `<div class="ad-row">
+        <div class="ad-row-info">
+          <div class="ad-headline">${headline}</div>
+          <div class="ad-meta"><span>📅 ${since}</span><span>👁 ${imp}</span><span>💰 ${spend}</span></div>
+        </div>
+        ${ad.ad_snapshot_url?`<a class="ad-snap" href="${ad.ad_snapshot_url}" target="_blank">Voir →</a>`:''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    adsEl.innerHTML=`<div class="err" style="margin:10px">⚠ ${e.message}<br><small>Vérifier que le Page ID est correct et que l'accès Ad Library est autorisé.</small></div>`;
+  }
+}
+
+function renderComps() {
+  const el=document.getElementById('compCards');
+  if (!el) return;
+  if (!S.competitors.length) {
+    el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:10px">Aucun concurrent ajouté. Utilise le formulaire ci-dessus.</div>';
+    return;
+  }
+  el.innerHTML=S.competitors.map((comp,i)=>`
+    <div class="comp-card">
+      <div class="comp-card-hdr">
+        <div>
+          <div class="comp-name">${comp.name}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">Page ID: ${comp.pageId} · ${comp.country}</div>
+        </div>
+        <div class="comp-actions">
+          <button class="load-btn" onclick="loadCompAds(${i})">⟳ Load Ads</button>
+          <button class="rm-btn" onclick="removeComp(${i})">✕</button>
+        </div>
+      </div>
+      <div class="comp-ads-list" id="cads-${i}">
+        ${comp.ads?.length ? comp.ads.map(ad=>{
+          const h=(ad.ad_creative_link_titles?.[0]||ad.ad_creative_bodies?.[0]||'Sans titre').substring(0,90);
+          const s=ad.ad_delivery_start_time?new Date(ad.ad_delivery_start_time).toLocaleDateString('fr-FR'):'—';
+          const imp=ad.impressions?`${(ad.impressions.lower_bound||0).toLocaleString('fr-FR')}–${(ad.impressions.upper_bound||0).toLocaleString('fr-FR')}`:'—';
+          return `<div class="ad-row"><div class="ad-row-info"><div class="ad-headline">${h}</div><div class="ad-meta"><span>📅 ${s}</span><span>👁 ${imp}</span></div></div>${ad.ad_snapshot_url?`<a class="ad-snap" href="${ad.ad_snapshot_url}" target="_blank">Voir →</a>`:''}</div>`;
+        }).join('') : '<div class="comp-empty">Clique sur "Load Ads" pour charger les pubs actives</div>'}
+      </div>
+    </div>`).join('');
+}
+
+// ════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
