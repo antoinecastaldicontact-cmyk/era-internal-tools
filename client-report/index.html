@@ -75,6 +75,12 @@ svg text{font-family:'DM Mono',monospace}
 .split-r{display:flex;justify-content:space-between;font-size:11px}
 .split-r span:first-child{color:var(--text3)}
 .footer{margin-top:70px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:10px;color:var(--text3);letter-spacing:.05em}
+.methodo-body p{font-size:12px;color:var(--text2);line-height:1.75;margin-bottom:10px}
+.methodo-body b{color:var(--text)}
+.m-sec{margin-bottom:22px}
+.m-ttl{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:9px}
+.m-scale{display:flex;flex-direction:column;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin:10px 0;font-size:11px;color:var(--text2)}
+.m-scale i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:8px;vertical-align:-1px}
 .state{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
 .spinner{width:22px;height:22px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -212,7 +218,10 @@ function render(){
   document.getElementById('app').innerHTML=`
   <div class="brand">
     <div class="logo">ERA <span>ADS</span></div>
-    <div class="live ${anyLive?'':'off'}"><span class="dot"></span>${anyLive?'Campagne en direct':'Campagne en pause'}</div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <a href="#" onclick="openMethodo();return false" style="color:var(--text2);font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid var(--border2);padding-bottom:2px">Notre méthodologie</a>
+      <div class="live ${anyLive?'':'off'}"><span class="dot"></span>${anyLive?'Campagne en direct':'Campagne en pause'}</div>
+    </div>
   </div>
 
   <div class="hero-kicker">Rapport de campagne</div>
@@ -281,7 +290,7 @@ function render(){
   </div>
 
   <div class="footer">
-    <span>ERA MUSIC · rapport généré en direct depuis Meta Ads</span>
+    <span>ERA MUSIC · rapport généré en direct depuis Meta Ads · <a href="#" onclick="openMethodo();return false" style="color:var(--text2)">méthodologie</a></span>
     <span>Dernière actualisation : ${new Date(DATA.generated_at).toLocaleString('fr-FR')}</span>
   </div>`;
 }
@@ -348,6 +357,54 @@ function renderDailyTable(daily){
     return `<tr><td class="bold">${d.date}</td><td class="num">${fmt.m(d.spend)}</td><td class="num">${fmt.n(d.impressions)}</td><td class="num">${fmt.n(d.vc)}</td><td class="num" style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</td></tr>`;
   }).join('');
   return `<table class="data-table"><thead><tr><th>Date</th><th>Dépense</th><th>Impressions</th><th>Résultats</th><th>CPR</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function openMethodo(){
+  document.getElementById('methodoModal')?.remove();
+  const m=document.createElement('div');
+  m.id='methodoModal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:999;padding:20px';
+  m.innerHTML=`
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:12px;max-width:640px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:22px 26px 0;flex-shrink:0">
+      <div class="hero-kicker">ERA Music</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin-bottom:4px">Notre méthodologie</div>
+      <div style="font-size:11px;color:var(--text3)">Comment lire ce rapport, et comment nous décidons.</div>
+    </div>
+    <div style="padding:18px 26px 26px;overflow-y:auto" class="methodo-body">
+      <div class="m-sec">
+        <div class="m-ttl">01 · Ce que nous mesurons</div>
+        <p>Chaque « résultat » de ce rapport est un <b>View Content</b> : une personne qui a cliqué sur la publicité, atteint la page d'écoute et cliqué vers une plateforme de streaming. Ce n'est ni une impression, ni un like — c'est un auditeur qualifié amené à la porte du track.</p>
+        <p>Nous n'affichons pas les streams ici : la conversion finale dépend des plateformes, de la force du morceau et de facteurs hors publicité. Notre travail, mesurable et piloté au quotidien, est le volume d'auditeurs qualifiés et son coût.</p>
+      </div>
+      <div class="m-sec">
+        <div class="m-ttl">02 · Explore / Scale</div>
+        <p>Chaque campagne vit en deux temps. <b>EXPLORE</b> est un banc d'essai : plusieurs créations en concurrence sur un budget de test, pour identifier ce qui fonctionne réellement — pas ce qu'on suppose. Les coûts y sont structurellement plus élevés : c'est le prix de l'apprentissage.</p>
+        <p><b>SCALE</b> est l'amplification : seules les créations gagnantes y sont dupliquées, à l'identique, pour monter en budget sans perdre leur historique de diffusion.</p>
+        <p>Conséquence importante : une création coûteuse en Explore, puis coupée, n'est pas un échec — c'est le tri qui fait son travail. Le budget se concentre sur ce qui a fait ses preuves.</p>
+      </div>
+      <div class="m-sec">
+        <div class="m-ttl">03 · Lire le CPR</div>
+        <p>CPR = dépense ÷ résultats. Le code couleur du rapport suit nos standards internes, calibrés sur l'ensemble de notre catalogue :</p>
+        <div class="m-scale">
+          <span><i style="background:var(--green)"></i>&lt; 0,20 € — la cible</span>
+          <span><i style="background:var(--yellow)"></i>0,20 – 0,30 € — sous surveillance</span>
+          <span><i style="background:var(--red)"></i>&gt; 0,30 € — candidat à la coupe (en Explore)</span>
+        </div>
+        <p>Ces barres sont des références de travail, pas des garanties : le genre, le marché, la saison publicitaire et le morceau lui-même font varier les coûts. Elles servent une chose : décider vite et toujours sur les mêmes critères.</p>
+      </div>
+      <div class="m-sec">
+        <div class="m-ttl">04 · Le cycle de décision</div>
+        <p>Les décisions se prennent par fenêtres de 72 heures, uniquement sur des créations ayant assez dépensé pour être jugeables. À chaque cycle : les perdantes sont coupées, les gagnantes promues en Scale. La discipline prime sur l'intuition — chaque euro reste sur ce qui performe.</p>
+      </div>
+      <div style="font-size:10px;color:var(--text3);border-top:1px solid var(--border);padding-top:14px;margin-top:6px">Des questions sur une décision visible dans ce rapport ? Votre contact ERA y répond directement.</div>
+    </div>
+    <div style="padding:0 26px 20px;flex-shrink:0;text-align:right">
+      <button class="toggle" onclick="document.getElementById('methodoModal').remove()" style="padding:8px 20px">Fermer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m)m.remove();});
 }
 
 boot();
