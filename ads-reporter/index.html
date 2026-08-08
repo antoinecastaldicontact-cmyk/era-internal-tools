@@ -788,30 +788,62 @@ async function clientLink() {
     key = prompt('Clé admin (REPORT_ADMIN_SECRET définie sur Vercel) — stockée dans ce navigateur :');
     if (!key) return;
     localStorage.setItem('era_admin_key', key.trim());
-    key = key.trim();
   }
-  const btn = document.getElementById('clBtn');
-  btn.textContent = '… génération';
+  // Devine la jumelle EXPLORE/SCALE avec un matching assoupli (casse, ponctuation, préfixes ignorés)
+  const norm = n => n.toLowerCase().replace(/explore|scaling|scale/g,'').replace(/[^a-z0-9]/g,'');
+  const me = norm(c.name);
+  const guess = S.campaigns.find(o => {
+    if (o.id === c.id) return false;
+    const on = norm(o.name);
+    if (!on || !me) return false;
+    return on === me || (on.length >= 6 && me.length >= 6 && (on.includes(me) || me.includes(on)));
+  });
+  const baseName = c.name.replace(/\s*[-–—(]*\s*(EXPLORE|SCALE)[\s\S]*$/i,'').trim() || c.name;
+
+  document.getElementById('linkModal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'linkModal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:999';
+  const rows = S.campaigns.map(o => {
+    const checked = o.id === c.id ? 'checked disabled' : (guess && o.id === guess.id ? 'checked' : '');
+    const col = o.status === 'ACTIVE' ? 'var(--green)' : 'var(--text3)';
+    return `<label style="display:flex;align-items:center;gap:9px;padding:6px 4px;cursor:pointer;border-bottom:1px solid var(--border)">
+      <input type="checkbox" class="lm-camp" value="${o.id}" ${checked}/>
+      <span style="width:6px;height:6px;border-radius:50%;background:${col};flex-shrink:0"></span>
+      <span style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.name}</span>
+    </label>`;
+  }).join('');
+  m.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:20px;max-width:520px;width:92%;max-height:80vh;display:flex;flex-direction:column">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;margin-bottom:6px">Composer le rapport client</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Coche les campagnes à combiner (max 4) — ex. EXPLORE + SCALE du même track.${guess?` Jumelle pré-cochée : <b style="color:var(--text2)">${guess.name}</b>.`:' Aucune jumelle détectée automatiquement.'}</div>
+      <div class="inp-grp" style="margin-bottom:12px"><label>Titre affiché au client</label><input type="text" id="lmTitle" value="${baseName.replace(/"/g,'&quot;')}"/></div>
+      <div style="overflow-y:auto;flex:1;border:1px solid var(--border);border-radius:5px;padding:4px 10px;margin-bottom:14px">${rows}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="load-btn" onclick="document.getElementById('linkModal').remove()">Annuler</button>
+        <button class="gen-btn" style="width:auto;padding:9px 18px" onclick="submitClientLink()">Générer le lien</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+}
+
+async function submitClientLink() {
+  const key = localStorage.getItem('era_admin_key');
+  const ids = [...document.querySelectorAll('.lm-camp:checked')].map(i => i.value);
+  const title = document.getElementById('lmTitle').value.trim() || 'Rapport de campagne';
+  if (!ids.length) return;
+  if (ids.length > 4) { alert('Maximum 4 campagnes par rapport.'); return; }
   try {
-    // Détecte la campagne jumelle du même track (EXPLORE ↔ SCALE) pour un rapport combiné
-    const baseName = n => n.replace(/\s*[-–—(]*\s*(EXPLORE|SCALE)[\s\S]*$/i,'').trim();
-    const base = baseName(c.name);
-    const sib = base ? S.campaigns.find(o => o.id !== c.id && /(EXPLORE|SCALE)/i.test(o.name) && baseName(o.name) === base) : null;
-    let ids = [c.id];
-    if (sib && confirm(`Campagne jumelle détectée : « ${sib.name} ».\nL'inclure dans le même rapport (EXPLORE + SCALE combinés) ?`)) ids.push(sib.id);
-    const title = prompt('Titre affiché au client :', ids.length > 1 ? base : c.name) ?? c.name;
     const r = await fetch(`/api/meta-sign?key=${encodeURIComponent(key)}&c=${ids.join(',')}&t=${encodeURIComponent(title)}`);
     const d = await r.json();
     if (!r.ok) {
       if (r.status === 403) localStorage.removeItem('era_admin_key');
       throw new Error(d.message || 'Erreur');
     }
-    btn.textContent = '🔗 Générer le lien client';
     showLinkModal(d.url);
-    // Tentative de copie auto (fonctionne sur Chrome, bloquée sur Safari — le bouton Copier du modal prend le relais)
     try { await navigator.clipboard.writeText(d.url); } catch(_){}
   } catch(e) {
-    btn.textContent = '🔗 Générer le lien client';
     alert('Erreur : ' + e.message);
   }
 }
