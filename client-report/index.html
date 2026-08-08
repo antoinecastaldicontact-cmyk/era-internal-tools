@@ -61,6 +61,8 @@ svg text{font-family:'DM Mono',monospace}
 .ad-m{display:flex;justify-content:space-between;font-size:11px;padding:3px 0}
 .ad-ml{color:var(--text3)}
 .ad-mv{color:var(--text);font-weight:500}
+.ad-view{display:block;text-align:center;margin-top:11px;padding:8px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;text-decoration:none;transition:all .15s}
+.ad-view:hover{background:rgba(255,107,53,.12);border-color:var(--accent)}
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-family:'Syne',sans-serif;font-weight:700}
 .toggle{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:5px 13px;border-radius:20px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:10px;letter-spacing:.05em}
 .toggle.active{background:rgba(255,107,53,.15);border-color:var(--accent);color:var(--accent)}
@@ -152,7 +154,7 @@ function mergedCountries(){
 function mergedAds(){
   const all=[];
   for(const c of DATA.campaigns) for(const a of c.ads){
-    all.push({name:a.name,spend:parseFloat(a.spend||0),impressions:parseInt(a.impressions||0),vc:getVC(a.actions)});
+    all.push({name:a.name,spend:parseFloat(a.spend||0),impressions:parseInt(a.impressions||0),vc:getVC(a.actions),preview:a.preview||null});
   }
   return all.sort((a,b)=>b.spend-a.spend);
 }
@@ -304,6 +306,7 @@ function renderAds(){
       <div class="ad-m"><span class="ad-ml">Résultats</span><span class="ad-mv">${fmt.n(a.vc)}</span></div>
       <div class="ad-m"><span class="ad-ml">CPR</span><span class="ad-mv" style="color:${cprColor(cpr)}">${cpr>0?fmt.cpr(cpr):'—'}</span></div>
       <div class="ad-m"><span class="ad-ml">Impressions</span><span class="ad-mv">${fmt.n(a.impressions)}</span></div>
+      ${a.preview?`<a class="ad-view" href="${esc(a.preview)}" target="_blank" rel="noopener">Voir la publicité ↗</a>`:''}
     </div>`;
   }).join('');
 }

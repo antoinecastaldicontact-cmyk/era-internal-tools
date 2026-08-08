@@ -65,12 +65,15 @@ export default async function handler(req, res) {
       const meta = await graph(version, META_ACCESS_TOKEN, `${id}?fields=name,status,start_time`);
       const since = meta.start_time ? meta.start_time.split('T')[0] : '2020-01-01';
       const tr = `since=${since}&until=${end}`;
-      const [totals, daily, countries, ads] = await Promise.all([
+      const [totals, daily, countries, ads, adLinks] = await Promise.all([
         graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=${insightFields}&${tr}`),
         graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=${insightFields}&time_increment=1&${tr}&limit=400`),
         graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=${insightFields}&breakdowns=country&${tr}&limit=100`),
         graph(version, META_ACCESS_TOKEN, `${id}/insights?fields=ad_id,ad_name,spend,impressions,reach,actions&level=ad&${tr}&limit=60`),
+        graph(version, META_ACCESS_TOKEN, `${id}/ads?fields=id,preview_shareable_link&limit=200`).catch(() => ({ data: [] })),
       ]);
+      const linkById = {};
+      for (const a of (adLinks.data || [])) if (a.preview_shareable_link) linkById[a.id] = a.preview_shareable_link;
       // Whitelist stricte des champs renvoyés au navigateur du client
       const pick = (row) => ({
         date_start: row.date_start, date_stop: row.date_stop, country: row.country,
@@ -87,7 +90,7 @@ export default async function handler(req, res) {
         countries: (countries.data || []).map(pick),
         ads: (ads.data || []).map(a => ({
           name: a.ad_name, spend: a.spend, impressions: a.impressions,
-          reach: a.reach, actions: a.actions,
+          reach: a.reach, actions: a.actions, preview: linkById[a.ad_id] || null,
         })),
       };
     }));
