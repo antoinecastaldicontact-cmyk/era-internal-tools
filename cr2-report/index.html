@@ -316,13 +316,14 @@ function render(list, range, days) {
     const shown = winners.length ? winners : t.ads.sort((a,b)=>b.spend-a.spend).slice(0,3);
 
     const kinds = [...new Set(t.campaigns.map(c=>c.kind))];
-    const perDayLabel = days>1 ? ' (per day average)' : '';
 
     const emailHtml = `
 <p><b>${esc(t.name)}</b><br><span style="color:#555">Period: ${periodLabel(range, days)}</span></p>
 <table>
-  <tr><td class="lbl">Spend${days>1?' (per day average)':''}</td><td>${cur}${spendDay.toFixed(2)}</td></tr>
-  <tr><td class="lbl">Results (content views)${days>1?' — per day avg':''}</td><td>${days>1?vcDay:vc}</td></tr>
+  <tr><td class="lbl">Total spend</td><td>${cur}${spend.toFixed(2)}</td></tr>
+  ${days>1?`<tr><td class="lbl">Spend (per day average)</td><td>${cur}${spendDay.toFixed(2)}</td></tr>`:''}
+  <tr><td class="lbl">Total results (content views)</td><td>${vc.toLocaleString('en-US')}</td></tr>
+  ${days>1?`<tr><td class="lbl">Results (per day average)</td><td>${vcDay.toLocaleString('en-US')}</td></tr>`:''}
   <tr><td class="lbl">CPR (cost per result)</td><td>${cur}${isFinite(cpr)?cpr.toFixed(2):'—'} <span class="${cprC}">${cprW}</span></td></tr>
   <tr><td class="lbl">CTR</td><td>${ctr.toFixed(2)}% <span class="${ctrC}">${ctrW}</span></td></tr>
   <tr><td class="lbl">CPM</td><td>${cur}${cpm.toFixed(2)} <span class="${cpmC}">${cpmW}</span></td></tr>
@@ -330,15 +331,15 @@ function render(list, range, days) {
   <tr><td class="lbl">Impressions / reach</td><td>${impr.toLocaleString('en-US')} / ${reach.toLocaleString('en-US')}</td></tr>
 </table>
 <p>${verdictSentence(cpr,ctr,cpm,freq)}</p>
-<h3>Winning ads${perDayLabel}</h3>
+<h3>Winning ads (period totals)</h3>
 <table>
   <tr><th>Ad</th><th>CPR</th><th>CTR</th><th>Spend</th><th>Results</th><th>Preview</th></tr>
   ${shown.map(a=>`<tr>
     <td>${esc(a.name)}</td>
     <td>${cur}${isFinite(a.cpr)?a.cpr.toFixed(2):'—'}</td>
     <td>${a.ctr.toFixed(2)}%</td>
-    <td>${cur}${(a.spend/days).toFixed(2)}</td>
-    <td>${Math.round(a.vc/days)}</td>
+    <td>${cur}${a.spend.toFixed(2)}</td>
+    <td>${a.vc.toLocaleString('en-US')}</td>
     <td>${a.preview?`<a href="${esc(a.preview)}">View</a>`:'—'}</td>
   </tr>`).join('')}
 </table>`;
