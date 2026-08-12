@@ -78,14 +78,13 @@ a{color:var(--accent)}
 </div>
 
 <div class="controls">
-  <button class="pill" data-days="1">Hier</button>
-  <button class="pill active" data-days="3">3 jours</button>
-  <button class="pill" data-days="7">7 jours</button>
-  <button class="pill" data-days="14">14 jours</button>
-  <button class="pill" data-days="0">Custom</button>
-  <span id="customRange" style="display:none;gap:6px;align-items:center">
-    <input type="date" id="dSince"> → <input type="date" id="dUntil">
-  </span>
+  <input type="date" id="dSince"> <span style="color:var(--text3)">→</span> <input type="date" id="dUntil">
+  <span style="color:var(--text3);font-size:10px;margin:0 4px">présets :</span>
+  <button class="pill" data-preset="today">Aujourd'hui</button>
+  <button class="pill" data-preset="1">Hier</button>
+  <button class="pill" data-preset="3">3 jours</button>
+  <button class="pill" data-preset="7">7 jours</button>
+  <button class="pill" data-preset="14">14 jours</button>
   <button class="btn" onclick="load()">Charger</button>
   <span class="status" id="status"></span>
 </div>
@@ -153,21 +152,24 @@ function clearToken(){ localStorage.removeItem('era_meta_token'); TOKEN=''; aler
 // ════════════════════════════════════════════════
 // DATE RANGE
 // ════════════════════════════════════════════════
-let rangeDays = 3;
+function setRange(since, until) { $('#dSince').value = since; $('#dUntil').value = until; }
 document.querySelectorAll('.pill').forEach(p => p.onclick = () => {
   document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));
   p.classList.add('active');
-  rangeDays = parseInt(p.dataset.days);
-  $('#customRange').style.display = rangeDays === 0 ? 'inline-flex' : 'none';
+  const pr = p.dataset.preset;
+  if (pr === 'today') setRange(today(), today());
+  else if (pr === '1') setRange(daysAgo(1), daysAgo(1));
+  else setRange(daysAgo(parseInt(pr)), daysAgo(1)); // fenêtres glissantes finissant hier
 });
+// Défaut au chargement : 3 jours
+setRange(daysAgo(3), daysAgo(1));
+document.querySelector('[data-preset="3"]').classList.add('active');
+
 function getRange() {
-  if (rangeDays === 0) {
-    const s = $('#dSince').value, u = $('#dUntil').value;
-    if (!s || !u) throw new Error('Renseigne les deux dates du custom.');
-    return { since: s, until: u };
-  }
-  // "Hier" = J-1 seul ; sinon fenêtre glissante finissant hier (données du jour incomplètes)
-  return { since: daysAgo(rangeDays), until: daysAgo(1) };
+  const s = $('#dSince').value, u = $('#dUntil').value;
+  if (!s || !u) throw new Error('Sélectionne les deux dates.');
+  if (s > u) throw new Error('La date de début est après la date de fin.');
+  return { since: s, until: u };
 }
 function nbDays(r) {
   return Math.max(1, Math.round((new Date(r.until) - new Date(r.since)) / 86400000) + 1);
@@ -249,7 +251,8 @@ async function load() {
     }
 
     render(list, range, days);
-    st.textContent = `${list.length} track(s) · ${range.since} → ${range.until}`;
+    const partial = range.until >= today() ? " · ⚠ inclut aujourd'hui — données partielles" : '';
+    st.textContent = `${list.length} track(s) · ${range.since} → ${range.until}${partial}`;
   } catch (e) {
     body.innerHTML = `<div class="err"><b>Erreur Meta :</b> ${esc(e.message)}<br><br>
       Si c'est un problème de droits sur le compte CR2 (act_110521542482244), ton token actuel ne couvre peut-être que le compte ERA —
