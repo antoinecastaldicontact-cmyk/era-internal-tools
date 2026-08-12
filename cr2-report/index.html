@@ -72,7 +72,7 @@ a{color:var(--accent)}
   <div class="logo">CR2 <span>REPORT</span></div>
   <div class="nav-note">roll-up + copier-coller email · <a href="/ads-reporter/" style="color:var(--text3)">← ads reporter</a></div>
   <div class="acct-badge">
-    Sample Tools by Cr2 act_<b>110521542482244</b> ($) · Wav Of Luv épinglé (€)<br>
+    Sample Tools by Cr2 act_<b>110521542482244</b> ($) · campagnes EXPLORE/SCALE uniquement<br>
     <span class="tk" onclick="clearToken()">token</span>
   </div>
 </div>
@@ -100,12 +100,8 @@ a{color:var(--accent)}
 // ════════════════════════════════════════════════
 const BASE = "https://graph.facebook.com/v19.0";
 const ACCOUNTS = [
-  { id: "act_110521542482244", cur: "$", name: "Sample Tools by Cr2", mode: "all" },
-  // Wav Of Luv tourne encore sur le compte ERA (EUR) — épinglé par nom, retirer à la fin de la campagne.
-  { id: "act_1909983676326333", cur: "€", name: "ERA (Wav Of Luv épinglé)", mode: "pin", pinMatch: /wav\s*of\s*luv/i },
+  { id: "act_110521542482244", cur: "$", name: "Sample Tools by Cr2" },
 ];
-// Override manuel possible : localStorage.cr2_pinned_ids = "id1,id2" (IDs campagne compte ERA)
-const PINNED_IDS = (localStorage.getItem('cr2_pinned_ids') || '').split(',').map(s=>s.trim()).filter(Boolean);
 
 // Seuils internes (jamais imprimés dans l'email — verdicts seulement)
 const TH = {
@@ -195,10 +191,8 @@ async function load() {
     for (const acc of ACCOUNTS) {
       st.textContent = `Chargement ${acc.name}…`;
       const camps = (await api(`${acc.id}/campaigns?fields=id,name,status&limit=200`)).data || [];
-      let keep = camps;
-      if (acc.mode === 'pin') {
-        keep = camps.filter(c => PINNED_IDS.includes(c.id) || acc.pinMatch.test(c.name));
-      }
+      // Convention de nommage : seules les campagnes EXPLORE/SCALE entrent dans le report
+      const keep = camps.filter(c => /explore|scale/i.test(c.name));
       if (!keep.length) continue;
 
       // Insights niveau campagne sur la période (une requête par compte)
@@ -208,7 +202,7 @@ async function load() {
       for (const c of keep) {
         const row = insById[c.id];
         if (!row || !parseFloat(row.spend||0)) continue; // pas de spend sur la période → pas dans le report
-        const kind = /scale/i.test(c.name) ? 'SCALE' : (/explore/i.test(c.name) ? 'EXPLORE' : 'AUTRE');
+        const kind = /scale/i.test(c.name) ? 'SCALE' : 'EXPLORE';
         const trackName = c.name.replace(/[-–—|·]*\s*(explore|scale)\s*[-–—|·]*/ig, ' ').replace(/\s+/g,' ').trim() || c.name;
         const key = acc.id + '::' + trackName.toLowerCase();
         if (!tracks[key]) tracks[key] = { name: trackName, cur: acc.cur, acc: acc.id, campaigns: [], ads: [] };
@@ -272,6 +266,12 @@ function vCTR(v){ if(v>=TH.ctrStrong) return ['✓ strong','v-ok']; if(v>=TH.ctr
 function vCPM(v){ if(v>TH.cpmAlarm) return ['✗ high','v-bad']; if(v>=TH.cpmLo&&v<=TH.cpmHi) return ['✓ in range','v-ok']; if(v<1) return ['✗ low quality','v-bad']; return ['→ watch','v-watch']; }
 function vFreq(v){ return v<TH.freqMax ? ['✓ controlled','v-ok'] : ['✗ high','v-bad']; }
 
+function periodLabel(r, days){
+  const f = s => new Date(s+'T00:00:00').toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+  if (r.since === r.until) return `${f(r.since)} (1 day)`;
+  return `${f(r.since)} – ${f(r.until)} (${days} days)`;
+}
+
 function verdictSentence(cpr,ctr,cpm,freq){
   const good = [];
   const bad = [];
@@ -316,7 +316,7 @@ function render(list, range, days) {
     const perDayLabel = days>1 ? ' (per day average)' : '';
 
     const emailHtml = `
-<p><b>${esc(t.name)}</b> — ${esc(range.since)} → ${esc(range.until)}</p>
+<p><b>${esc(t.name)}</b><br><span style="color:#555">Period: ${periodLabel(range, days)}</span></p>
 <table>
   <tr><td class="lbl">Spend${days>1?' (per day average)':''}</td><td>${cur}${spendDay.toFixed(2)}</td></tr>
   <tr><td class="lbl">Results (content views)${days>1?' — per day avg':''}</td><td>${days>1?vcDay:vc}</td></tr>
