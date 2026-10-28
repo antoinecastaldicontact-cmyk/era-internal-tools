@@ -38,8 +38,10 @@ const F = {
 const TOKEN = process.env.AIRTABLE_TOKEN;
 const ORIGINS = (process.env.ORIGINS || 'ERA').split(',').map(s => s.trim()).filter(Boolean);
 const DRY_RUN = process.env.DRY_RUN === '1';
+// Mode test : liste d'IDs Spotify séparés par des virgules. Lit les playcounts, n'appelle pas Airtable.
+const TEST_IDS = (process.env.TEST_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
 
-if (!TOKEN) {
+if (!TOKEN && !TEST_IDS.length) {
   console.error('AIRTABLE_TOKEN manquant.');
   process.exit(2);
 }
@@ -141,8 +143,33 @@ async function readPlaycount(context, spotifyId) {
   }
 }
 
+// ---------- mode test (sans Airtable) ----------
+async function testOnly() {
+  console.log(`Mode test — ${TEST_IDS.length} IDs, aucune écriture Airtable.`);
+  const browser = await chromium.launch({ headless: true });
+  const major = String(browser.version()).split('.')[0];
+  const context = await browser.newContext({
+    locale: 'en-US',
+    userAgent: `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36`,
+    viewport: { width: 1280, height: 900 },
+  });
+  const lines = ['## Mode test — lecture Spotify', '', '| spotify_id | playcount | source | texte brut |', '|---|---:|---|---|'];
+  let failed = 0;
+  for (const id of TEST_IDS) {
+    let r;
+    try { r = await readPlaycount(context, id); } catch (e) { r = { value: null, error: String(e.message || e) }; }
+    if (r.value == null) failed++;
+    console.log(`${id}  ${r.value ?? 'ÉCHEC'}  ${r.source || ''}  ${JSON.stringify(r.raw ?? r.error ?? null)}`);
+    lines.push(`| ${id} | ${r.value ?? 'ÉCHEC'} | ${r.source || ''} | ${String(r.raw ?? r.error ?? '').slice(0, 80)} |`);
+  }
+  await browser.close();
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+  if (failed) process.exit(1);
+}
+
 // ---------- run ----------
 async function main() {
+  if (TEST_IDS.length) return testOnly();
   console.log(`Relevé du ${TODAY} → ligne Songs du ${TARGET} (delta vs ${PREV}). Origins: ${ORIGINS.join(', ')}${DRY_RUN ? ' — DRY RUN' : ''}`);
 
   const originFormula = `OR(${ORIGINS.map(o => `{Origin}='${o.replace(/'/g, "\\'")}'`).join(',')})`;

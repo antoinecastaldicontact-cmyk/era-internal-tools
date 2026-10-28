@@ -12,6 +12,10 @@ on:
         description: "Lire les streams sans rien écrire dans Airtable"
         type: boolean
         default: true
+      test_ids:
+        description: "Mode test : IDs Spotify séparés par des virgules (aucun appel Airtable)"
+        type: string
+        default: ""
 
 concurrency:
   group: spotify-streams
@@ -39,3 +43,4 @@ jobs:
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           ORIGINS: ERA
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+          TEST_IDS: ${{ inputs.test_ids }}
