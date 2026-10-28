@@ -13,7 +13,8 @@
 //
 // Env :
 //   AIRTABLE_TOKEN  (obligatoire) — PAT Airtable, scope data.records:read/write sur la base
-//   ORIGINS         (optionnel)   — valeurs du champ Origin de la Matrice, séparées par des virgules. Défaut : ERA
+//   ORIGINS         (optionnel)   — valeurs du champ Origin de la Matrice, séparées par des virgules,
+//                                   ou ALL pour tous les titres ayant un spotify_id. Défaut : ALL
 //   DRY_RUN         (optionnel)   — "1" pour lire sans écrire dans Airtable
 
 import { chromium } from 'playwright';
@@ -36,7 +37,8 @@ const F = {
 };
 
 const TOKEN = process.env.AIRTABLE_TOKEN;
-const ORIGINS = (process.env.ORIGINS || 'ERA').split(',').map(s => s.trim()).filter(Boolean);
+const ORIGINS = (process.env.ORIGINS || 'ALL').split(',').map(s => s.trim()).filter(Boolean);
+const ALL_ORIGINS = ORIGINS.length === 0 || ORIGINS.some(o => o.toUpperCase() === 'ALL');
 const DRY_RUN = process.env.DRY_RUN === '1';
 // Mode test : liste d'IDs Spotify séparés par des virgules. Lit les playcounts, n'appelle pas Airtable.
 const TEST_IDS = (process.env.TEST_IDS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -92,9 +94,20 @@ async function listAll(table, { formula, fields }) {
   return out;
 }
 
-async function writeBatches(method, records) {
-  for (let i = 0; i < records.length; i += 10) {
-    await at(method, `${BASE}/${T_SONGS}`, { records: records.slice(i, i + 10), typecast: true });
+// Écrit par lots de 10. Si un lot est refusé, chaque ligne est retentée seule :
+// une ligne invalide (ex. option track_name absente) ne doit pas faire perdre les 9 autres.
+async function writeRecords(method, items) {
+  for (let i = 0; i < items.length; i += 10) {
+    const chunk = items.slice(i, i + 10);
+    try {
+      await at(method, `${BASE}/${T_SONGS}`, { records: chunk.map(c => c.payload), typecast: true });
+    } catch {
+      for (const c of chunk) {
+        try { await at(method, `${BASE}/${T_SONGS}`, { records: [c.payload], typecast: true }); }
+        catch (e) { c.res.writeFailed = true; c.res.status = `échec écriture : ${String(e.message || e).slice(0, 140)}`; }
+        await sleep(250);
+      }
+    }
     await sleep(250);
   }
 }
@@ -177,9 +190,9 @@ async function testOnly() {
 // ---------- run ----------
 async function main() {
   if (TEST_IDS.length) return testOnly();
-  console.log(`Relevé du ${TODAY} → ligne Songs du ${TARGET} (delta vs ${PREV}). Origins: ${ORIGINS.join(', ')}${DRY_RUN ? ' — DRY RUN' : ''}`);
+  console.log(`Relevé du ${TODAY} → ligne Songs du ${TARGET} (delta vs ${PREV}). Origins: ${ALL_ORIGINS ? 'toutes' : ORIGINS.join(', ')}${DRY_RUN ? ' — DRY RUN' : ''}`);
 
-  const originFormula = `OR(${ORIGINS.map(o => `{Origin}='${o.replace(/'/g, "\\'")}'`).join(',')})`;
+  const originFormula = ALL_ORIGINS ? 'TRUE()' : `OR(${ORIGINS.map(o => `{Origin}='${o.replace(/'/g, "\\'")}'`).join(',')})`;
   const tracks = (await listAll(T_MATRICE, {
     formula: `AND(${originFormula}, {spotify_id}!='')`,
     fields: [F.m_songName, F.m_spotifyId, F.m_origin],
@@ -187,7 +200,9 @@ async function main() {
     matriceId: r.id,
     name: (r.fields[F.m_songName] || '').trim(),
     spotifyId: (r.fields[F.m_spotifyId] || '').trim(),
-  })).filter(t => /^[A-Za-z0-9]{22}$/.test(t.spotifyId));
+    origin: r.fields[F.m_origin] || '—',
+  })).filter(t => /^[A-Za-z0-9]{22}$/.test(t.spotifyId))
+    .sort((a, b) => a.origin.localeCompare(b.origin) || a.name.localeCompare(b.name));
 
   console.log(`${tracks.length} titres à relever.`);
 
@@ -244,35 +259,37 @@ async function main() {
     const fields = { [F.s_total]: r.total };
     if (r.daily != null) fields[F.s_daily] = r.daily;
     const existing = rowsTarget.get(r.matriceId);
-    if (existing) updates.push({ id: existing, fields });
-    else creates.push({ fields: { ...fields, [F.s_date]: TARGET, [F.s_trackName]: r.name, [F.s_link]: [r.matriceId] } });
+    if (existing) updates.push({ res: r, payload: { id: existing, fields } });
+    else creates.push({ res: r, payload: { fields: { ...fields, [F.s_date]: TARGET, [F.s_trackName]: r.name, [F.s_link]: [r.matriceId] } } });
   }
   if (DRY_RUN) {
     console.log(`DRY RUN — ${creates.length} créations et ${updates.length} mises à jour non écrites.`);
   } else {
-    await writeBatches('POST', creates);
-    await writeBatches('PATCH', updates);
-    console.log(`Écrit : ${creates.length} lignes créées, ${updates.length} mises à jour.`);
+    await writeRecords('POST', creates);
+    await writeRecords('PATCH', updates);
+    const ko = results.filter(r => r.writeFailed).length;
+    console.log(`Écrit : ${creates.length} créations, ${updates.length} mises à jour demandées, ${ko} refusées.`);
   }
 
   // ---------- résumé ----------
   const failed = results.filter(r => r.total == null);
   const anomalies = results.filter(r => r.status.startsWith('ANOMALIE'));
+  const writeKo = results.filter(r => r.writeFailed);
   const lines = [
     `## Streams Spotify — ligne du ${TARGET}${DRY_RUN ? ' (dry run)' : ''}`,
     '',
-    `${results.length} titres · ${results.length - failed.length} lus · ${failed.length} échecs · ${anomalies.length} anomalies`,
+    `${results.length} titres · ${results.length - failed.length} lus · ${failed.length} échecs de lecture · ${writeKo.length} échecs d'écriture · ${anomalies.length} anomalies`,
     '',
-    '| Titre | total_streams | daily_streams | Statut |',
-    '|---|---:|---:|---|',
-    ...results.map(r => `| ${r.name} | ${r.total ?? '—'} | ${r.daily ?? ''} | ${r.status}${r.error ? ` (${r.error.slice(0, 80)})` : ''} |`),
+    '| Origin | Titre | total_streams | daily_streams | Statut |',
+    '|---|---|---:|---:|---|',
+    ...results.map(r => `| ${r.origin} | ${r.name} | ${r.total ?? '—'} | ${r.daily ?? ''} | ${r.status}${r.error ? ` (${r.error.slice(0, 80)})` : ''} |`),
   ];
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
   annotate(`Streams ${TARGET}${DRY_RUN ? ' (dry run)' : ''} — ${results.length - failed.length}/${results.length} lus`,
-    results.map(r => `${r.name} · ${r.total ?? '—'} · ${r.daily ?? ''} · ${r.status}`));
+    results.map(r => `${r.origin} · ${r.name} · ${r.total ?? '—'} · ${r.daily ?? ''} · ${r.status}`));
 
   // Un run avec des échecs sort en erreur : GitHub notifie par mail, le trou ne passe pas inaperçu.
-  if (failed.length || anomalies.length) process.exit(1);
+  if (failed.length || anomalies.length || writeKo.length) process.exit(1);
 }
 
 main().catch(e => {

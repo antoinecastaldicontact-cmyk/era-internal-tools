@@ -1,8 +1,10 @@
-name: Spotify streams → Airtable (ERA)
+name: Spotify streams → Airtable (Reporting Songs)
 
 # Relevé quotidien du playcount Spotify, écrit dans la table Songs (ligne J-1).
 # Cron en UTC : 07:37 UTC = 08:37 Paris en hiver, 09:37 en été — même créneau que l'ancien scénario Make 9213141 (09:00 Paris).
 # Garder un horaire fixe : daily_streams est un écart entre deux relevés consécutifs.
+# Créneau du matin volontaire : Spotify rafraîchit les playcounts en soirée (mises à jour encore observées après 21h40) ;
+# un relevé à 18h tomberait au milieu du rafraîchissement.
 on:
   schedule:
     - cron: '37 7 * * *'
@@ -47,7 +49,7 @@ jobs:
         run: node scrape.mjs
         env:
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
-          ORIGINS: ERA
+          ORIGINS: ALL
           # Un push n'écrit jamais : dry run complet si le secret Airtable existe, sinon lecture des 4 titres témoins.
           DRY_RUN: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) && '1' || '0' }}
           TEST_IDS: ${{ (github.event_name == 'push' && secrets.AIRTABLE_TOKEN == '') && '6pC3dvvvEbmxvVnKsCkBVm,5se5BnFIsMf0CVTno42pq0,4hEYkH9bBbSEHNrts1iz3a,4cRXvR0xaasQCwlaYMt9b8' || inputs.test_ids }}

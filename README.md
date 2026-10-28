@@ -48,10 +48,10 @@ Hors site : le dossier `jobs/` et `.github/` sont exclus du déploiement Vercel 
 
 - **Code** : `jobs/spotify-streams/scrape.mjs` · **Workflow** : `.github/workflows/spotify-streams.yml`
 - **Quand** : tous les jours à 07:37 UTC (08:37 Paris l'hiver, 09:37 l'été — créneau de l'ancien scénario Make). Lancement manuel possible depuis l'onglet Actions (dry run par défaut). Chaque push sur le job lance un dry run (aucune écriture) : complet si le secret existe, sinon 4 titres témoins.
-- **Quoi** : pour chaque titre de la Matrice (`Origin = ERA`, `spotify_id` renseigné), ouvre la page Spotify dans un Chromium headless et lit le playcount public. Écrit dans la table Songs, ligne `Date = J-1` : `total_streams`, et `daily_streams = total(J-1) − total(J-2)` quand la ligne J-2 existe.
+- **Quoi** : pour chaque titre de la Matrice ayant un `spotify_id` (ERA, Agence, CR2 Records — `ORIGINS: ALL`), ouvre la page Spotify dans un Chromium headless et lit le playcount public. Écrit dans la table Songs, ligne `Date = J-1` : `total_streams`, et `daily_streams = total(J-1) − total(J-2)` quand la ligne J-2 existe.
 - **Règle** : un nombre illisible n'est jamais écrit. Pas de J-2 ou total en baisse → `daily_streams` laissé vide. Tout échec fait sortir le run en erreur (mail GitHub).
 - **Secret requis** : `AIRTABLE_TOKEN` (Settings → Secrets → Actions), scope `data.records:read` + `data.records:write` sur la base `appnSgCIW2ik08BFm`.
-- **Étendre à 129 / CR2** : changer `ORIGINS` dans le workflow (ex. `ERA,Agence,CR2 Records`).
+- **Restreindre le périmètre** : changer `ORIGINS` dans le workflow (ex. `ERA`). Pour une autre base (129), dupliquer le job avec ses propres IDs de base et de tables.
 
 ## Notes de sécurité
 
