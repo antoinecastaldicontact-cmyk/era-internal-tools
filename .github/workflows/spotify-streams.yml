@@ -6,7 +6,7 @@ name: Spotify streams → Airtable (ERA)
 on:
   schedule:
     - cron: '37 7 * * *'
-  # Toute modification du job lance un test de lecture sur 4 titres témoins, sans écrire dans Airtable.
+  # Toute modification du job lance un dry run (aucune écriture Airtable).
   push:
     branches: [main]
     paths:
@@ -48,5 +48,6 @@ jobs:
         env:
           AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
           ORIGINS: ERA
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
-          TEST_IDS: ${{ github.event_name == 'push' && '6pC3dvvvEbmxvVnKsCkBVm,5se5BnFIsMf0CVTno42pq0,4hEYkH9bBbSEHNrts1iz3a,4cRXvR0xaasQCwlaYMt9b8' || inputs.test_ids }}
+          # Un push n'écrit jamais : dry run complet si le secret Airtable existe, sinon lecture des 4 titres témoins.
+          DRY_RUN: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)) && '1' || '0' }}
+          TEST_IDS: ${{ (github.event_name == 'push' && secrets.AIRTABLE_TOKEN == '') && '6pC3dvvvEbmxvVnKsCkBVm,5se5BnFIsMf0CVTno42pq0,4hEYkH9bBbSEHNrts1iz3a,4cRXvR0xaasQCwlaYMt9b8' || inputs.test_ids }}
