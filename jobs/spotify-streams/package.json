@@ -1,0 +1,12 @@
+{
+  "name": "era-spotify-streams",
+  "private": true,
+  "type": "module",
+  "description": "Relevé quotidien du playcount Spotify des titres de la Matrice vers la table Songs (Airtable).",
+  "scripts": {
+    "start": "node scrape.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

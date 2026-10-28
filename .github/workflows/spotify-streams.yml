@@ -1,0 +1,41 @@
+name: Spotify streams → Airtable (ERA)
+
+# Relevé quotidien du playcount Spotify, écrit dans la table Songs (ligne J-1).
+# Cron en UTC : 16:37 UTC = 17:37 Paris en hiver, 18:37 en été — même créneau que l'ancien pipeline Apify (~18h).
+# Garder un horaire fixe : daily_streams est un écart entre deux relevés consécutifs.
+on:
+  schedule:
+    - cron: '37 16 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Lire les streams sans rien écrire dans Airtable"
+        type: boolean
+        default: true
+
+concurrency:
+  group: spotify-streams
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: jobs/spotify-streams
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Installer les dépendances
+        run: npm install --no-audit --no-fund
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Relever les streams
+        run: node scrape.mjs
+        env:
+          AIRTABLE_TOKEN: ${{ secrets.AIRTABLE_TOKEN }}
+          ORIGINS: ERA
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}

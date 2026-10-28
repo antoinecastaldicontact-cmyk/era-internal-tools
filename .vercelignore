@@ -1,0 +1,3 @@
+# Jobs planifiés (GitHub Actions) : ne pas les publier sur le site Vercel.
+jobs/
+.github/
