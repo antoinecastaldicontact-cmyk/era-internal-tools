@@ -143,6 +143,12 @@ async function readPlaycount(context, spotifyId) {
   }
 }
 
+// Une seule annotation GitHub (lisible via l'API checks, visible en tête du run) : GitHub plafonne le nombre d'annotations par étape.
+function annotate(title, lines) {
+  const esc = t => String(t).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  console.log(`::notice title=${esc(title)}::${esc(lines.join('\n'))}`);
+}
+
 // ---------- mode test (sans Airtable) ----------
 async function testOnly() {
   console.log(`Mode test — ${TEST_IDS.length} IDs, aucune écriture Airtable.`);
@@ -164,6 +170,7 @@ async function testOnly() {
   }
   await browser.close();
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+  annotate('Mode test — lecture Spotify', lines.slice(4).map(l => l.replace(/^\| | \|$/g, '').replace(/ \| /g, ' · ')));
   if (failed) process.exit(1);
 }
 
@@ -261,6 +268,8 @@ async function main() {
     ...results.map(r => `| ${r.name} | ${r.total ?? '—'} | ${r.daily ?? ''} | ${r.status}${r.error ? ` (${r.error.slice(0, 80)})` : ''} |`),
   ];
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n');
+  annotate(`Streams ${TARGET}${DRY_RUN ? ' (dry run)' : ''} — ${results.length - failed.length}/${results.length} lus`,
+    results.map(r => `${r.name} · ${r.total ?? '—'} · ${r.daily ?? ''} · ${r.status}`));
 
   // Un run avec des échecs sort en erreur : GitHub notifie par mail, le trou ne passe pas inaperçu.
   if (failed.length || anomalies.length) process.exit(1);
