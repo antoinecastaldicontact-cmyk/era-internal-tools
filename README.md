@@ -11,6 +11,41 @@ Hub des outils internes ERA Music. Hébergé sur Vercel, déployé automatiqueme
 | Sound Intel | Beta | [/sound-intel/](/sound-intel/) |
 | Cockpit royalties | Live | [/royalties/](/royalties/) |
 
+## Formulaire de release (artiste)
+
+Remplace le Fillout « 3 - Master Catalog (Artist Version) ». Page artiste : `/release-form/?t=<lien signé>` (non listée dans le hub, noindex).
+
+**Flux**
+
+1. Airtable, table *Master Catalog (Meta)* : Pipeline → « Lien à envoyer ».
+2. L'automation Airtable appelle `GET /api/release/?action=mint&r=<recordId>` : le lien signé est écrit dans « Form Link », Pipeline → « Lien envoyé ». Régénérer le lien révoque l'ancien.
+3. L'artiste remplit, enregistre le brouillon autant de fois qu'il veut (autosave), uploade WAV / artwork / photos / contenus vers Drive (relais par morceaux de 4 Mo vers une session resumable).
+4. « Submit final release » : validation serveur, résolution artistes / ayants droits (fiches existantes complétées champs vides seulement, nouvelles fiches « À valider »), écriture des champs titre, flags QC, archive JSON dans le dossier Drive, mail interne. Pipeline → « Soumis ».
+5. QC dans Airtable : « QC validé » verrouille le formulaire ; « Correction demandée » + note le rouvre avec la note affichée.
+
+**Fichiers**
+
+| Fichier | Rôle |
+|---|---|
+| `release-form/index.html` | UI artiste (vanilla, ES module) |
+| `release-form/rules.js` | Schéma de données + validation, partagé client/serveur |
+| `api/release.js` | Routeur `?action=` : mint, config, save, search, upload-start, chunk, artwork, submit |
+| `api/_release/*.js` | Airtable (IDs de champs), Google (Drive + mail via Apps Script), tokens HMAC |
+| `tools/release-apps-script/` | Apps Script « ERA — Releases » : jeton Drive court + envoi de mail (non déployé par Vercel) |
+
+**Variables Vercel**
+
+| Variable | Obligatoire | Rôle |
+|---|---|---|
+| `AIRTABLE_TOKEN` | oui | Lecture/écriture base Catalog (ou `RELEASE_AIRTABLE_TOKEN` si le token existant ne couvre pas cette base) |
+| `RELEASE_SIGNING_SECRET` | oui | ≥ 32 caractères, signe liens artiste et jetons d'upload |
+| `RELEASE_APPS_SCRIPT_URL` | oui | URL `/exec` du web app Apps Script |
+| `RELEASE_APPS_SCRIPT_SECRET` | oui | Secret loggé par `setup()` dans l'Apps Script |
+| `RELEASE_NOTIFY_EMAILS` | non | Destinataires du mail interne (défaut : acastaldi@eramusic.io) |
+| `RELEASE_PUBLIC_BASE` | non | Domaine des liens artiste si différent de l'hôte appelé |
+
+Aucun secret dans le repo. Le lien artiste ne sort jamais de l'API : il est écrit uniquement dans Airtable.
+
 ## Stack
 
 - **HTML/CSS/JS vanilla** pour la majorité des outils — pas de build step, pas de dépendances

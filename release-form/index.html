@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="data:,">
+<title>ERA Music · Release form</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050507;--bg2:#0c0c10;--bg3:#13131a;--border:#1e1e2a;--border2:#2c2c40;
+  --text:#e8e8f0;--text2:#8a8ab0;--text3:#4a4a68;--accent:#8b85ff;
+  --ok:#00e5a0;--warn:#ffb830;--err:#ff6b6b;
+  --sans:'Space Grotesk',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;line-height:1.55;min-height:100vh;padding-bottom:120px}
+a{color:var(--accent)}
+.wrap{max-width:760px;margin:0 auto;padding:36px 20px 40px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+.brand{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--text2)}
+.save-state{font-family:var(--mono);font-size:11px;color:var(--text3)}
+.save-state.ok{color:var(--ok)} .save-state.err{color:var(--err)}
+h1{font-size:30px;font-weight:500;letter-spacing:-.01em;line-height:1.15;margin-bottom:6px}
+h2{font-size:21px;font-weight:500;margin-bottom:6px}
+h3{font-size:15px;font-weight:600;margin-bottom:8px}
+.sub{color:var(--text2);font-size:14px}
+.lead{color:var(--text2);margin:14px 0 22px}
+.banner{border:1px solid var(--border2);background:var(--bg2);border-radius:10px;padding:12px 14px;font-size:13.5px;color:var(--text);margin:16px 0}
+.banner b{font-weight:600}
+.banner.warn{border-color:#5a4520;background:#1a1408}
+.banner.err{border-color:#5a2525;background:#1a0b0b}
+.stepper{display:flex;gap:6px;flex-wrap:wrap;margin:22px 0 26px}
+.stepper button{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:6px 11px;cursor:pointer}
+.stepper button.on{color:var(--text);border-color:var(--accent)}
+.stepper button.done::after{content:' ✓';color:var(--ok)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.field{margin-bottom:16px}
+.field > label,.lbl{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.req::after{content:' *';color:var(--err)}
+.hint{font-size:12.5px;color:var(--text2);margin:-2px 0 7px}
+input[type=text],input[type=email],input[type=tel],input[type=number],input[type=url],select,textarea{
+  width:100%;font:inherit;font-size:14px;color:var(--text);background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;outline:none}
+textarea{min-height:110px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
+@media(max-width:600px){.row2,.row3{grid-template-columns:1fr}}
+.radios{display:flex;gap:8px;flex-wrap:wrap}
+.radios label{display:flex;align-items:center;gap:7px;border:1px solid var(--border2);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:14px}
+.radios input{accent-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:999px;padding:5px 6px 5px 11px;font-size:13px}
+.chip .tag{font-family:var(--mono);font-size:9.5px;color:var(--warn);text-transform:uppercase}
+.chip button,.x{background:none;border:none;color:var(--text2);cursor:pointer;font-size:15px;line-height:1;padding:0 5px}
+.chip button:hover,.x:hover{color:var(--err)}
+.picker{position:relative}
+.results{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;z-index:20;overflow:hidden;display:none}
+.results.open{display:block}
+.results button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text);font:inherit;font-size:13.5px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.results button:last-child{border-bottom:none}
+.results button:hover{background:var(--bg2)}
+.results small{color:var(--text2);margin-left:6px}
+.suggest{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.suggest button{background:none;border:1px dashed var(--border2);color:var(--text2);border-radius:999px;padding:4px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.suggest button:hover{color:var(--text);border-color:var(--accent)}
+.drop{display:block;border:1px dashed var(--border2);border-radius:10px;padding:18px;text-align:center;color:var(--text2);font-size:13.5px;cursor:pointer;background:var(--bg)}
+.drop.over{border-color:var(--accent);color:var(--text)}
+.drop input{display:none}
+.file{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:13px}
+.file .meta{flex:1;min-width:0}
+.file .name{word-break:break-all}
+.file .st{font-family:var(--mono);font-size:11px;color:var(--text2);margin-top:2px}
+.file .st.ok{color:var(--ok)} .file .st.err{color:var(--err)}
+.file .warn{color:var(--warn);font-size:12px;margin-top:3px}
+.bar{height:3px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+.person{border:1px solid var(--border2);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--bg)}
+.person-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.person-head .nm{flex:1;font-weight:500}
+.share{width:110px !important;text-align:right}
+.onfile{color:var(--ok);font-size:13px}
+.total{font-family:var(--mono);font-size:12px;margin:8px 0 4px}
+.total.ok{color:var(--ok)} .total.bad{color:var(--warn)}
+.btn{font:inherit;font-size:14px;font-weight:500;border-radius:8px;padding:10px 16px;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text)}
+.btn:hover{border-color:var(--text2)}
+.btn.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+.btn.primary:hover{opacity:.9}
+.btn.ghost{background:none}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.small{font-size:12.5px;padding:6px 10px}
+.foot{position:fixed;left:0;right:0;bottom:0;background:rgba(5,5,7,.96);border-top:1px solid var(--border);backdrop-filter:blur(6px);z-index:30}
+.foot-in{max-width:760px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.prog{flex:1;min-width:140px}
+.prog .t{font-family:var(--mono);font-size:10.5px;color:var(--text2);letter-spacing:.05em}
+.prog .bar{height:4px;margin-top:5px}
+.prog .bar i{background:var(--ok)}
+.miss{list-style:none}
+.miss li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.miss li:last-child{border-bottom:none}
+.miss .w{color:var(--warn)}
+.sum dt{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-top:10px}
+.sum dd{font-size:14px;white-space:pre-wrap;word-break:break-word}
+.sum-head{display:flex;justify-content:space-between;align-items:center}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:10px 14px;font-size:13.5px;z-index:50;display:none;max-width:90vw}
+.toast.on{display:block}.toast.err{border-color:var(--err)}
+.center{text-align:center;padding:60px 0;color:var(--text2)}
+.legal{font-size:11.5px;color:var(--text3);margin-top:30px}
+ul.plain{margin:6px 0 0 18px;color:var(--text2);font-size:14px}
+ul.plain li{margin:3px 0}
+.count{font-family:var(--mono);font-size:10.5px;color:var(--text3);text-align:right;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">ERA MUSIC</div>
+    <div class="save-state" id="saveState"></div>
+  </header>
+  <main id="app"><div class="center">Loading…</div></main>
+  <p class="legal">ERA Music SAS uses this information only to release this track, draft the contract and account royalties. Never share passwords in this form.</p>
+</div>
+<div class="foot" id="foot" hidden>
+  <div class="foot-in">
+    <div class="prog"><div class="t" id="progT">0 % complete</div><div class="bar"><i id="progB"></i></div></div>
+    <button class="btn ghost small" data-act="back" id="bBack">Back</button>
+    <button class="btn small" data-act="next" id="bNext">Next</button>
+    <button class="btn small" data-act="save">Save draft</button>
+    <button class="btn primary small" data-act="submit">Submit final release</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { STEPS, STEP_LABELS, GENRES, LANGUAGES, MASTERING, NATIONALITIES, VERSIONS, FILE_KINDS, MAX_FILE_BYTES, MAX_FILES,
+  emptyData, validate, personMissing, personName, sharesTotal, isInstrumental } from './rules.js';
+
+const TOKEN = new URLSearchParams(location.search).get('t') || '';
+const api = (a) => `/api/release/?action=${a}&t=${encodeURIComponent(TOKEN)}`;
+const CHUNK = 4 * 1024 * 1024;
+const S = { cfg: null, data: null, step: 'welcome', dirty: false, saving: false, saveAgain: false, savedAt: null,
+  up: {}, thumbs: {}, files: {}, submitted: false, timer: null };
+
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const fmtSize = (n) => n > 1e9 ? (n / 1e9).toFixed(2) + ' GB' : n > 1e6 ? (n / 1e6).toFixed(1) + ' MB' : Math.round(n / 1e3) + ' KB';
+const fmtDur = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+const hhmm = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const fmtDate = (s) => s ? new Date(s + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+
+function toast(msg, kind = '') {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast on ' + kind;
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.className = 'toast'; }, kind === 'err' ? 7000 : 3800);
+}
+
+async function getJson(url) {
+  const r = await fetch(url);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(d.error || 'Error ' + r.status), { status: r.status, data: d });
+  return d;
+}
+async function postJson(url, body) {
+  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(d.error || 'Error ' + r.status), { status: r.status, data: d });
+  return d;
+}
+
+const getPath = (o, p) => p.split('.').reduce((x, k) => (x == null ? undefined : x[k]), o);
+function setPath(o, p, v) {
+  const ks = p.split('.');
+  let x = o;
+  for (let i = 0; i < ks.length - 1; i++) {
+    if (x[ks[i]] == null) x[ks[i]] = /^\d+$/.test(ks[i + 1]) ? [] : {};
+    x = x[ks[i]];
+  }
+  x[ks[ks.length - 1]] = v;
+}
+
+function merge(base, saved) {
+  if (!saved || typeof saved !== 'object') return base;
+  const out = Array.isArray(base) ? saved : { ...base };
+  if (Array.isArray(base)) return Array.isArray(saved) ? saved : base;
+  for (const k of Object.keys(saved)) {
+    out[k] = base[k] && typeof base[k] === 'object' && !Array.isArray(base[k]) ? merge(base[k], saved[k]) : saved[k];
+  }
+  return out;
+}
+
+/* ---------- boot ---------- */
+function fatal(msg) {
+  $('#app').innerHTML = `<h1>Release form</h1><div class="banner err">${esc(msg)}</div><p class="sub">Ask ERA for a new link.</p>`;
+}
+
+async function boot() {
+  if (!TOKEN) return fatal('This link is incomplete. Use the full link ERA sent you.');
+  try { S.cfg = await getJson(api('config')); } catch (e) { return fatal(e.message); }
+  const fresh = !S.cfg.data;
+  S.data = merge(emptyData(), S.cfg.data || {});
+  if (fresh) {
+    S.data.release.title = S.cfg.title || '';
+    S.data.release.type = S.cfg.releaseType || 'Single';
+    S.data.release.mainArtists = (S.cfg.mainArtists || []).map(a => ({ id: a.id, name: a.name }));
+  }
+  for (const f of S.data.files) if (f.status === 'uploading') { f.status = 'error'; f.error = 'Upload interrupted. Remove it and add the file again.'; }
+  render();
+}
+
+/* ---------- validation helpers ---------- */
+const ctx = () => ({ photosOnFile: Boolean(S.cfg?.photosOnFile) });
+const V = () => validate(S.data, ctx());
+function stepDone(step) {
+  if (step === 'welcome') return true;
+  return !V().missing.some(m => m.step === step);
+}
+
+/* ---------- render ---------- */
+function render() {
+  const app = $('#app');
+  if (S.submitted) { $('#foot').hidden = true; app.innerHTML = submittedView(); return; }
+  if (S.cfg.locked) { $('#foot').hidden = true; app.innerHTML = lockedView(); return; }
+  $('#foot').hidden = false;
+  app.innerHTML = head() + stepper() + `<section id="step">${RENDER[S.step]()}</section>`;
+  updateFoot();
+}
+function renderStep() {
+  const el = $('#step');
+  if (!el) return render();
+  const y = window.scrollY;
+  el.innerHTML = RENDER[S.step]();
+  const st = $('.stepper'); if (st) st.outerHTML = stepper();
+  window.scrollTo(0, y);
+  updateFoot();
+}
+
+function head() {
+  const a = (S.data.release.mainArtists || []).map(x => x.name).join(', ');
+  const title = S.data.release.title || S.cfg.title || S.cfg.productName;
+  const note = S.cfg.correctionNote
+    ? `<div class="banner warn"><b>ERA asked for changes.</b><br>${esc(S.cfg.correctionNote)}</div>` : '';
+  return `<h1>${esc(title)}</h1>
+    <div class="sub">${esc(a)}${S.cfg.releaseDate ? ' · Planned release ' + esc(fmtDate(S.cfg.releaseDate)) : ''}</div>
+    ${note}
+    <div class="banner"><b>Save anytime.</b> This link stays valid: come back as often as you need, from any device.
+      Nothing reaches ERA until you press <b>Submit final release</b>.</div>`;
+}
+
+function stepper() {
+  return `<nav class="stepper">${STEPS.map((s, i) => `<button data-act="goto" data-step="${s}" class="${s === S.step ? 'on' : ''} ${i > 0 && stepDone(s) ? 'done' : ''}">${i ? i + '. ' : ''}${esc(STEP_LABELS[s])}</button>`).join('')}</nav>`;
+}
+
+function updateFoot() {
+  const v = V();
+  $('#progT').textContent = `${v.progress} % complete`;
+  $('#progB').style.width = v.progress + '%';
+  const i = STEPS.indexOf(S.step);
+  $('#bBack').disabled = i <= 0;
+  $('#bNext').textContent = i === STEPS.length - 2 ? 'Review' : 'Next';
+  $('#bNext').hidden = i >= STEPS.length - 1;
+}
+
+/* ---------- small builders ---------- */
+const bind = (path) => `data-bind="${path}"`;
+const val = (path) => esc(getPath(S.data, path) ?? '');
+function input(path, { label, hint, req, type = 'text', ph = '', live = false, list = '' } = {}) {
+  return `<div class="field">${label ? `<label class="${req ? 'req' : ''}">${esc(label)}</label>` : ''}${hint ? `<div class="hint">${hint}</div>` : ''}
+    <input type="${type}" ${bind(path)} value="${val(path)}" placeholder="${esc(ph)}" ${live ? 'data-live' : ''} ${list ? `list="${list}"` : ''}></div>`;
+}
+function area(path, { label, hint, req, ph = '', rows = 5, count = false } = {}) {
+  return `<div class="field">${label ? `<label class="${req ? 'req' : ''}">${esc(label)}</label>` : ''}${hint ? `<div class="hint">${hint}</div>` : ''}
+    <textarea rows="${rows}" ${bind(path)} placeholder="${esc(ph)}" ${count ? 'data-count' : ''}>${val(path)}</textarea>${count ? `<div class="count" data-count-for="${path}">${String(getPath(S.data, path) || '').trim().length} characters</div>` : ''}</div>`;
+}
+function select(path, options, { label, hint, req, empty = 'Choose…', rerender = false } = {}) {
+  const cur = getPath(S.data, path) ?? '';
+  const opts = options.map(o => Array.isArray(o) ? o : [o, o]);
+  return `<div class="field">${label ? `<label class="${req ? 'req' : ''}">${esc(label)}</label>` : ''}${hint ? `<div class="hint">${hint}</div>` : ''}
+    <select ${bind(path)} ${rerender ? 'data-rerender' : ''}><option value="">${esc(empty)}</option>${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === cur ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>`;
+}
+function radios(path, options, { label, hint, req, rerender = true } = {}) {
+  const cur = getPath(S.data, path) ?? '';
+  const name = 'r_' + path.replace(/\W/g, '_');
+  return `<div class="field">${label ? `<div class="lbl ${req ? 'req' : ''}">${esc(label)}</div>` : ''}${hint ? `<div class="hint">${hint}</div>` : ''}
+    <div class="radios">${options.map(([v, l]) => `<label><input type="radio" name="${name}" value="${esc(v)}" ${bind(path)} ${rerender ? 'data-rerender' : ''} ${v === cur ? 'checked' : ''}>${esc(l)}</label>`).join('')}</div></div>`;
+}
+const nav = () => `<div style="display:flex;gap:10px;justify-content:space-between;margin-top:22px">
+  <button class="btn ghost" data-act="back" ${STEPS.indexOf(S.step) <= 0 ? 'disabled' : ''}>Back</button>
+  <button class="btn" data-act="next">${STEPS.indexOf(S.step) === STEPS.length - 2 ? 'Review' : 'Next'}</button></div>`;
+
+/* ---------- steps ---------- */
+const RENDER = {
+  welcome() {
+    return `<h2>Release form</h2>
+      <p class="lead">Everything ERA needs to release this track, in one place: audio, artwork, credits, rightholders, splits and pitch. About 15 minutes if you have everything at hand.</p>
+      <div class="card"><h3>Have ready</h3><ul class="plain">
+        <li>The final master as a WAV file (24-bit)</li>
+        <li>The artwork: 3000 × 3000 px, JPG or PNG</li>
+        <li>The lyrics</li>
+        <li>For every contributor: legal name, email, postal address, and their share</li>
+        <li>Artist photos, and any content you already made for this track</li></ul></div>
+      <div class="card"><h3>Working with other artists or producers?</h3>
+        <p class="sub">You collect everyone's details and fill them in here. In <b>Rightholders &amp; splits</b>, the button
+        <b>Copy the list for my collaborators</b> gives you the exact list to send them. Save, wait for their answers, come back with the same link.</p></div>
+      <button class="btn primary" data-act="next">Start</button>`;
+  },
+
+  release() {
+    const r = S.data.release;
+    return `<h2>Release</h2><p class="lead">How the track appears on streaming platforms.</p>
+      <div class="card">
+        ${input('release.title', { label: 'Track title', req: true, hint: 'Title only. Featured artists go in <b>Featured artists</b> below, not in the title.' })}
+        ${input('release.version', { label: 'Version', req: true, list: 'versions', hint: 'Original Mix, Extended Mix, Radio Edit, Remix…' })}
+        <datalist id="versions">${VERSIONS.map(v => `<option value="${esc(v)}">`).join('')}</datalist>
+        ${radios('release.type', [['Single', 'Single'], ['EP', 'Part of an EP']], { label: 'Release type', req: true })}
+        ${r.type === 'EP' ? input('release.epTitle', { label: 'EP title', req: true, hint: 'ERA releases EP tracks one by one, then groups them.' }) : ''}
+      </div>
+      <div class="card">
+        <div class="field"><div class="lbl req">Main artists</div><div class="hint">As credited on streaming platforms.</div>${artistList('mainArtists')}</div>
+        <div class="field"><div class="lbl">Featured artists</div>${artistList('featuredArtists')}</div>
+      </div>
+      <div class="card">
+        <div class="row2">${select('release.genre', GENRES, { label: 'Genre', req: true })}${select('release.language', LANGUAGES, { label: 'Language of the lyrics', req: true, rerender: true })}</div>
+        ${radios('release.explicit', [['no', 'No'], ['yes', 'Yes']], { label: 'Explicit lyrics', req: true })}
+        <div class="row2">${input('release.bpm', { label: 'BPM', type: 'number' })}${input('release.key', { label: 'Key', ph: 'A minor / 8A' })}</div>
+      </div>${nav()}`;
+  },
+
+  audio() {
+    return `<h2>Audio &amp; artwork</h2><p class="lead">Files go straight to ERA's storage. Large files take a few minutes: keep the page open until each one shows <b>Uploaded</b>.</p>
+      <div class="card"><div class="lbl req">Master WAV</div><div class="hint">Final master, WAV, 24-bit, 44.1 or 48 kHz. Checked here before upload.</div>${slot('master', '.wav,audio/wav,audio/x-wav', false)}</div>
+      <div class="card"><div class="lbl">Other versions</div><div class="hint">Extended, radio edit, instrumental… one WAV each, named below.</div>${slot('version', '.wav,audio/wav,audio/x-wav', true)}</div>
+      <div class="card"><div class="lbl req">Artwork</div><div class="hint">Square, 3000 × 3000 px minimum, JPG or PNG. No streaming logos, URLs or prices on the cover.</div>${slot('artwork', 'image/jpeg,image/png', false)}</div>
+      <div class="card">
+        ${input('release.previewStart', { label: 'Clip start', ph: '01:12', hint: 'Where the 15–30 s clip for TikTok, Reels and Shorts should start (mm:ss).' })}
+        ${isInstrumental(S.data) ? '<p class="sub">Instrumental: no lyrics needed.</p>' : area('lyrics', { label: 'Lyrics', req: true, rows: 10, hint: 'Full lyrics as sung, one line per line. Used by Apple Music, Spotify and Instagram.' })}
+      </div>${nav()}`;
+  },
+
+  credits() {
+    const c = S.data.credits;
+    return `<h2>Credits</h2><p class="lead">Everyone who wrote or made the track, as they should appear on streaming platforms. Pick people already in ERA's base, or add them by full name.</p>
+      <div class="card">
+        ${roleBlock('composers', 'Composers', 'Who wrote the music.', true)}
+        ${isInstrumental(S.data) ? '' : roleBlock('lyricists', 'Lyricists', 'Who wrote the lyrics.', true)}
+        ${roleBlock('producers', 'Producers', 'Who produced the track.', true)}
+      </div>
+      <div class="card">
+        ${input('credits.mix', { label: 'Mix engineer' })}
+        ${select('credits.mastering', [...MASTERING.map(m => [m, m === 'Artist-Made' ? 'Mastered by the artist' : m]), ['Other', 'Someone else']], { label: 'Mastering', req: true, rerender: true })}
+        ${c.mastering === 'Other' ? input('credits.masteringOther', { label: 'Mastering engineer', req: true }) : ''}
+        ${area('credits.other', { label: 'Other credits', rows: 3, ph: 'Vocals: …\nGuitar: …\nCo-production: …' })}
+      </div>${nav()}`;
+  },
+
+  rights() {
+    const d = S.data;
+    const rows = d.rightholders || [];
+    const t = sharesTotal(rows);
+    const pub = d.publishing || {};
+    const pt = sharesTotal(pub.rows || []);
+    return `<h2>Rightholders &amp; splits</h2>
+      <p class="lead">Who shares the artist side of the royalties, and in what proportion. ERA's share is set in the contract; the shares below split what remains between the rightholders. Total: 100 %.
+      Example: three co-writers sharing equally enter 33.34, 33.33 and 33.33.</p>
+      <div class="banner">Each rightholder is named in the contract. ERA needs their legal name, email and postal address.
+        <button class="btn small" data-act="copy-request" style="margin-left:6px">Copy the list for my collaborators</button></div>
+      ${rows.map((row, i) => personCard(row.key, `rightholders.${i}.share`, 'rightholders', i)).join('')}
+      <div class="total ${Math.abs(t - 100) < 0.01 ? 'ok' : 'bad'}" data-total="rightholders">Total ${t} %${Math.abs(t - 100) < 0.01 ? ' ✓' : ' — must be 100 %'}</div>
+      ${suggestions('rightholders')}
+      ${picker('person', 'rightholders', 'Add a rightholder: search ERA\'s base or type a full legal name')}
+      <div class="card" style="margin-top:22px">
+        ${radios('publishing.applicable', [['no', 'No'], ['yes', 'Yes']], { label: 'Is there a publishing split to declare?', req: true, hint: 'How the composition is split between authors and composers, for the collecting societies. Answer No if no publishing applies to this track.' })}
+        ${pub.applicable === 'yes' ? `
+          ${(pub.rows || []).map((row, i) => `<div class="person"><div class="person-head"><span class="nm">${esc(personName(d.people[row.key]))}</span>
+            <input type="number" step="0.01" class="share" ${bind(`publishing.rows.${i}.share`)} value="${esc(row.share)}" placeholder="%" data-live>
+            <button class="x" data-act="remove-row" data-list="publishing.rows" data-i="${i}" title="Remove">×</button></div></div>`).join('')}
+          <div class="total ${Math.abs(pt - 100) < 0.01 ? 'ok' : 'bad'}" data-total="publishing.rows">Total ${pt} %${Math.abs(pt - 100) < 0.01 ? ' ✓' : ' — must be 100 %'}</div>
+          ${suggestions('publishing.rows')}
+          ${picker('person', 'publishing.rows', 'Add an author or composer')}` : ''}
+      </div>${nav()}`;
+  },
+
+  promo() {
+    return `<h2>Pitch &amp; promo</h2><p class="lead">What ERA uses to pitch the track to platforms, playlists and press, and to build the campaign.</p>
+      <div class="card">
+        ${area('pitch.story', { label: 'The story of the track', req: true, rows: 6, count: true, hint: 'What it is about, where it comes from, what you were going for. 150 characters minimum.' })}
+        ${area('pitch.mood', { label: 'Mood and emotion', req: true, rows: 2, hint: 'A few words or one sentence.' })}
+        ${area('pitch.references', { label: 'Sounds like', rows: 2, hint: 'Up to three artists or tracks.' })}
+        ${area('pitch.supports', { label: 'Support so far', rows: 2, hint: 'DJs, radios, playlists or press already behind the track.' })}
+        ${area('pitch.markets', { label: 'Key markets', rows: 2, hint: 'Countries or cities where your listeners are.' })}
+      </div>
+      <div class="card"><div class="lbl ${S.cfg.photosOnFile ? '' : 'req'}">Artist photos</div>
+        <div class="hint">${S.cfg.photosOnFile ? 'ERA already has photos of you. Add new ones if you have them.' : 'High resolution, for pitches and visuals.'}</div>${slot('photo', 'image/*', true)}</div>
+      <div class="card"><div class="lbl">Content you already made</div>
+        <div class="hint">TikToks, Reels, studio, live, dancefloor, behind the scenes… anything ERA can use in ads, on your account or ours. Videos up to 5 GB each.</div>
+        ${slot('promo', 'video/*,image/*', true)}
+        ${area('promoLinks', { label: 'Links', rows: 3, ph: 'One link per line: Dropbox, WeTransfer, Google Drive, TikTok…' })}
+      </div>
+      <div class="card"><div class="row2">${input('contact.name', { label: 'Your name', req: true })}${input('contact.email', { label: 'Your email', req: true, type: 'email', hint: '' })}</div>
+        <div class="hint">ERA writes to this address about this release.</div></div>${nav()}`;
+  },
+
+  review() {
+    const v = V();
+    const groups = {};
+    for (const m of v.missing) (groups[m.step] = groups[m.step] || []).push(m);
+    const miss = v.missing.length ? `<div class="card"><h3>Still missing</h3><ul class="miss">${v.missing.filter(m => m.step !== 'review').map(m =>
+      `<li><span>${esc(m.label)}</span><button class="btn small ghost" data-act="goto" data-step="${m.step}">${esc(STEP_LABELS[m.step])}</button></li>`).join('') || '<li>Only the final confirmation below.</li>'}</ul></div>` : '';
+    const warn = v.warnings.length ? `<div class="card"><h3>Worth a check</h3><ul class="miss">${v.warnings.map(m =>
+      `<li><span class="w">${esc(m.label)}</span><button class="btn small ghost" data-act="goto" data-step="${m.step}">${esc(STEP_LABELS[m.step])}</button></li>`).join('')}</ul></div>` : '';
+    return `<h2>Review &amp; submit</h2><p class="lead">Check everything once. Edit any section, then submit. After that, ERA checks the release and comes back to you if something needs changing.</p>
+      ${miss}${warn}${summary(true)}
+      <div class="card"><label class="check"><input type="checkbox" ${bind('confirm')} ${S.data.confirm ? 'checked' : ''} data-rerender>
+        <span>This release is complete and accurate. Every contributor agreed to share their details with ERA Music.</span></label></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" data-act="save">Save draft</button>
+      <button class="btn primary" data-act="submit">Submit final release</button></div>`;
+  },
+};
+
+/* ---------- artists ---------- */
+function artistList(field) {
+  const list = S.data.release[field] || [];
+  const extra = list.map((a, i) => a.id ? '' : `<div class="row2" style="margin-top:6px">
+      ${input(`release.${field}.${i}.spotify`, { label: `${a.name}: Spotify artist link`, ph: 'https://open.spotify.com/artist/…' })}
+      ${input(`release.${field}.${i}.instagram`, { label: 'Instagram', ph: '@handle' })}</div>`).join('');
+  return `<div class="chips">${list.map((a, i) => `<span class="chip">${esc(a.name)}${a.id ? '' : '<span class="tag">new</span>'}<button data-act="remove-row" data-list="release.${field}" data-i="${i}" title="Remove">×</button></span>`).join('')}</div>
+    ${picker('artist', `release.${field}`, 'Search ERA\'s artists or type a new artist name')}${extra}`;
+}
+
+/* ---------- people ---------- */
+function roleBlock(role, label, hint, req) {
+  const keys = S.data.credits[role] || [];
+  return `<div class="field"><div class="lbl ${req ? 'req' : ''}">${esc(label)}</div><div class="hint">${esc(hint)}</div>
+    <div class="chips">${keys.map((k, i) => `<span class="chip">${esc(personName(S.data.people[k]))}${S.data.people[k]?.existing ? '' : '<span class="tag">new</span>'}<button data-act="remove-row" data-list="credits.${role}" data-i="${i}" title="Remove">×</button></span>`).join('')}</div>
+    ${suggestions(`credits.${role}`)}${picker('person', `credits.${role}`, 'Search or type a full name')}</div>`;
+}
+
+function inList(target, key) {
+  const list = getPath(S.data, target) || [];
+  return list.some(x => (typeof x === 'string' ? x : x.key) === key);
+}
+
+// Quick-add: people already in this form, then people ERA has on file for the artist.
+function suggestions(target) {
+  const own = Object.values(S.data.people || {}).filter(p => !inList(target, p.key));
+  const known = (S.cfg.knownPeople || []).filter(k => !Object.values(S.data.people).some(p => p.id === k.id));
+  if (!own.length && !known.length) return '';
+  return `<div class="suggest">${own.map(p => `<button data-act="add-person" data-target="${target}" data-key="${p.key}">+ ${esc(personName(p))}</button>`).join('')}
+    ${known.map(k => `<button data-act="add-known" data-target="${target}" data-id="${k.id}">+ ${esc(k.name)}</button>`).join('')}</div>`;
+}
+
+function picker(kind, target, ph) {
+  return `<div class="picker" data-picker="${kind}" data-target="${target}"><input type="text" placeholder="${esc(ph)}" autocomplete="off"><div class="results"></div></div>`;
+}
+
+function personCard(key, sharePath, listPath, i) {
+  const p = S.data.people[key];
+  if (!p) return '';
+  const pp = `people.${key}`;
+  const miss = new Set(p.existing ? (p.missing || []) : ['all']);
+  const all = miss.has('all');
+  let body = '';
+  if (!all && !miss.size) body = `<div class="onfile">On file at ERA ✓</div>`;
+  else {
+    if (!all) body += `<div class="hint">ERA is missing: ${esc([...miss].join(', '))}.</div>`;
+    if (all) body += `<div class="row2">${input(pp + '.legalName', { label: 'Full legal name', req: true, hint: 'As on their ID. Used in the contract.' })}${input(pp + '.alias', { label: 'Stage name' })}</div>`;
+    if (all || miss.has('email')) body += `<div class="row2">${input(pp + '.email', { label: 'Email', req: true, type: 'email' })}${all ? input(pp + '.phone', { label: 'Phone (WhatsApp)', type: 'tel' }) : ''}</div>`;
+    if (all || miss.has('address')) body += `${input(pp + '.street', { label: 'Street address', req: true })}<div class="row3">${input(pp + '.city', { label: 'City', req: true })}${input(pp + '.postcode', { label: 'Postcode', req: true })}${input(pp + '.country', { label: 'Country', req: true })}</div>`;
+    if (all || miss.has('nationality')) body += select(pp + '.nationality', NATIONALITIES, { label: 'Nationality', req: true });
+    if (all) {
+      body += radios(pp + '.pro', [['no', 'No'], ['yes', 'Yes']], { label: 'Member of a collecting society (SACEM, PRS, ASCAP…)?' });
+      if (p.pro === 'yes') body += `<div class="row2">${input(pp + '.proName', { label: 'Society', req: true })}${input(pp + '.ipi', { label: 'IPI number' })}</div>`;
+      body += radios(pp + '.publisher', [['no', 'No'], ['yes', 'Yes']], { label: 'Do they have a publisher?' });
+      if (p.publisher === 'yes') body += area(pp + '.publisherInfo', { label: 'Publisher', req: true, rows: 2, ph: 'Name, contact, share if known' });
+    }
+  }
+  return `<div class="person"><div class="person-head"><span class="nm">${esc(personName(p) || 'New rightholder')}</span>
+      <input type="number" step="0.01" min="0" max="100" class="share" ${bind(sharePath)} value="${esc(getPath(S.data, sharePath))}" placeholder="%" data-live>
+      <button class="x" data-act="remove-row" data-list="${listPath}" data-i="${i}" title="Remove">×</button></div>${body}</div>`;
+}
+
+function newPerson(name) {
+  const key = 'p_' + uid();
+  S.data.people[key] = { key, existing: false, legalName: name, alias: '', email: '', phone: '', street: '', postcode: '', city: '', country: '', nationality: '', pro: '', proName: '', ipi: '', publisher: '', publisherInfo: '' };
+  return key;
+}
+function existingPerson(r) {
+  const found = Object.values(S.data.people).find(p => p.id === r.id);
+  if (found) return found.key;
+  const key = 'p_' + uid();
+  S.data.people[key] = { key, id: r.id, existing: true, displayName: r.name, missing: r.missing || [], email: '', street: '', postcode: '', city: '', country: '', nationality: '' };
+  return key;
+}
+function addToTarget(target, key) {
+  if (inList(target, key)) return;
+  const list = getPath(S.data, target) || [];
+  if (target === 'rightholders' || target === 'publishing.rows') list.push({ key, share: '' });
+  else list.push(key);
+  setPath(S.data, target, list);
+}
+function cleanupPeople() {
+  const used = new Set([...(S.data.credits.composers || []), ...(S.data.credits.lyricists || []), ...(S.data.credits.producers || []),
+    ...(S.data.rightholders || []).map(x => x.key), ...(S.data.publishing.rows || []).map(x => x.key)]);
+  for (const k of Object.keys(S.data.people)) if (!used.has(k)) delete S.data.people[k];
+}
+
+/* ---------- files ---------- */
+function slot(kind, accept, multiple) {
+  const files = S.data.files.map((f, i) => ({ f, i })).filter(x => x.f.kind === kind);
+  return `<label class="drop" data-drop="${kind}"><input type="file" data-upload="${kind}" accept="${accept}" ${multiple ? 'multiple' : ''}>
+      Drop ${multiple ? 'files' : 'the file'} here or click to choose</label>
+    ${files.map(({ f, i }) => fileRow(f, i)).join('')}`;
+}
+function fileRow(f, i) {
+  const up = S.up[f.uid];
+  const c = f.checks || {};
+  let info = '';
+  if (c.format === 'wav') info = `WAV · ${c.bitDepth}-bit · ${(c.sampleRate / 1000).toFixed(1)} kHz · ${c.channels === 2 ? 'stereo' : c.channels + ' ch'}${c.duration ? ' · ' + fmtDur(c.duration) : ''}${Number.isFinite(c.peakDb) ? ` · peak ${c.peakDb.toFixed(1)} dBFS` : ''}`;
+  if (c.width) info = `${c.width} × ${c.height} px`;
+  const warns = [];
+  if (c.format === 'wav' && c.bitDepth < 24) warns.push('24-bit expected. Send a 24-bit export if you have one.');
+  if (c.format === 'wav' && c.sampleRate && ![44100, 48000, 88200, 96000].includes(c.sampleRate)) warns.push('Unusual sample rate.');
+  if (c.format === 'wav' && c.channels && c.channels !== 2) warns.push('Not stereo.');
+  if (Number.isFinite(c.peakDb) && c.peakDb > -0.1) warns.push('Peaks at 0 dBFS: check with your mastering engineer.');
+  const st = f.status === 'done' ? `<div class="st ok">Uploaded ✓ ${esc(fmtSize(f.size))}</div>`
+    : f.status === 'error' ? `<div class="st err">${esc(f.error || 'Upload failed. Remove it and add the file again.')}</div>`
+      : `<div class="st">Uploading ${Math.round((up?.pct || 0) * 100)} % · ${esc(fmtSize(f.size))}</div><div class="bar"><i data-bar="${f.uid}" style="width:${Math.round((up?.pct || 0) * 100)}%"></i></div>`;
+  const label = f.kind === 'version' ? `<input type="text" list="versions2" ${bind(`files.${i}.label`)} value="${esc(f.label)}" placeholder="Version name (Extended Mix…)" style="margin-top:6px">
+      <datalist id="versions2">${VERSIONS.map(v => `<option value="${esc(v)}">`).join('')}</datalist>` : '';
+  return `<div class="file"><div class="meta"><div class="name">${esc(f.name)}</div>${info ? `<div class="st">${esc(info)}</div>` : ''}${st}
+    ${warns.map(w => `<div class="warn">${esc(w)}</div>`).join('')}${label}</div>
+    <button class="x" data-act="remove-file" data-uid="${f.uid}" title="Remove">×</button></div>`;
+}
+
+async function checkWav(file) {
+  const headBuf = await file.slice(0, Math.min(file.size, 4 * 1024 * 1024)).arrayBuffer();
+  const v = new DataView(headBuf);
+  const tag = (o) => o + 4 <= v.byteLength ? String.fromCharCode(v.getUint8(o), v.getUint8(o + 1), v.getUint8(o + 2), v.getUint8(o + 3)) : '';
+  if (!['RIFF', 'RF64'].includes(tag(0)) || tag(8) !== 'WAVE') return { error: `${file.name} is not a WAV file. Export the master as WAV.` };
+  let off = 12, fmt = null, dataOff = null, dataSize = null;
+  while (off + 8 <= v.byteLength) {
+    const id = tag(off), size = v.getUint32(off + 4, true);
+    if (id === 'fmt ') {
+      fmt = { format: v.getUint16(off + 8, true), channels: v.getUint16(off + 10, true), sampleRate: v.getUint32(off + 12, true), bits: v.getUint16(off + 22, true) };
+      if (fmt.format === 0xFFFE && size >= 40) fmt.format = v.getUint16(off + 32, true);
+    }
+    if (id === 'data') { dataOff = off + 8; dataSize = size; break; }
+    off += 8 + size + (size % 2);
+  }
+  if (!fmt) return { error: `${file.name}: the WAV header cannot be read. Export it again.` };
+  if (dataOff == null) dataOff = 44;
+  if (dataSize == null || dataSize === 0xFFFFFFFF || dataOff + dataSize > file.size) dataSize = file.size - dataOff;
+  const bps = fmt.sampleRate * fmt.channels * fmt.bits / 8;
+  const checks = { format: 'wav', bitDepth: fmt.bits, sampleRate: fmt.sampleRate, channels: fmt.channels, duration: bps ? dataSize / bps : 0 };
+  if (fmt.bits < 16) return { error: `${file.name}: ${fmt.bits}-bit audio is not accepted.` };
+  if (file.size <= 900 * 1024 * 1024) {
+    try { checks.peakDb = await peakDb(file, dataOff, dataSize, fmt); } catch { /* peak is a hint only */ }
+  }
+  return { checks };
+}
+
+async function peakDb(file, off, size, fmt) {
+  const bytes = fmt.bits / 8, block = bytes * fmt.channels;
+  const step = Math.floor((8 * 1024 * 1024) / block) * block;
+  let max = 0;
+  for (let pos = off; pos < off + size; pos += step) {
+    const buf = new Uint8Array(await file.slice(pos, Math.min(pos + step, off + size)).arrayBuffer());
+    const n = buf.length - (buf.length % bytes);
+    if (fmt.format === 3 && bytes === 4) {
+      const f = new Float32Array(buf.buffer, 0, n / 4);
+      for (let i = 0; i < f.length; i++) { const a = Math.abs(f[i]); if (a > max) max = a; }
+    } else if (bytes === 2) {
+      for (let i = 0; i < n; i += 2) { let s = buf[i] | (buf[i + 1] << 8); if (s & 0x8000) s -= 0x10000; const a = Math.abs(s) / 32768; if (a > max) max = a; }
+    } else if (bytes === 3) {
+      for (let i = 0; i < n; i += 3) { let s = buf[i] | (buf[i + 1] << 8) | (buf[i + 2] << 16); if (s & 0x800000) s -= 0x1000000; const a = Math.abs(s) / 8388608; if (a > max) max = a; }
+    } else if (bytes === 4) {
+      const dv = new DataView(buf.buffer);
+      for (let i = 0; i < n; i += 4) { const a = Math.abs(dv.getInt32(i, true)) / 2147483648; if (a > max) max = a; }
+    } else return undefined;
+  }
+  return max > 0 ? Math.round(20 * Math.log10(max) * 100) / 100 : -Infinity;
+}
+
+async function checkImage(file, kind) {
+  if (!/^image\/(jpeg|png)$/.test(file.type)) return { error: `${file.name}: use a JPG or PNG file.` };
+  let bmp;
+  try { bmp = await createImageBitmap(file); } catch { return { error: `${file.name}: this image cannot be read.` }; }
+  const checks = { width: bmp.width, height: bmp.height };
+  if (kind === 'artwork') {
+    if (bmp.width !== bmp.height || bmp.width < 3000) return { error: `Artwork must be square and at least 3000 × 3000 px (this one is ${bmp.width} × ${bmp.height}).` };
+    const scale = Math.min(1, 1600 / bmp.width);
+    const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * scale); cv.height = Math.round(bmp.height * scale);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', 0.86));
+    const base64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = () => rej(fr.error); fr.readAsDataURL(blob); });
+    return { checks, thumb: { contentType: 'image/jpeg', filename: file.name.replace(/\.\w+$/, '') + '.jpg', base64 } };
+  }
+  return { checks };
+}
+
+async function handleFiles(kind, list) {
+  for (const file of [...list]) {
+    if (file.size > MAX_FILE_BYTES) { toast(`${file.name} is over 5 GB: add it as a link instead.`, 'err'); continue; }
+    if (S.data.files.length >= MAX_FILES) { toast('File limit reached for this release: add the rest as links.', 'err'); break; }
+    let r = { checks: {} };
+    if (kind === 'master' || kind === 'version') { toast(`Checking ${file.name}…`); r = await checkWav(file); }
+    else if (kind === 'artwork' || kind === 'photo') r = await checkImage(file, kind);
+    if (r.error) { toast(r.error, 'err'); continue; }
+    if (kind === 'master' || kind === 'artwork') S.data.files = S.data.files.filter(f => f.kind !== kind);
+    const entry = { uid: uid(), kind, name: file.name, size: file.size, type: file.type || '', label: kind === 'version' ? guessVersion(file.name) : '', status: 'uploading', checks: r.checks || {}, at: new Date().toISOString() };
+    if (r.thumb) S.thumbs[entry.uid] = r.thumb;
+    S.data.files.push(entry);
+    S.up[entry.uid] = { pct: 0 };
+    renderStep(); markDirty();
+    upload(entry, file);
+  }
+}
+function guessVersion(name) {
+  const n = name.toLowerCase();
+  return VERSIONS.find(v => n.includes(v.toLowerCase().split(' ')[0])) || '';
+}
+
+async function upload(entry, file) {
+  try {
+    const start = await postJson(api('upload-start'), { files: [{ name: file.name, size: file.size, type: file.type || (entry.kind === 'master' || entry.kind === 'version' ? 'audio/wav' : 'application/octet-stream'), kind: entry.kind, label: entry.label }] });
+    const out = await uploadChunks(file, start.uploads[0].token, (b) => {
+      S.up[entry.uid] = { pct: b / file.size };
+      const bar = document.querySelector(`[data-bar="${entry.uid}"]`);
+      if (bar) { bar.style.width = Math.round(b / file.size * 100) + '%'; const st = bar.parentElement.previousElementSibling; if (st) st.textContent = `Uploading ${Math.round(b / file.size * 100)} % · ${fmtSize(file.size)}`; }
+    });
+    entry.status = 'done'; entry.driveId = out.fileId || null; delete entry.error;
+    if (entry.kind === 'artwork' && S.thumbs[entry.uid]) postJson(api('artwork'), S.thumbs[entry.uid]).catch(() => {});
+  } catch (e) {
+    entry.status = 'error'; entry.error = `Upload failed (${e.message}). Remove it and add the file again.`;
+    toast(`${file.name}: upload failed.`, 'err');
+  }
+  delete S.up[entry.uid];
+  renderStep();
+  save(false);
+}
+
+async function uploadChunks(file, token, onBytes) {
+  let start = 0, stalls = 0;
+  while (start < file.size) {
+    const end = Math.min(start + CHUNK, file.size);
+    let attempt = 0, out;
+    for (;;) {
+      try {
+        const r = await fetch('/api/release/?action=chunk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream', 'X-Upload-Token': token, 'X-Chunk-Start': String(start), 'X-Total-Size': String(file.size) },
+          body: file.slice(start, end),
+        });
+        out = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(out.error || 'Error ' + r.status);
+        break;
+      } catch (e) {
+        if (++attempt > 4) throw e;
+        await sleep(1500 * attempt);
+      }
+    }
+    if (out.done) { onBytes(file.size); return out; }
+    const next = Number.isFinite(out.next) ? out.next : end;
+    if (next <= start) { if (++stalls > 3) throw new Error('upload stalled'); } else stalls = 0;
+    start = next;
+    onBytes(start);
+  }
+  throw new Error('upload not confirmed');
+}
+
+/* ---------- summary ---------- */
+function summary(edit) {
+  const d = S.data, r = d.release, c = d.credits;
+  const names = (keys) => (keys || []).map(k => personName(d.people[k])).filter(Boolean).join(', ') || '—';
+  const files = (k) => d.files.filter(f => f.kind === k && f.status === 'done').map(f => (f.label ? f.label + ': ' : '') + f.name).join('\n') || '—';
+  const block = (step, title, rows) => `<div class="card"><div class="sum-head"><h3>${esc(title)}</h3>${edit ? `<button class="btn small ghost" data-act="goto" data-step="${step}">Edit</button>` : ''}</div>
+    <dl class="sum">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v || '—')}</dd>`).join('')}</dl></div>`;
+  return [
+    block('release', 'Release', [['Title', `${r.title}${r.version ? ' (' + r.version + ')' : ''}`], ['Type', r.type === 'EP' ? 'EP: ' + r.epTitle : 'Single'],
+      ['Main artists', (r.mainArtists || []).map(a => a.name).join(', ')], ['Featured', (r.featuredArtists || []).map(a => a.name).join(', ')],
+      ['Genre / language', [r.genre, r.language].filter(Boolean).join(' · ')], ['Explicit', r.explicit === 'yes' ? 'Yes' : r.explicit === 'no' ? 'No' : '']]),
+    block('audio', 'Audio & artwork', [['Master', files('master')], ['Other versions', files('version')], ['Artwork', files('artwork')], ['Clip start', r.previewStart], ['Lyrics', isInstrumental(d) ? 'Instrumental' : (d.lyrics ? d.lyrics.trim().split('\n').length + ' lines' : '')]]),
+    block('credits', 'Credits', [['Composers', names(c.composers)], ['Lyricists', isInstrumental(d) ? '—' : names(c.lyricists)], ['Producers', names(c.producers)],
+      ['Mix', c.mix], ['Mastering', c.mastering === 'Other' ? c.masteringOther : c.mastering], ['Other', c.other]]),
+    block('rights', 'Rightholders & splits', [['Artist side of the master', (d.rightholders || []).map(x => `${personName(d.people[x.key])}: ${x.share || 0} %`).join('\n')],
+      ['Publishing', d.publishing.applicable === 'yes' ? (d.publishing.rows || []).map(x => `${personName(d.people[x.key])}: ${x.share || 0} %`).join('\n') : d.publishing.applicable === 'no' ? 'None' : '']]),
+    block('promo', 'Pitch & promo', [['Story', d.pitch.story], ['Mood', d.pitch.mood], ['Photos', files('photo')], ['Content', files('promo')], ['Links', d.promoLinks], ['Contact', [d.contact.name, d.contact.email].filter(Boolean).join(' · ')]]),
+  ].join('');
+}
+
+function lockedView() {
+  const st = S.cfg.status;
+  const msg = st === 'Soumis'
+    ? `Submitted${S.cfg.submittedAt ? ' on ' + new Date(S.cfg.submittedAt).toLocaleString() : ''}. ERA is checking it. If something needs changing, this link reopens with a note.`
+    : 'ERA has validated this release. Changes now go through ERA directly.';
+  return `<h1>${esc(S.data.release.title || S.cfg.title)}</h1><div class="banner">${esc(msg)}</div>${summary(false)}`;
+}
+function submittedView() {
+  return `<h1>Release submitted</h1><div class="banner"><b>Done.</b> ERA checks every element and writes to ${esc(S.data.contact.email)} if something needs changing. You can close this page.</div>`;
+}
+
+/* ---------- saving ---------- */
+function markDirty() {
+  S.dirty = true;
+  $('#saveState').textContent = 'Unsaved changes';
+  $('#saveState').className = 'save-state';
+  clearTimeout(S.timer);
+  S.timer = setTimeout(() => save(false), 4000);
+  updateFoot();
+}
+
+async function save(manual) {
+  if (S.saving) { S.saveAgain = true; return; }
+  clearTimeout(S.timer);
+  S.saving = true;
+  $('#saveState').textContent = 'Saving…';
+  try {
+    const out = await postJson(api('save'), { data: S.data, progress: V().progress });
+    S.savedAt = out.savedAt; S.dirty = false;
+    $('#saveState').textContent = `Draft saved · ${hhmm(out.savedAt)}`;
+    $('#saveState').className = 'save-state ok';
+    if (manual) toast(`Draft saved · ${hhmm(out.savedAt)}. Same link, any time.`);
+  } catch (e) {
+    $('#saveState').textContent = 'Not saved, retrying…';
+    $('#saveState').className = 'save-state err';
+    if (e.status === 409) { S.saving = false; return boot(); }
+    if (manual) toast(e.message, 'err');
+    S.timer = setTimeout(() => save(false), 10000);
+  }
+  S.saving = false;
+  if (S.saveAgain) { S.saveAgain = false; save(false); }
+}
+
+async function submit() {
+  const v = V();
+  if (Object.keys(S.up).length) return toast('Wait until every upload shows Uploaded.', 'err');
+  if (v.missing.length) {
+    if (S.step !== 'review') { S.step = 'review'; render(); window.scrollTo(0, 0); }
+    return toast(`${v.missing.length} item${v.missing.length > 1 ? 's' : ''} still missing. See the list.`, 'err');
+  }
+  const btns = document.querySelectorAll('[data-act="submit"]');
+  btns.forEach(b => { b.disabled = true; b.textContent = 'Submitting…'; });
+  try {
+    await postJson(api('submit'), { data: S.data });
+    S.submitted = true; S.dirty = false; render(); window.scrollTo(0, 0);
+  } catch (e) {
+    btns.forEach(b => { b.disabled = false; b.textContent = 'Submit final release'; });
+    if (e.data?.missing) toast('Some required information is missing: see the list.', 'err');
+    else toast(e.message, 'err');
+  }
+}
+
+function collabRequest() {
+  const title = S.data.release.title || S.cfg.title;
+  return `Hi,\n\nI'm filling in the release form for "${title}" with ERA Music. I need your details for the contract and the royalty statements:\n\n` +
+    `- Full legal name (as on your ID)\n- Stage name, if any\n- Email\n- Postal address: street, postcode, city, country\n- Nationality\n` +
+    `- Collecting society (SACEM, PRS, ASCAP…) and IPI number, if you are a member\n- Publisher, if you have one\n- Your share of the artist royalties, as we agreed\n\nThanks.`;
+}
+
+/* ---------- pickers ---------- */
+let pickTimer = null;
+async function runPicker(el) {
+  const kind = el.dataset.picker, target = el.dataset.target;
+  const term = el.querySelector('input').value.trim();
+  const box = el.querySelector('.results');
+  if (!term) { box.className = 'results'; box.innerHTML = ''; return; }
+  const items = [];
+  if (kind === 'person') {
+    for (const p of Object.values(S.data.people)) if (!inList(target, p.key) && personName(p).toLowerCase().includes(term.toLowerCase())) items.push({ act: 'add-person', key: p.key, label: personName(p), note: 'in this form' });
+    for (const k of S.cfg.knownPeople || []) if (!Object.values(S.data.people).some(p => p.id === k.id) && k.name.toLowerCase().includes(term.toLowerCase())) items.push({ act: 'add-known', id: k.id, label: k.name, note: 'on file at ERA' });
+  }
+  if (term.length >= 3) {
+    try {
+      const out = await postJson(api('search'), { kind, q: term });
+      for (const r of out.results || []) {
+        if (kind === 'person' && (items.some(i => i.id === r.id) || Object.values(S.data.people).some(p => p.id === r.id))) continue;
+        if (kind === 'artist' && inList(target, r.id)) continue;
+        items.push(kind === 'person' ? { act: 'pick-person', r, label: r.name, note: 'on file at ERA' } : { act: 'pick-artist', r, label: r.name, note: 'ERA artist' });
+      }
+    } catch { /* lookup is optional */ }
+  }
+  if (el.querySelector('input').value.trim() !== term) return;
+  items.push({ act: kind === 'person' ? 'new-person' : 'new-artist', label: `Add “${term}” as new`, note: '' });
+  el._items = items;
+  box.innerHTML = items.map((it, i) => `<button data-pick="${i}">${esc(it.label)}${it.note ? `<small>${esc(it.note)}</small>` : ''}</button>`).join('');
+  box.className = 'results open';
+}
+
+function pick(el, i) {
+  const it = el._items?.[i];
+  if (!it) return;
+  const target = el.dataset.target;
+  const term = el.querySelector('input').value.trim();
+  if (it.act === 'add-person') addToTarget(target, it.key);
+  if (it.act === 'add-known') addToTarget(target, existingPerson((S.cfg.knownPeople || []).find(k => k.id === it.id)));
+  if (it.act === 'pick-person') addToTarget(target, existingPerson(it.r));
+  if (it.act === 'new-person') addToTarget(target, newPerson(term));
+  if (it.act === 'pick-artist' || it.act === 'new-artist') {
+    const list = getPath(S.data, target) || [];
+    if (it.act === 'pick-artist') { if (!list.some(a => a.id === it.r.id)) list.push({ id: it.r.id, name: it.r.name }); }
+    else if (!list.some(a => a.name.toLowerCase() === term.toLowerCase())) list.push({ name: term, spotify: '', instagram: '' });
+    setPath(S.data, target, list);
+  }
+  markDirty(); renderStep();
+}
+
+/* ---------- events ---------- */
+function go(step) {
+  if (!STEPS.includes(step)) return;
+  S.step = step; render(); window.scrollTo(0, 0);
+  if (S.dirty) save(false);
+}
+
+document.addEventListener('click', async (e) => {
+  const pickBtn = e.target.closest('[data-pick]');
+  if (pickBtn) { e.preventDefault(); return pick(pickBtn.closest('.picker'), Number(pickBtn.dataset.pick)); }
+  if (!e.target.closest('.picker')) document.querySelectorAll('.results.open').forEach(b => { b.className = 'results'; });
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const act = b.dataset.act;
+  const i = STEPS.indexOf(S.step);
+  if (act === 'next') return go(STEPS[Math.min(i + 1, STEPS.length - 1)]);
+  if (act === 'back') return go(STEPS[Math.max(i - 1, 0)]);
+  if (act === 'goto') return go(b.dataset.step);
+  if (act === 'save') return save(true);
+  if (act === 'submit') return submit();
+  if (act === 'remove-row') {
+    const list = getPath(S.data, b.dataset.list) || [];
+    list.splice(Number(b.dataset.i), 1);
+    cleanupPeople(); markDirty(); return renderStep();
+  }
+  if (act === 'remove-file') {
+    if (S.up[b.dataset.uid]) return toast('Wait for the upload to finish, then remove it.');
+    S.data.files = S.data.files.filter(f => f.uid !== b.dataset.uid);
+    markDirty(); return renderStep();
+  }
+  if (act === 'add-person') { addToTarget(b.dataset.target, b.dataset.key); markDirty(); return renderStep(); }
+  if (act === 'add-known') { addToTarget(b.dataset.target, existingPerson((S.cfg.knownPeople || []).find(k => k.id === b.dataset.id))); markDirty(); return renderStep(); }
+  if (act === 'copy-request') {
+    try { await navigator.clipboard.writeText(collabRequest()); toast('Copied. Paste it in a message to your collaborators.'); }
+    catch { window.prompt('Copy this message:', collabRequest()); }
+  }
+});
+
+function readValue(el) {
+  if (el.type === 'checkbox') return el.checked;
+  return el.value;
+}
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (el.closest('.picker')) {
+    clearTimeout(pickTimer);
+    const p = el.closest('.picker');
+    pickTimer = setTimeout(() => runPicker(p), 250);
+    return;
+  }
+  if (!el.dataset.bind || el.type === 'radio' || el.tagName === 'SELECT' || el.type === 'checkbox') return;
+  setPath(S.data, el.dataset.bind, readValue(el));
+  if (el.hasAttribute('data-count')) { const c = document.querySelector(`[data-count-for="${el.dataset.bind}"]`); if (c) c.textContent = el.value.trim().length + ' characters'; }
+  if (el.hasAttribute('data-live')) updateTotals();
+  markDirty();
+});
+document.addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.dataset.upload) { handleFiles(el.dataset.upload, el.files); el.value = ''; return; }
+  if (!el.dataset.bind) return;
+  if (el.type === 'radio' && !el.checked) return;
+  setPath(S.data, el.dataset.bind, readValue(el));
+  markDirty();
+  if (el.hasAttribute('data-rerender')) renderStep();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.closest('.picker')) {
+    e.preventDefault();
+    const p = e.target.closest('.picker');
+    if (p._items?.length) pick(p, 0);
+  }
+});
+function updateTotals() {
+  for (const el of document.querySelectorAll('[data-total]')) {
+    const t = sharesTotal(getPath(S.data, el.dataset.total) || []);
+    const ok = Math.abs(t - 100) < 0.01;
+    el.className = 'total ' + (ok ? 'ok' : 'bad');
+    el.textContent = `Total ${t} %${ok ? ' ✓' : ' — must be 100 %'}`;
+  }
+}
+for (const ev of ['dragenter', 'dragover']) document.addEventListener(ev, (e) => { const d = e.target.closest('[data-drop]'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+document.addEventListener('dragleave', (e) => { const d = e.target.closest('[data-drop]'); if (d) d.classList.remove('over'); });
+document.addEventListener('drop', (e) => {
+  const d = e.target.closest('[data-drop]');
+  if (!d) return;
+  e.preventDefault(); d.classList.remove('over');
+  if (e.dataTransfer?.files?.length) handleFiles(d.dataset.drop, e.dataTransfer.files);
+});
+window.addEventListener('beforeunload', (e) => {
+  if (Object.keys(S.up).length || S.dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && S.dirty && S.data && !S.cfg?.locked && !S.submitted) {
+    navigator.sendBeacon(api('save'), new Blob([JSON.stringify({ data: S.data, progress: V().progress })], { type: 'application/json' }));
+  }
+});
+
+boot();
+</script>
+</body>
+</html>

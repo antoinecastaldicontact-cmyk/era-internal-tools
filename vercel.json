@@ -1,4 +1,37 @@
 {
   "cleanUrls": true,
-  "trailingSlash": true
+  "trailingSlash": true,
+  "functions": {
+    "api/release.js": {
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/release-form/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/:path((?!release-form|api/release).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "release.eramusic.io"
+        }
+      ],
+      "destination": "https://eramusic.io/",
+      "permanent": false
+    }
+  ]
 }
