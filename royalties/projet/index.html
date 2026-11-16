@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>ERA · Projet · royalties</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/royalties/style.css">
+</head>
+<body>
+<div class="wrap" id="app"><div class="loading">Chargement du projet…</div></div>
+<script src="/royalties/lib.js"></script>
+<script src="/royalties/viz.js"></script>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const { C } = V;
+  const id = R.qs('id') || '';
+
+  async function start(refresh) {
+    app.innerHTML = '<div class="loading">Chargement du projet…</div>';
+    try {
+      const d = await R.model({ refresh });
+      const p = d.projects.find((x) => x.id === id);
+      if (!p) { app.innerHTML = `<div class="err"><b>Projet introuvable.</b><br><a href="/royalties/">← Retour au cockpit</a></div>`; return; }
+      render(d, p);
+    } catch (e) {
+      if (e.code === 'no_key' || e.code === 'unauthorized') {
+        return R.lock(app, e.code === 'unauthorized' ? 'Clé refusée. Colle la bonne clé ROYALTIES_ADMIN_KEY.' : null, () => start());
+      }
+      app.innerHTML = `<div class="err"><b>Impossible de charger les données.</b><br>${R.esc(R.errorText(e.code))}</div>`;
+    }
+  }
+
+  function render(d, p) {
+    document.title = `ERA · ${p.title}`;
+    // Window: first month with any activity on this project → last month of the axis.
+    let j0 = p.series.findIndex((s) => s.gross > 0 || s.marketing > 0 || s.artist > 0 || s.streams > 0);
+    if (j0 < 0) j0 = Math.max(0, p.series.length - 1);
+    const S = p.series.slice(j0);
+    const M = S.map((s) => s.m);
+    const cross = S.find((s) => s.cumMarketing > 0 && s.cumGross >= s.cumMarketing);
+    const ugc = S.reduce((a, s) => a + s.ugc, 0);
+    const now = enCours(p, S);
+
+    app.innerHTML = `
+      <div class="brand"><a href="/">ERA · Internal</a><span>/</span><a href="/royalties/">Royalties</a><span>/</span><span>Projet</span></div>
+      <div class="top">
+        <div>
+          <h1>${R.esc(p.title)}</h1>
+          <div class="meta">${R.statusPill(p.status)}
+            <span>Sortie ${R.date(p.release)}</span>
+            ${p.monthsSinceRelease != null ? `<span class="sep">·</span><span>M+${p.monthsSinceRelease}</span>` : ''}
+            ${p.distributor && p.distributor.length ? `<span class="sep">·</span><span>${R.esc(p.distributor.join(', '))}</span>` : ''}
+            ${p.kind ? `<span class="sep">·</span><span>${R.esc(p.kind)}</span>` : ''}
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="artist">Copier le lien artiste</button>
+          <button class="btn" id="refresh">↻</button>
+        </div>
+      </div>
+
+      <div class="kpis">
+        ${kpi('Dépensé', R.eur(p.marketing), 'marketing, recoupé sur le brut')}
+        ${kpi('Revenus bruts', R.eur(p.gross), `RPM ${p.streams ? R.eur((p.gross / p.streams) * 1000, 2) : '—'} / 1 000 streams`)}
+        ${kpi('Recoupement', R.pct(p.recoupPct), p.marketing > 0 ? (cross ? `recoupé en ${R.mLong(cross.m)}` : 'pas encore recoupé') : 'aucune dépense marketing')}
+        ${kpi('Reste à recouper', p.remaining > 0 ? R.eur(p.remaining) : '0 €', now.projection || '—')}
+        ${kpi('Streams audio', R.int(p.streams), `+ ${R.intC(ugc)} vues UGC (hors recoupement)`)}
+        ${kpi('Compte artiste', R.eur(p.artistCosts), 'recoupé sur la part artiste uniquement')}
+        ${p.toVerify > 0 ? kpi('À vérifier', `<span class="flag">${R.eur(p.toVerify)}</span>`, 'dépenses marquées à vérifier') : ''}
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-h"><div><div class="card-t">Courbe de recoupement</div>
+          <div class="card-d">Revenus cumulés vs dépenses marketing cumulées. Le titre est recoupé quand la ligne bleue passe au-dessus de l’orange.</div></div></div>
+          <div class="chart" id="c-recoup"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div><div class="card-t">Dépensé vs récupéré par mois</div>
+          <div class="card-d">Marketing engagé et revenus bruts, mois par mois.</div></div></div>
+          <div class="chart" id="c-month"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Dépenses vs écoutes</div>
+        <div class="card-d">Deux graphiques, même axe des mois : ce qui a été dépensé, puis les streams audio que ça a accompagnés.</div></div></div>
+        <div class="sublabel">Dépenses marketing (€)</div>
+        <div class="chart" id="c-spend"></div>
+        <div class="sublabel">Streams audio</div>
+        <div class="chart" id="c-streams"></div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-t">En cours</div>
+          <dl class="kv">
+            <dt>Dernier mois reporté</dt><dd>${R.mLong(p.dataUntil)}${p.sources && p.sources.length ? ` <span class="mono" style="color:var(--muted);font-size:11px">(${R.esc(p.sources.join(', '))})</span>` : ''}</dd>
+            <dt>Revenus / mois</dt><dd>${now.avg3 != null ? `${R.eur(now.avg3)} <span style="color:var(--muted)">moyenne des 3 derniers mois</span>` : '—'}</dd>
+            <dt>Tendance</dt><dd>${now.trend != null ? `${now.trend >= 0 ? '▲' : '▼'} ${R.pct(Math.abs(now.trend))} <span style="color:var(--muted)">vs les 3 mois d’avant</span>` : '—'}</dd>
+            <dt>Streams / mois</dt><dd>${now.streams3 != null ? R.int(now.streams3) : '—'}</dd>
+            <dt>Marketing récent</dt><dd>${now.mkt3 > 0 ? `${R.eur(now.mkt3)} sur les 3 derniers mois` : 'aucune dépense sur les 3 derniers mois'}</dd>
+            <dt>Projection</dt><dd>${now.projection || '—'}</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <div class="card-t">Deal &amp; splits</div>
+          <dl class="kv">
+            <dt>Type de deal</dt><dd>${R.esc(p.dealType || '—')}</dd>
+            <dt>Part label</dt><dd>${p.labelCut != null ? R.pct(p.labelCut, 1) : '<span class="flag">⚑ Label Cut manquant</span>'}</dd>
+            <dt>Part artiste</dt><dd>${p.labelCut != null ? R.pct(1 - p.labelCut, 1) : '—'}</dd>
+            <dt>Statut splits</dt><dd>${R.esc(R.SPLIT_ADMIN[p.splitStatus] || p.splitStatus || '—')}</dd>
+            <dt>Splits actifs depuis</dt><dd>${R.date(p.splitsSince)}</dd>
+          </dl>
+          ${payees(p)}
+          ${p.notes ? `<div class="note">${R.esc(p.notes)}</div>` : ''}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Dépenses</div>
+        <div class="card-d">${p.expenses.length} ligne(s). Poche Marketing = recoupée sur le brut ; poche Compte artiste = recoupée sur la part artiste.</div></div></div>
+        ${expenses(p)}
+      </div>
+
+      <div class="foot"><span><a href="/royalties/" style="color:var(--text2);text-decoration:none">← Cockpit</a></span><span>Généré ${R.esc(R.dateTime(d.generatedAt))} · ${R.esc(p.id)}</span></div>`;
+
+    document.getElementById('refresh').onclick = () => start(true);
+    document.getElementById('artist').onclick = () => copyArtistLink(p);
+
+    const common = { months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: p.dataUntil, shadeLabel: 'non encore reporté' };
+    V.line(document.getElementById('c-recoup'), {
+      ...common, h: 250, yFmt: R.eurC, yTip: R.eur, label: 'Courbe de recoupement',
+      markers: cross ? [{ m: cross.m, label: 'recoupé' }] : [],
+      series: [
+        { name: 'Dépenses marketing cumulées', color: C.orange, values: S.map((s) => s.cumMarketing) },
+        { name: 'Revenus cumulés', color: C.blue, values: S.map((s) => s.cumGross) },
+      ],
+      extra: (i) => {
+        const r = S[i].cumMarketing > 0 ? S[i].cumGross / S[i].cumMarketing : null;
+        return `<div class="tip-note">Recoupement : ${R.pct(r)}</div>`;
+      },
+    });
+    V.bars(document.getElementById('c-month'), {
+      ...common, h: 250, yFmt: R.eurC, yTip: (v) => R.eur(v, 2), label: 'Dépensé vs récupéré par mois',
+      series: [
+        { name: 'Dépensé (marketing)', color: C.orange, values: S.map((s) => s.marketing) },
+        { name: 'Revenus bruts', color: C.blue, values: S.map((s) => s.gross) },
+      ],
+    });
+    V.bars(document.getElementById('c-spend'), {
+      ...common, h: 150, yFmt: R.eurC, yTip: (v) => R.eur(v, 2), label: 'Dépenses marketing par mois',
+      series: [{ name: 'Dépenses marketing', color: C.orange, values: S.map((s) => s.marketing) }],
+      extra: (i) => (S[i].artist > 0 ? `<div class="tip-note">+ ${R.eur(S[i].artist, 2)} compte artiste</div>` : ''),
+    });
+    V.bars(document.getElementById('c-streams'), {
+      ...common, h: 150, yFmt: R.intC, yTip: R.int, label: 'Streams audio par mois',
+      series: [{ name: 'Streams audio', color: C.aqua, values: S.map((s) => s.streams) }],
+      extra: (i) => `<div class="tip-note">UGC : ${R.int(S[i].ugc)} vues · revenus ${R.eur(S[i].gross, 2)}</div>`,
+    });
+  }
+
+  // Run-rate on the last 3 reported months (months after dataUntil are not reported yet).
+  function enCours(p, S) {
+    const rep = p.dataUntil ? S.filter((s) => s.m <= p.dataUntil) : S;
+    const last3 = rep.slice(-3), prev3 = rep.slice(-6, -3);
+    const avg = (a, k) => (a.length ? a.reduce((x, s) => x + s[k], 0) / a.length : null);
+    const avg3 = avg(last3, 'gross');
+    const prev = avg(prev3, 'gross');
+    const out = {
+      avg3, streams3: avg(last3, 'streams'),
+      trend: avg3 != null && prev ? avg3 / prev - 1 : null,
+      mkt3: S.slice(-3).reduce((x, s) => x + s.marketing, 0),
+      projection: null,
+    };
+    if (p.status === 'Recouped') out.projection = 'recoupé';
+    else if (p.remaining > 0 && avg3 > 0) {
+      const n = Math.ceil(p.remaining / avg3);
+      out.projection = `≈ ${n} mois au rythme actuel (projection linéaire, sans décroissance)`;
+    } else if (p.remaining > 0) out.projection = 'pas de revenus récents : non projetable';
+    return out;
+  }
+
+  function payees(p) {
+    if (!p.splits.length) return '<div class="empty">Aucun split renseigné.</div>';
+    const total = p.splits.reduce((a, s) => a + (s.share || 0), 0);
+    const off = Math.abs(total - 1) > 0.001;
+    return `<div class="tbl-wrap" style="margin-top:14px"><table class="tbl"><thead><tr><th>Payee</th><th class="n">Part côté artiste</th><th>Source</th></tr></thead><tbody>
+      ${p.splits.map((s) => `<tr><td class="t">${R.esc(s.payee || '—')}</td><td class="n">${R.pct(s.share, 1)}</td><td>${R.esc(s.source || '—')}</td></tr>`).join('')}
+      <tr><td class="t" style="color:var(--text2)">Total</td><td class="n">${off ? `<span class="flag">⚑ ${R.pct(total, 1)}</span>` : R.pct(total, 1)}</td><td></td></tr>
+      </tbody></table></div>`;
+  }
+
+  function expenses(p) {
+    if (!p.expenses.length) return '<div class="empty">Aucune dépense.</div>';
+    const by = {};
+    for (const e of p.expenses) by[e.bucket || '—'] = (by[e.bucket || '—'] || 0) + e.amount;
+    return `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Mois</th><th>Dépense</th><th>Type</th><th>Poche</th><th class="n">Montant</th><th>Source</th><th></th></tr></thead><tbody>
+      ${p.expenses.map((e) => `<tr><td>${R.mShort(e.month)}</td><td class="t">${R.esc(e.name)}${e.notes ? `<div style="color:var(--muted);font-size:11px;margin-top:2px">${R.esc(e.notes)}</div>` : ''}</td><td>${R.esc(e.type || '—')}</td><td>${R.esc(R.BUCKET[e.bucket] || e.bucket || '—')}</td><td class="n">${R.eur(e.amount, 2)}</td><td>${R.esc(e.source || '—')}</td><td>${e.toVerify ? '<span class="flag" title="À vérifier">⚑</span>' : ''}</td></tr>`).join('')}
+      ${Object.entries(by).map(([b, v]) => `<tr><td></td><td class="t" style="color:var(--text2)">Total ${R.esc(R.BUCKET[b] || b)}</td><td></td><td></td><td class="n">${R.eur(v, 2)}</td><td></td><td></td></tr>`).join('')}
+      </tbody></table></div>`;
+  }
+
+  const kpi = (l, v, s) => `<div class="kpi"><div class="kpi-l">${R.esc(l)}</div><div class="kpi-v">${v}</div><div class="kpi-s">${s}</div></div>`;
+
+  async function copyArtistLink(p) {
+    try {
+      const { path } = await R.admin(`/api/royalties?sign=${encodeURIComponent(p.id)}`);
+      const url = location.origin + path;
+      let copied = false;
+      try { await navigator.clipboard.writeText(url); copied = true; } catch (e) { /* clipboard blocked */ }
+      toast(copied ? 'Lien artiste copié. À n’envoyer qu’après ton go sur le relevé.' : `Lien artiste : ${url}`, copied ? 3500 : 15000);
+    } catch (e) {
+      toast(R.errorText(e.code), 5000);
+    }
+  }
+
+  function toast(msg, ms) {
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), ms);
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>

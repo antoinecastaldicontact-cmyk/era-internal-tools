@@ -9,6 +9,7 @@ Hub des outils internes ERA Music. Hébergé sur Vercel, déployé automatiqueme
 | Competitor Intel | Live | [/competitor-intel/](/competitor-intel/) |
 | Fan Link Generator | Live | [/fan-link-generator/](/fan-link-generator/) |
 | Sound Intel | Beta | [/sound-intel/](/sound-intel/) |
+| Cockpit royalties | Live | [/royalties/](/royalties/) |
 
 ## Stack
 
@@ -34,8 +35,15 @@ era-internal-tools/
 │   └── index.html           # Scraping Meta Ad Library
 ├── fan-link-generator/
 │   └── index.html           # ReleaseConfig Lovable
-└── sound-intel/
-    └── index.html           # UGC extraction TikTok + Instagram
+├── sound-intel/
+│   └── index.html           # UGC extraction TikTok + Instagram
+├── royalties/               # Cockpit royalties (macro, projet, relevé artiste)
+│   ├── index.html · projet/ · artiste/
+│   └── lib.js · viz.js · style.css
+└── api/
+    ├── _royalties.js        # Lecture Airtable + modèle (non routé : préfixe _)
+    ├── royalties.js         # Données admin (clé x-admin-key)
+    └── royalties-artist.js  # Relevé artiste (lien signé)
 ```
 
 Chaque nouvel outil = un nouveau dossier avec son propre `index.html`. Le hub liste les outils disponibles + roadmap.
@@ -52,6 +60,15 @@ Hors site : le dossier `jobs/` et `.github/` sont exclus du déploiement Vercel 
 - **Règle** : un nombre illisible n'est jamais écrit. Pas de J-2 ou total en baisse → `daily_streams` laissé vide. Tout échec fait sortir le run en erreur (mail GitHub).
 - **Secret requis** : `AIRTABLE_TOKEN` (Settings → Secrets → Actions), scope `data.records:read` + `data.records:write` sur la base `appnSgCIW2ik08BFm`.
 - **Restreindre le périmètre** : changer `ORIGINS` dans le workflow (ex. `ERA`). Pour une autre base (129), dupliquer le job avec ses propres IDs de base et de tables.
+
+## Cockpit royalties
+
+- **Source** : base Airtable *ERA Reporting & Royalties* (`appBvSWFIA6P36nXu`), lue côté serveur — tables Projects, Statement Lines, Expenses, Splits, Payees, par field ID (un renommage de colonne ne casse rien).
+- **Pages** : `/royalties/` (macro : cash déployé/récupéré, dépenses vs revenus, par titre, top 15 mensuel, kanban de recoupement, table) · `/royalties/projet/?id=rec…` (micro admin : courbe de recoupement, dépensé vs récupéré, dépenses vs écoutes, en cours, deal & splits, dépenses) · `/royalties/artiste/?p=rec…&s=…` (relevé artiste, un seul titre, sans notes internes).
+- **Règles de calcul** : KPI = rollups Airtable (source de vérité). Courbes = lignes mensuelles par mois d'écoute ; tout écart > 0,50 € avec les rollups s'affiche en bandeau. Récupéré = Σ min(revenus, marketing) par titre. Mois postérieurs au dernier mois reporté par *tous* les distributeurs = partiels (hachurés).
+- **Variables Vercel** : `AIRTABLE_TOKEN` (lecture sur `appBvSWFIA6P36nXu`) · `ROYALTIES_ADMIN_KEY` (secret long : accès admin + signature des liens artistes ; le changer invalide tous les liens artistes envoyés).
+- **Diagnostic** : `/api/royalties?health=1` (sans clé, aucun montant) → état du token, de la clé, nombre de projets et d'écarts.
+- **Cache** : 10 min par instance. Bouton ↻ = relecture immédiate d'Airtable.
 
 ## Notes de sécurité
 

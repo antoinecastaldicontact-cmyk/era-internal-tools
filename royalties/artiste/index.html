@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>ERA Music · Relevé artiste</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/royalties/style.css">
+<style>.wrap{max-width:980px}.lead{font-size:15px;color:var(--ink2);line-height:1.6;margin:18px 0 26px;max-width:680px}.lead .ic{font-size:14px;margin-right:4px}</style>
+</head>
+<body>
+<div class="wrap" id="app"><div class="loading">Chargement…</div></div>
+<script src="/royalties/lib.js"></script>
+<script src="/royalties/viz.js"></script>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const { C } = V;
+  const SPLIT_ARTIST = {
+    'Not recouped': 'Ta part sera versée une fois le titre recoupé.',
+    'Due: activate on Wiseband': 'Titre recoupé : l’activation de ta part sur Wiseband est en cours.',
+    'Active on Wiseband': 'Ta part t’est versée directement par Wiseband.',
+    'Due: ERA pays artist (ADA)': 'Titre recoupé : ERA te verse ta part.',
+    'Paid by ERA (ADA)': 'Ta part t’est versée par ERA.',
+    'Artist advance not recouped': 'Ton avance est en cours de recoupement sur ta part.',
+  };
+
+  async function start() {
+    const p = R.qs('p') || '', s = R.qs('s') || '';
+    try {
+      const d = await R.getJSON(`/api/royalties-artist?p=${encodeURIComponent(p)}&s=${encodeURIComponent(s)}`);
+      render(d);
+    } catch (e) {
+      app.innerHTML = `<div class="err"><b>Relevé indisponible.</b><br>${R.esc(R.errorText(e.code))}</div>`;
+    }
+  }
+
+  function render(d) {
+    document.title = `ERA Music · ${d.title}`;
+    let j0 = d.series.findIndex((s) => s.gross > 0 || s.marketing > 0 || s.streams > 0);
+    if (j0 < 0) j0 = Math.max(0, d.series.length - 1);
+    const S = d.series.slice(j0);
+    const M = S.map((s) => s.m);
+    const recouped = d.status === 'Recouped' || (d.marketing > 0 && d.gross >= d.marketing);
+    const noSpend = !(d.marketing > 0);
+    const cross = S.find((s) => s.cumMarketing > 0 && s.cumGross >= s.cumMarketing);
+
+    const lead = noSpend
+      ? `Aucun investissement marketing à recouper sur ce titre.`
+      : recouped
+        ? `<span class="ic good">✓</span>Titre <b>recoupé</b>${cross ? ` en ${R.mLong(cross.m)}` : ''} : l’investissement marketing est remboursé.`
+        : `<span class="ic warn">◷</span>Titre <b>recoupé à ${R.pct(d.recoupPct)}</b> : il reste ${R.eur(d.remaining)} de marketing à rembourser par les revenus du titre.`;
+
+    app.innerHTML = `
+      <div class="brand"><span>ERA Music</span><span>·</span><span>Relevé artiste</span></div>
+      <h1>${R.esc(d.title)}</h1>
+      <p class="sub">Sortie ${R.date(d.release)} · mis à jour ${R.esc(R.date(d.generatedAt))} · chiffres actualisés chaque mois, autour du 15${d.dataUntil ? ` · écoutes reportées jusqu’à ${R.mLong(d.dataUntil)}` : ''}</p>
+      <p class="lead">${lead}</p>
+
+      <div class="kpis">
+        ${kpi('Streams', R.int(d.streams), 'écoutes audio, toutes plateformes')}
+        ${kpi('Revenus générés', R.eur(d.gross), 'revenus bruts du titre')}
+        ${noSpend ? '' : kpi('Investissement marketing', R.eur(d.marketing), 'avancé par ERA')}
+        ${noSpend ? '' : kpi(recouped ? 'Recoupement' : 'Reste à recouper', recouped ? '100 %' : R.eur(d.remaining), recouped ? 'marketing remboursé' : `${R.pct(d.recoupPct)} déjà remboursé`)}
+      </div>
+
+      ${noSpend ? '' : `<div class="card">
+        <div class="card-t">Recoupement</div>
+        <div class="card-d">Revenus cumulés du titre face à l’investissement marketing. Quand la ligne bleue dépasse l’orange, le titre est recoupé.</div>
+        <div class="chart" id="c-recoup"></div>
+      </div>`}
+
+      <div class="card">
+        <div class="card-t">Streams par mois</div>
+        <div class="card-d">Écoutes audio par mois d’écoute.</div>
+        <div class="chart" id="c-streams"></div>
+      </div>
+
+      ${splits(d)}
+
+      <div class="foot"><span>ERA Music</span><span>Relevé personnel : merci de ne pas partager ce lien.</span></div>`;
+
+    const common = { months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: d.dataUntil, shadeLabel: 'pas encore reporté' };
+    if (!noSpend) {
+      V.line(document.getElementById('c-recoup'), {
+        ...common, h: 250, yFmt: R.eurC, yTip: R.eur, label: 'Courbe de recoupement',
+        markers: cross ? [{ m: cross.m, label: 'recoupé' }] : [],
+        series: [
+          { name: 'Investissement marketing (cumul)', color: C.orange, values: S.map((s) => s.cumMarketing) },
+          { name: 'Revenus du titre (cumul)', color: C.blue, values: S.map((s) => s.cumGross) },
+        ],
+      });
+    }
+    V.bars(document.getElementById('c-streams'), {
+      ...common, h: 200, yFmt: R.intC, yTip: R.int, label: 'Streams par mois',
+      series: [{ name: 'Streams', color: C.aqua, values: S.map((s) => s.streams) }],
+    });
+  }
+
+  function splits(d) {
+    const status = SPLIT_ARTIST[d.splitStatus];
+    if (d.artistShare == null && !d.splits.length && !status) return '';
+    return `<div class="card">
+      <div class="card-t">Ta part</div>
+      <dl class="kv">
+        ${d.artistShare != null ? `<dt>Part artiste</dt><dd>${R.pct(d.artistShare, 1)} des revenus du titre, après recoupement</dd>` : ''}
+        ${status ? `<dt>Versement</dt><dd>${R.esc(status)}</dd>` : ''}
+      </dl>
+      ${d.splits.length ? `<div class="tbl-wrap" style="margin-top:14px"><table class="tbl"><thead><tr><th>Ayant droit</th><th class="n">Part côté artiste</th></tr></thead><tbody>
+        ${d.splits.map((s) => `<tr><td class="t">${R.esc(s.payee || '—')}</td><td class="n">${R.pct(s.share, 1)}</td></tr>`).join('')}
+      </tbody></table></div>` : ''}
+    </div>`;
+  }
+
+  const kpi = (l, v, s) => `<div class="kpi"><div class="kpi-l">${R.esc(l)}</div><div class="kpi-v">${v}</div><div class="kpi-s">${s}</div></div>`;
+
+  start();
+})();
+</script>
+</body>
+</html>

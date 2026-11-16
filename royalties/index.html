@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>ERA · Cockpit royalties</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/royalties/style.css">
+</head>
+<body>
+<div class="wrap" id="app"><div class="loading">Chargement du cockpit…</div></div>
+<script src="/royalties/lib.js"></script>
+<script src="/royalties/viz.js"></script>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const { C } = V;
+  const projectHref = (id) => `/royalties/projet/?id=${encodeURIComponent(id)}`;
+  const S = { monthly: 'portfolio', heat: 'streams', sort: { k: 'marketing', dir: -1 }, open: {} };
+  let D, M, I0;
+
+  async function start(refresh) {
+    app.innerHTML = '<div class="loading">Chargement du cockpit…</div>';
+    try {
+      D = await R.model({ refresh });
+      render();
+    } catch (e) {
+      if (e.code === 'no_key' || e.code === 'unauthorized') {
+        return R.lock(app, e.code === 'unauthorized' ? 'Clé refusée. Colle la bonne clé ROYALTIES_ADMIN_KEY.' : null, () => start());
+      }
+      app.innerHTML = `<div class="err"><b>Impossible de charger les données.</b><br>${R.esc(R.errorText(e.code))}</div>`;
+    }
+  }
+
+  function render() {
+    const K = D.kpis;
+    // Trim the leading months with no activity at all.
+    I0 = Math.max(0, D.catalogue.findIndex((c) => c.gross > 0 || c.marketing > 0));
+    M = D.months.slice(I0);
+    const cat = D.catalogue.slice(I0);
+    const st = Object.fromEntries(K.byStatus.map((s) => [s.status, s]));
+    const cu = D.coverage && D.coverage.completeUntil;
+    const cov = D.coverage ? Object.entries(D.coverage.bySource).map(([s, m]) => `${R.esc(s)} jusqu’à <b>${R.mLong(m)}</b>`).join(' · ') : '';
+    const port = D.projects.filter((p) => p.marketing > 0);
+
+    app.innerHTML = `
+      <div class="brand"><a href="/">ERA · Internal</a><span>/</span><span>Royalties</span></div>
+      <div class="top">
+        <div>
+          <h1>Cockpit <b>royalties</b></h1>
+          <p class="sub">Base ERA Reporting &amp; Royalties · générée ${R.esc(R.dateTime(D.generatedAt))} · ${cov}${cu ? ` · mois après ${R.mLong(cu)} = partiels (hachurés)` : ''}</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="refresh">↻ Rafraîchir</button>
+          <button class="btn" id="logout">Clé</button>
+        </div>
+      </div>
+      ${checksBanner()}
+      <div class="kpis">
+        ${kpi('Cash déployé', R.eur(K.deployed), `marketing sur ${K.portfolioCount} titres`)}
+        ${kpi('Cash récupéré', R.eur(K.recovered), `${R.pct(K.deployed ? K.recovered / K.deployed : null)} du cash déployé`)}
+        ${kpi('Capital à risque', R.eur(K.atRisk), `reste à recouper · ${st.Maturing.count} en maturation, ${st.Impaired.count} impaired`)}
+        ${kpi('Multiple portefeuille', R.mult(K.multiple), `revenus ${R.eurC(K.grossPortfolio)} ÷ dépenses ${R.eurC(K.deployed)}`)}
+        ${kpi('Revenus catalogue', R.eur(K.grossCatalogue), `${D.projects.length} lignes projet, avec et sans dépense`)}
+        ${kpi('Streams audio', R.intC(K.streamsCatalogue), 'catalogue entier, hors UGC')}
+      </div>
+
+      <div class="section-label">Vue macro · cash</div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-h"><div><div class="card-t">Cash déployé vs cash récupéré</div>
+          <div class="card-d">Cumul mensuel. Récupéré = revenus imputés au recoupement, plafonnés à la dépense de chaque titre.</div></div></div>
+          <div class="chart" id="c-cash"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div><div class="card-t">Dépenses vs revenus par mois</div>
+          <div class="card-d">Marketing engagé et revenus bruts du mois d’écoute.</div></div>
+          <div class="seg" id="seg-monthly"><button data-v="portfolio">Titres avec dépense</button><button data-v="catalogue">Catalogue</button></div></div>
+          <div class="chart" id="c-monthly"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Par titre · dépensé vs revenus</div>
+        <div class="card-d">${port.length} titres avec dépense marketing, triés par dépense. Le pourcentage = revenus ÷ dépense (≥ 100 % = recoupé). Clic = vue projet.</div></div></div>
+        <div class="chart" id="c-pairs"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Top 15 titres · mensuel</div>
+        <div class="card-d">Classement sur le total de la période. Une ligne par titre, une case par mois d’écoute.</div></div>
+        <div class="seg" id="seg-heat"><button data-v="streams">Streams</button><button data-v="gross">Revenus</button></div></div>
+        <div class="chart" id="c-heat"></div>
+      </div>
+
+      <div class="section-label">Pipeline de recoupement</div>
+      <div class="kanban" id="kanban"></div>
+
+      <div class="section-label">Tous les projets</div>
+      <div class="card"><div class="tbl-wrap" id="tbl"></div></div>
+
+      <div class="foot"><span>ERA · Cockpit royalties · v1</span><span>Données : Airtable appBvSWFIA6P36nXu · horloge du 15</span></div>`;
+
+    document.getElementById('refresh').onclick = () => start(true);
+    document.getElementById('logout').onclick = () => { R.resetKey(); start(); };
+    seg('seg-monthly', 'monthly', drawMonthly);
+    seg('seg-heat', 'heat', drawHeat);
+
+    V.line(document.getElementById('c-cash'), {
+      months: M, h: 250, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur, shadeFrom: cu,
+      label: 'Cash déployé et cash récupéré cumulés par mois',
+      series: [
+        { name: 'Cash déployé (cumul)', color: C.orange, values: cat.map((c) => c.deployedCum) },
+        { name: 'Cash récupéré (cumul)', color: C.blue, values: cat.map((c) => c.recoveredCum) },
+      ],
+      extra: (i) => `<div class="tip-note">Écart : ${R.eur(cat[i].deployedCum - cat[i].recoveredCum)}</div>`,
+    });
+    drawMonthly();
+    drawPairs(port);
+    drawHeat();
+    drawKanban();
+    drawTable();
+  }
+
+  const kpi = (l, v, s) => `<div class="kpi"><div class="kpi-l">${R.esc(l)}</div><div class="kpi-v">${v}</div><div class="kpi-s">${s}</div></div>`;
+
+  function checksBanner() {
+    if (!D.checks || !D.checks.length) return '';
+    return `<div class="banner"><b>${D.checks.length} écart(s)</b> entre les lignes mensuelles et les rollups Airtable : les courbes de ces titres ne retombent pas exactement sur leurs totaux. Les KPI, eux, viennent des rollups.
+      <details><summary>Détail</summary><ul>${D.checks.map((c) => `<li>${R.esc(c.project)} · ${R.esc(c.field)} : lignes ${R.eur(c.lines, 2)} vs rollup ${R.eur(c.rollup, 2)}</li>`).join('')}</ul></details></div>`;
+  }
+
+  function seg(id, key, redraw) {
+    const el = document.getElementById(id);
+    const sync = () => el.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === S[key]));
+    el.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S[key] = b.dataset.v; sync(); redraw(); }));
+    sync();
+  }
+
+  function drawMonthly() {
+    const cat = D.catalogue.slice(I0);
+    const pf = S.monthly === 'portfolio';
+    V.bars(document.getElementById('c-monthly'), {
+      months: M, h: 250, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur, shadeFrom: D.coverage && D.coverage.completeUntil,
+      label: 'Dépenses marketing et revenus par mois',
+      series: [
+        { name: 'Dépenses marketing', color: C.orange, values: cat.map((c) => c.marketing) },
+        { name: pf ? 'Revenus (titres avec dépense)' : 'Revenus (catalogue)', color: C.blue, values: cat.map((c) => (pf ? c.grossPortfolio : c.gross)) },
+      ],
+      extra: (i) => `<div class="tip-note">Streams audio du catalogue : ${R.int(cat[i].streams)}</div>`,
+    });
+  }
+
+  function drawPairs(port) {
+    const rows = [...port].sort((a, b) => b.marketing - a.marketing).map((p) => {
+      const s = R.STATUS[p.status] || R.STATUS['No spend'];
+      return {
+        label: p.title, a: p.marketing, b: p.gross, href: projectHref(p.id),
+        pre: `<span class="ic ${s.cls}" title="${R.esc(s.fr)}">${s.icon}</span>`,
+        note: `${s.fr}${p.remaining > 0 ? ` · reste ${R.eur(p.remaining)}` : ''}`,
+        pct: p.recoupPct,
+      };
+    });
+    V.pairs(document.getElementById('c-pairs'), {
+      rows, fmt: R.eur,
+      a: { name: 'Dépensé (marketing)', color: C.orange },
+      b: { name: 'Revenus bruts', color: C.blue },
+      valueText: (r) => `${R.eurC(r.a)} <span class="m">→</span> ${R.eurC(r.b)} <span class="m">·</span> ${R.pct(r.pct)}`,
+    });
+  }
+
+  function drawHeat() {
+    const k = S.heat;
+    const rows = D.projects.map((p) => {
+      const values = p.series.slice(I0).map((s) => s[k]);
+      return { label: p.title, href: projectHref(p.id), values, total: values.reduce((a, b) => a + b, 0) };
+    }).filter((r) => r.total > 0).sort((a, b) => b.total - a.total).slice(0, 15);
+    V.heat(document.getElementById('c-heat'), {
+      rows, months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: D.coverage && D.coverage.completeUntil,
+      fmt: k === 'streams' ? R.int : (v) => R.eur(v, 2),
+      totalFmt: k === 'streams' ? R.intC : R.eurC,
+    });
+  }
+
+  function drawKanban() {
+    const cols = [
+      { st: 'Recouped', sort: (a, b) => b.gross - a.gross, sub: (g) => `${R.eurC(sum(g, 'gross'))} de revenus pour ${R.eurC(sum(g, 'marketing'))} dépensés` },
+      { st: 'Maturing', sort: (a, b) => (b.recoupPct || 0) - (a.recoupPct || 0), sub: (g) => `reste ${R.eurC(sum(g, 'remaining'))} à recouper · moins de 6 mois` },
+      { st: 'Impaired', sort: (a, b) => b.remaining - a.remaining, sub: (g) => `M+6 dépassé sans recoupement · reste ${R.eurC(sum(g, 'remaining'))}` },
+      { st: 'No spend', sort: (a, b) => b.gross - a.gross, sub: (g) => `${R.eurC(sum(g, 'gross'))} de revenus sans marketing` },
+    ];
+    const LIMIT = 8;
+    document.getElementById('kanban').innerHTML = cols.map((c) => {
+      const s = R.STATUS[c.st];
+      const g = D.projects.filter((p) => p.status === c.st).sort(c.sort);
+      const shown = S.open[c.st] ? g : g.slice(0, LIMIT);
+      return `<div class="col">
+        <div class="col-h">${R.statusPill(c.st)}<span class="col-n">${g.length}</span></div>
+        <div class="col-s">${c.sub(g)}</div>
+        ${shown.map((p) => card(p)).join('') || '<div class="empty">Aucun titre</div>'}
+        ${g.length > LIMIT ? `<button class="more" data-st="${R.esc(c.st)}">${S.open[c.st] ? 'Réduire' : `+ ${g.length - LIMIT} autres`}</button>` : ''}
+      </div>`;
+    }).join('');
+    document.querySelectorAll('#kanban .more').forEach((b) => b.addEventListener('click', () => { S.open[b.dataset.st] = !S.open[b.dataset.st]; drawKanban(); }));
+  }
+
+  function card(p) {
+    const age = p.monthsSinceRelease != null ? `M+${p.monthsSinceRelease}` : '';
+    if (p.status === 'No spend') {
+      return `<a class="kc" href="${projectHref(p.id)}"><div class="kc-t">${R.esc(p.title)}</div>
+        <div class="kc-m"><span><b>${R.eurC(p.gross)}</b> revenus</span><span>${R.intC(p.streams)} streams</span></div></a>`;
+    }
+    const w = Math.min(100, (p.recoupPct || 0) * 100);
+    return `<a class="kc" href="${projectHref(p.id)}"><div class="kc-t">${R.esc(p.title)}</div>
+      <div class="kc-bar" title="Recoupement ${R.pct(p.recoupPct)}"><span style="width:${w}%"></span></div>
+      <div class="kc-m"><span><b>${R.pct(p.recoupPct)}</b> recoupé</span><span>${age}</span></div>
+      <div class="kc-m"><span>${R.eurC(p.marketing)} dépensés</span><span>${p.remaining > 0 ? `reste <b>${R.eurC(p.remaining)}</b>` : `<b>${R.mult(p.recoupPct)}</b>`}</span></div></a>`;
+  }
+
+  const sum = (g, k) => g.reduce((a, p) => a + (p[k] || 0), 0);
+
+  function drawTable() {
+    const cols = [
+      { k: 'title', l: 'Titre', cls: 't', v: (p) => R.esc(p.title) },
+      { k: 'status', l: 'Statut', v: (p) => R.statusPill(p.status) },
+      { k: 'release', l: 'Sortie', v: (p) => R.date(p.release) },
+      { k: 'monthsSinceRelease', l: 'Âge', n: 1, v: (p) => (p.monthsSinceRelease != null ? `M+${p.monthsSinceRelease}` : '—') },
+      { k: 'marketing', l: 'Dépensé', n: 1, v: (p) => R.eur(p.marketing) },
+      { k: 'gross', l: 'Revenus', n: 1, v: (p) => R.eur(p.gross) },
+      { k: 'recoupPct', l: 'Recoup.', n: 1, v: (p) => R.pct(p.recoupPct) },
+      { k: 'remaining', l: 'Reste', n: 1, v: (p) => (p.remaining > 0 ? R.eur(p.remaining) : '—') },
+      { k: 'streams', l: 'Streams', n: 1, v: (p) => R.int(p.streams) },
+      { k: 'distributor', l: 'Distrib.', v: (p) => R.esc((p.distributor || []).join(', ')) },
+      { k: 'splitStatus', l: 'Splits', v: (p) => R.esc(R.SPLIT_ADMIN[p.splitStatus] || p.splitStatus || '—') },
+    ];
+    const { k, dir } = S.sort;
+    const val = (p) => { const v = p[k]; return Array.isArray(v) ? v.join(',') : v; };
+    const rows = [...D.projects].sort((a, b) => {
+      const x = val(a), y = val(b);
+      if (x == null && y == null) return 0;
+      if (x == null) return 1;
+      if (y == null) return -1;
+      return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y), 'fr')) * dir;
+    });
+    const el = document.getElementById('tbl');
+    el.innerHTML = `<table class="tbl"><thead><tr>${cols.map((c) => `<th class="sortable ${c.n ? 'n' : ''}" data-k="${c.k}">${c.l}${c.k === k ? (dir > 0 ? ' ↑' : ' ↓') : ''}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map((p) => `<tr class="link" data-id="${p.id}">${cols.map((c) => `<td class="${c.cls || ''} ${c.n ? 'n' : ''}">${c.v(p)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    el.querySelectorAll('th').forEach((th) => th.addEventListener('click', () => {
+      S.sort = { k: th.dataset.k, dir: S.sort.k === th.dataset.k ? -S.sort.dir : (['title', 'status', 'release', 'distributor', 'splitStatus'].includes(th.dataset.k) ? 1 : -1) };
+      drawTable();
+    }));
+    el.querySelectorAll('tr.link').forEach((tr) => tr.addEventListener('click', () => { location.href = projectHref(tr.dataset.id); }));
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
