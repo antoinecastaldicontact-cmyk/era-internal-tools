@@ -23,4 +23,4 @@ Updating the vendored skill: re-copy `SKILL.md`, `references/`, `data/`, `script
 
 - Never commit a token, key or secret. Server secrets live in Vercel env vars (e.g. `AIRTABLE_TOKEN`, `ROYALTIES_ADMIN_KEY`); browser-only tokens stay in localStorage.
 - Admin APIs fail closed when their key is missing. Money figures never leave an API without the admin key or a signed link.
-- `.claude/`, `jobs/`, `.github/` and this file are excluded from the Vercel deploy (`.vercelignore`).
+- `.claude/`, `jobs/`, `.github/`, `tools/` and this file are excluded from the Vercel deploy (`.vercelignore`).
