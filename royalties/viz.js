@@ -29,14 +29,18 @@
     `<div class="tip-row"><span class="sw ${mark}" style="background:${color}"></span><span class="tip-name">${esc(name)}</span><span class="tip-val">${esc(value)}</span></div>`;
 
   // ---------- scales ----------
-  // Axis max and tick step: step in {1, 2, 2.5, 5} × 10^n so labels read cleanly.
-  function niceScale(v, target = 4) {
-    if (!(v > 0)) return { max: 1, step: 0.25 };
-    const raw = v / target;
+  // Axis range and tick step: step in {1, 2, 2.5, 5} × 10^n so labels read cleanly.
+  // Negative values (a margin, a variation) extend the axis below zero.
+  function niceStep(raw) {
     const p = Math.pow(10, Math.floor(Math.log10(raw)));
     const f = raw / p;
-    const step = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
-    return { max: Math.ceil(v / step - 1e-9) * step, step };
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+  }
+  function niceScale(hi, lo = 0, target = 4) {
+    hi = Math.max(0, hi || 0); lo = Math.min(0, lo || 0);
+    if (!(hi - lo > 0)) return { min: 0, max: 1, step: 0.25 };
+    const step = niceStep((hi - lo) / target);
+    return { min: Math.floor(lo / step + 1e-9) * step, max: Math.ceil(hi / step - 1e-9) * step, step };
   }
   const niceMax = (v) => niceScale(v).max;
   function svg(tag, attrs = {}, parent) {
@@ -50,17 +54,18 @@
   }
 
   // Common frame: axes, gridlines, x labels, shaded "partial" zone.
-  function frame(el, o, max) {
+  function frame(el, o, sc) {
     const W = Math.max(320, el.clientWidth || 640);
     const H = o.h || 240;
     const m = { l: 60, r: 14, t: 14, b: 26 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const s = svg('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': o.label || '' });
-    const y = (v) => m.t + ih - (v / max) * ih;
-    const ticks = Math.round(max / o._step);
+    const y = (v) => m.t + ih - ((v - sc.min) / (sc.max - sc.min)) * ih;
+    const ticks = Math.round((sc.max - sc.min) / sc.step);
     for (let i = 0; i <= ticks; i++) {
-      const v = o._step * i;
-      svg('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: i === 0 ? C.axis : C.grid, 'stroke-width': i === 0 ? 1 : 0.5 }, s);
+      const v = sc.min + sc.step * i;
+      const zero = Math.abs(v) < sc.step / 1e6;
+      svg('line', { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: zero ? C.axis : C.grid, 'stroke-width': zero ? 1 : 0.5 }, s);
       const t = svg('text', { x: m.l - 8, y: y(v) + 3.5, 'text-anchor': 'end', class: 'ax' }, s);
       t.textContent = o.yFmt(v);
     }
@@ -96,9 +101,9 @@
   function line(el, o) {
     const draw = () => {
       const n = o.months.length;
-      const sc = niceScale(Math.max(0, ...o.series.flatMap((s) => s.values)));
-      const max = sc.max; o._step = sc.step;
-      const f = frame(el, o, max);
+      const vals = o.series.flatMap((s) => s.values);
+      const sc = niceScale(Math.max(0, ...vals), Math.min(0, ...vals));
+      const f = frame(el, o, sc);
       const step = n > 1 ? f.iw / (n - 1) : f.iw;
       const xAt = (i) => f.m.l + (n > 1 ? i * step : f.iw / 2);
       shade(f, o.months, o.shadeFrom, step, xAt, o.shadeLabel);
@@ -126,7 +131,7 @@
         g.setAttribute('opacity', 1);
         vline.setAttribute('x1', xAt(i)); vline.setAttribute('x2', xAt(i));
         o.series.forEach((s, k) => { dots[k].setAttribute('cx', xAt(i)); dots[k].setAttribute('cy', f.y(s.values[i])); });
-        const partial = o.shadeFrom && o.months[i] > o.shadeFrom ? `<div class="tip-note">${esc(o.shadeLabel || 'partiel')}</div>` : '';
+        const partial = o.note ? o.note(i) : o.shadeFrom && o.months[i] > o.shadeFrom ? `<div class="tip-note">${esc(o.shadeLabel || 'partiel')}</div>` : '';
         tipShow(`<div class="tip-h">${esc(o.tipFmt ? o.tipFmt(o.months[i]) : o.months[i])}</div>${o.series.map((s) => tipRow(s.color, s.name, o.yTip ? o.yTip(s.values[i]) : o.yFmt(s.values[i]), 'ln')).join('')}${o.extra ? o.extra(i) : ''}${partial}`, ev.clientX, ev.clientY);
       });
       hit.addEventListener('pointerleave', () => { g.setAttribute('opacity', 0); tipHide(); });
@@ -141,9 +146,9 @@
   function bars(el, o) {
     const draw = () => {
       const n = o.months.length, k = o.series.length;
-      const sc = niceScale(Math.max(0, ...o.series.flatMap((s) => s.values)));
-      const max = sc.max; o._step = sc.step;
-      const f = frame(el, o, max);
+      const vals = o.series.flatMap((s) => s.values);
+      const sc = niceScale(Math.max(0, ...vals), Math.min(0, ...vals));
+      const f = frame(el, o, sc);
       const band = f.iw / n;
       const bw = Math.max(2, Math.min(14, (band * 0.72 - (k - 1) * 2) / k));
       const groupW = k * bw + (k - 1) * 2;
@@ -152,13 +157,16 @@
       const base = f.y(0);
       o.series.forEach((s, j) => {
         s.values.forEach((v, i) => {
-          if (!(v > 0)) return;
+          if (!v) return;
           const x = xAt(i) - groupW / 2 + j * (bw + 2);
-          const top = f.y(v);
-          const h = base - top;
+          const end = f.y(v);
+          const h = Math.abs(base - end);
           const r = Math.min(4, bw / 2, h);
-          const d = `M${x},${base}V${top + r}Q${x},${top} ${x + r},${top}H${x + bw - r}Q${x + bw},${top} ${x + bw},${top + r}V${base}Z`;
-          svg('path', { d, fill: s.color }, f.s);
+          // Rounded corners on the data end only, square on the zero line.
+          const d = v > 0
+            ? `M${x},${base}V${end + r}Q${x},${end} ${x + r},${end}H${x + bw - r}Q${x + bw},${end} ${x + bw},${end + r}V${base}Z`
+            : `M${x},${base}V${end - r}Q${x},${end} ${x + r},${end}H${x + bw - r}Q${x + bw},${end} ${x + bw},${end - r}V${base}Z`;
+          svg('path', { d, fill: s.color, opacity: s.dim && s.dim(i) ? 0.4 : 1 }, f.s);
         });
       });
       xLabels(f, o.months, xAt, o.xFmt);
@@ -170,7 +178,7 @@
         const mx = (ev.clientX - r.left) * (f.W / r.width);
         const i = Math.max(0, Math.min(n - 1, Math.floor((mx - f.m.l) / band)));
         hl.setAttribute('x', f.m.l + band * i); hl.setAttribute('opacity', 0.04);
-        const partial = o.shadeFrom && o.months[i] > o.shadeFrom ? `<div class="tip-note">${esc(o.shadeLabel || 'partiel')}</div>` : '';
+        const partial = o.note ? o.note(i) : o.shadeFrom && o.months[i] > o.shadeFrom ? `<div class="tip-note">${esc(o.shadeLabel || 'partiel')}</div>` : '';
         tipShow(`<div class="tip-h">${esc(o.tipFmt ? o.tipFmt(o.months[i]) : o.months[i])}</div>${o.series.map((s) => tipRow(s.color, s.name, o.yTip ? o.yTip(s.values[i]) : o.yFmt(s.values[i]))).join('')}${o.extra ? o.extra(i) : ''}${partial}`, ev.clientX, ev.clientY);
       });
       hit.addEventListener('pointerleave', () => { hl.setAttribute('opacity', 0); tipHide(); });

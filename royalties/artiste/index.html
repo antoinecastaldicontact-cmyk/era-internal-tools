@@ -43,20 +43,20 @@
     if (j0 < 0) j0 = Math.max(0, d.series.length - 1);
     const S = d.series.slice(j0);
     const M = S.map((s) => s.m);
-    const recouped = d.status === 'Recouped' || (d.marketing > 0 && d.gross >= d.marketing);
-    const noSpend = !(d.marketing > 0);
-    const cross = S.find((s) => s.cumMarketing > 0 && s.cumGross >= s.cumMarketing);
+    const recouped = d.status === 'Recouped' || !!d.recoupedIn;
+    const noSpend = !(d.marketing > 0) && d.fixed == null;
+    const cross = d.recoupedIn ? { m: d.recoupedIn } : null;
 
     const lead = noSpend
       ? `Aucun investissement marketing à recouper sur ce titre.`
       : recouped
         ? `<span class="ic good">✓</span>Titre <b>recoupé</b>${cross ? ` en ${R.mLong(cross.m)}` : ''} : l’investissement marketing est remboursé.`
-        : `<span class="ic warn">◷</span>Titre <b>recoupé à ${R.pct(d.recoupPct)}</b> : il reste ${R.eur(d.remaining)} de marketing à rembourser par les revenus du titre.`;
+        : `<span class="ic warn">◷</span>Titre <b>recoupé à ${R.pct(d.recoupPct)}</b> : il reste ${R.eur(d.remaining)} à rembourser par les revenus du titre${d.fixed != null ? ` (seuil prévu au contrat : ${R.eur(d.fixed)})` : ''}.`;
 
     app.innerHTML = `
       <div class="brand"><span>ERA Music</span><span>·</span><span>Relevé artiste</span></div>
       <h1>${R.esc(d.title)}</h1>
-      <p class="sub">Sortie ${R.date(d.release)} · mis à jour ${R.esc(R.date(d.generatedAt))} · chiffres actualisés chaque mois, autour du 15${d.dataUntil ? ` · écoutes reportées jusqu’à ${R.mLong(d.dataUntil)}` : ''}</p>
+      <p class="sub">Sortie ${R.date(d.release)} · mis à jour ${R.esc(R.date(d.generatedAt))} · chiffres actualisés chaque mois, autour du 15${d.completeThrough ? ` · revenus complets jusqu’à ${R.mLong(d.completeThrough)}` : ''}</p>
       <p class="lead">${lead}</p>
 
       <div class="kpis">
@@ -82,7 +82,10 @@
 
       <div class="foot"><span>ERA Music</span><span>Relevé personnel : merci de ne pas partager ce lien.</span></div>`;
 
-    const common = { months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: d.dataUntil, shadeLabel: 'pas encore reporté' };
+    const common = {
+      months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: d.completeThrough || d.dataUntil, shadeLabel: 'pas encore complet',
+      note: (i) => (S[i].state === 'partial' ? '<div class="tip-note">Mois partiel : Spotify, Deezer et Qobuz arrivent le mois suivant.</div>' : S[i].state === 'pending' ? '<div class="tip-note">Pas encore reporté par le distributeur.</div>' : ''),
+    };
     if (!noSpend) {
       V.line(document.getElementById('c-recoup'), {
         ...common, h: 250, yFmt: R.eurC, yTip: R.eur, label: 'Courbe de recoupement',
@@ -90,6 +93,7 @@
         series: [
           { name: 'Investissement marketing (cumul)', color: C.orange, values: S.map((s) => s.cumMarketing) },
           { name: 'Revenus du titre (cumul)', color: C.blue, values: S.map((s) => s.cumGross) },
+          ...(d.fixed != null ? [{ name: `Seuil prévu au contrat (${R.eur(d.fixed)})`, color: C.ink2, dash: '4 4', values: S.map(() => d.fixed) }] : []),
         ],
       });
     }

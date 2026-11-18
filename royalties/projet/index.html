@@ -40,7 +40,10 @@
     if (j0 < 0) j0 = Math.max(0, p.series.length - 1);
     const S = p.series.slice(j0);
     const M = S.map((s) => s.m);
-    const cross = S.find((s) => s.cumMarketing > 0 && s.cumGross >= s.cumMarketing);
+    // Recoupment month from the model (threshold = fixed contract amount when set, else marketing).
+    const cross = p.recoupedIn ? S.find((s) => s.m === p.recoupedIn) : null;
+    const thrAt = (s) => (p.fixed != null ? p.fixed : s.cumMarketing);
+    const stateNote = (s) => (s.state === 'partial' ? 'Revenus partiels : sans Spotify, Deezer ni Qobuz.' : s.state === 'pending' ? 'Revenus pas encore reportés (relevé du 15, deux à trois mois après).' : '');
     const ugc = S.reduce((a, s) => a + s.ugc, 0);
     const now = enCours(p, S);
 
@@ -51,7 +54,8 @@
           <h1>${R.esc(p.title)}</h1>
           <div class="meta">${R.statusPill(p.status)}
             <span>Sortie ${R.date(p.release)}</span>
-            ${p.monthsSinceRelease != null ? `<span class="sep">·</span><span>M+${p.monthsSinceRelease}</span>` : ''}
+            ${p.monthsSinceRelease != null ? `<span class="sep">·</span><span>M+${p.monthsSinceRelease}${p.dataAge != null ? ` · ${p.dataAge} mois de revenus complets` : ''}</span>` : (p.release ? '' : '<span class="sep">·</span><span class="flag">⚑ date de sortie manquante</span>')}
+            ${p.lagAdjusted ? `<span class="sep">·</span><span title="Airtable compte les mois depuis la sortie ; les revenus arrivent deux à trois mois après les écoutes.">Airtable : ${R.esc(p.statusAirtable)} au calendrier</span>` : ''}
             ${p.distributor && p.distributor.length ? `<span class="sep">·</span><span>${R.esc(p.distributor.join(', '))}</span>` : ''}
             ${p.kind ? `<span class="sep">·</span><span>${R.esc(p.kind)}</span>` : ''}
           </div>
@@ -65,7 +69,7 @@
       <div class="kpis">
         ${kpi('Dépensé', R.eur(p.marketing), 'marketing, recoupé sur le brut')}
         ${kpi('Revenus bruts', R.eur(p.gross), `RPM ${p.streams ? R.eur((p.gross / p.streams) * 1000, 2) : '—'} / 1 000 streams`)}
-        ${kpi('Recoupement', R.pct(p.recoupPct), p.marketing > 0 ? (cross ? `recoupé en ${R.mLong(cross.m)}` : 'pas encore recoupé') : 'aucune dépense marketing')}
+        ${kpi('Recoupement', R.pct(p.recoupPct), (p.fixed != null ? `seuil contrat fixe ${R.eur(p.fixed)} · ` : '') + (p.threshold > 0 ? (p.recoupedIn ? `recoupé en ${R.mLong(p.recoupedIn)}` : 'pas encore recoupé') : 'aucune dépense marketing'))}
         ${kpi('Reste à recouper', p.remaining > 0 ? R.eur(p.remaining) : '0 €', now.projection || '—')}
         ${kpi('Streams audio', R.int(p.streams), `+ ${R.intC(ugc)} vues UGC (hors recoupement)`)}
         ${kpi('Compte artiste', R.eur(p.artistCosts), 'recoupé sur la part artiste uniquement')}
@@ -75,7 +79,7 @@
       <div class="grid2">
         <div class="card">
           <div class="card-h"><div><div class="card-t">Courbe de recoupement</div>
-          <div class="card-d">Revenus cumulés vs dépenses marketing cumulées. Le titre est recoupé quand la ligne bleue passe au-dessus de l’orange.</div></div></div>
+          <div class="card-d">Revenus cumulés vs seuil de recoupement : dépenses marketing cumulées, ou montant fixe du contrat (pointillés) quand il existe. Le titre est recoupé quand la ligne bleue passe au-dessus.</div></div></div>
           <div class="chart" id="c-recoup"></div>
         </div>
         <div class="card">
@@ -98,7 +102,7 @@
         <div class="card">
           <div class="card-t">En cours</div>
           <dl class="kv">
-            <dt>Dernier mois reporté</dt><dd>${R.mLong(p.dataUntil)}${p.sources && p.sources.length ? ` <span class="mono" style="color:var(--muted);font-size:11px">(${R.esc(p.sources.join(', '))})</span>` : ''}</dd>
+            <dt>Revenus complets</dt><dd>jusqu’à ${R.mLong(p.completeThrough)}${p.dataUntil && p.dataUntil !== p.completeThrough ? `, ${R.mLong(p.dataUntil)} partiel` : ''}${p.sources && p.sources.length ? ` <span class="mono" style="color:var(--muted);font-size:11px">(${R.esc(p.sources.join(', '))})</span>` : ''}</dd>
             <dt>Revenus / mois</dt><dd>${now.avg3 != null ? `${R.eur(now.avg3)} <span style="color:var(--muted)">moyenne des 3 derniers mois</span>` : '—'}</dd>
             <dt>Tendance</dt><dd>${now.trend != null ? `${now.trend >= 0 ? '▲' : '▼'} ${R.pct(Math.abs(now.trend))} <span style="color:var(--muted)">vs les 3 mois d’avant</span>` : '—'}</dd>
             <dt>Streams / mois</dt><dd>${now.streams3 != null ? R.int(now.streams3) : '—'}</dd>
@@ -131,17 +135,21 @@
     document.getElementById('refresh').onclick = () => start(true);
     document.getElementById('artist').onclick = () => copyArtistLink(p);
 
-    const common = { months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: p.dataUntil, shadeLabel: 'non encore reporté' };
+    const common = {
+      months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: p.completeThrough, shadeLabel: 'partiel · attendu',
+      note: (i) => (stateNote(S[i]) ? `<div class="tip-note">${R.esc(stateNote(S[i]))}</div>` : ''),
+    };
     V.line(document.getElementById('c-recoup'), {
       ...common, h: 250, yFmt: R.eurC, yTip: R.eur, label: 'Courbe de recoupement',
       markers: cross ? [{ m: cross.m, label: 'recoupé' }] : [],
       series: [
         { name: 'Dépenses marketing cumulées', color: C.orange, values: S.map((s) => s.cumMarketing) },
         { name: 'Revenus cumulés', color: C.blue, values: S.map((s) => s.cumGross) },
+        ...(p.fixed != null ? [{ name: `Seuil contrat (${R.eur(p.fixed)})`, color: C.ink2, dash: '4 4', values: S.map(() => p.fixed) }] : []),
       ],
       extra: (i) => {
-        const r = S[i].cumMarketing > 0 ? S[i].cumGross / S[i].cumMarketing : null;
-        return `<div class="tip-note">Recoupement : ${R.pct(r)}</div>`;
+        const t = thrAt(S[i]);
+        return `<div class="tip-note">Recoupement : ${R.pct(t > 0 ? S[i].cumGross / t : null)}</div>`;
       },
     });
     V.bars(document.getElementById('c-month'), {
@@ -165,7 +173,7 @@
 
   // Run-rate on the last 3 reported months (months after dataUntil are not reported yet).
   function enCours(p, S) {
-    const rep = p.dataUntil ? S.filter((s) => s.m <= p.dataUntil) : S;
+    const rep = p.completeThrough ? S.filter((s) => s.m <= p.completeThrough) : S;
     const last3 = rep.slice(-3), prev3 = rep.slice(-6, -3);
     const avg = (a, k) => (a.length ? a.reduce((x, s) => x + s[k], 0) / a.length : null);
     const avg3 = avg(last3, 'gross');

@@ -126,7 +126,7 @@
   const STATUS = {
     Recouped: { fr: 'Recoupé', icon: '✓', cls: 'good' },
     Maturing: { fr: 'En maturation', icon: '◷', cls: 'warn' },
-    Impaired: { fr: 'Impaired', icon: '✕', cls: 'crit', hint: 'non recoupé à M+6' },
+    Impaired: { fr: 'Impaired', icon: '✕', cls: 'crit', hint: '6 mois de revenus complets sans recoupement' },
     'No spend': { fr: 'Sans dépense', icon: '○', cls: 'muted' },
   };
   const statusPill = (st) => {
@@ -149,7 +149,35 @@
     'Artist account (from artist share)': 'Compte artiste',
   };
 
+  // ---- reporting state of a usage month (the second speed) ----
+  const STATE = {
+    complete: { fr: 'complet', icon: '✓', cls: 'good' },
+    partial: { fr: 'partiel', icon: '◐', cls: 'warn' },
+    pending: { fr: 'attendu', icon: '◷', cls: 'muted' },
+  };
+  const dayMonth = (iso) => {
+    if (!iso) return '—';
+    const [, mo, d] = iso.split('-');
+    return `${+d} ${MONTHS[+mo - 1]}`;
+  };
+  const stateText = (state, exp) => {
+    if (state === 'complete') return 'Tous les stores reportés.';
+    if (state === 'partial') return `Sans Spotify, Deezer ni Qobuz. Complet vers le ${date(exp.complete)}.`;
+    return `Partiel vers le ${date(exp.partial)}, complet vers le ${date(exp.complete)}.`;
+  };
+  const stateChip = (state, exp) => {
+    const s = STATE[state] || STATE.pending;
+    const label = state === 'pending' && exp ? `attendu ${dayMonth(exp.partial)}` : s.fr;
+    return `<span class="pill ${s.cls}" title="${esc(stateText(state, exp))}"><span class="pill-ic" aria-hidden="true">${s.icon}</span>${esc(label)}</span>`;
+  };
+
+  const nav = (active) => `<nav class="tabs" aria-label="Royalties">
+      <a href="/royalties/" ${active === 'macro' ? 'aria-current="page"' : ''}>Vue macro</a>
+      <a href="/royalties/repartition/" ${active === 'repartition' ? 'aria-current="page"' : ''}>Répartition mensuelle</a>
+    </nav>`;
+
   window.R = {
+    STATE, stateText, stateChip, dayMonth, nav,
     eur, eurC, int, intC, pct, mult, mShort, mLong, date, dateTime, esc, qs,
     admin, getJSON, model, lock, resetKey, errorText, STATUS, statusPill, SPLIT_ADMIN, BUCKET, store,
   };

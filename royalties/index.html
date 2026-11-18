@@ -41,15 +41,16 @@
     const cat = D.catalogue.slice(I0);
     const st = Object.fromEntries(K.byStatus.map((s) => [s.status, s]));
     const cu = D.coverage && D.coverage.completeUntil;
-    const cov = D.coverage ? Object.entries(D.coverage.bySource).map(([s, m]) => `${R.esc(s)} jusqu’à <b>${R.mLong(m)}</b>`).join(' · ') : '';
+    const cov = cu ? `revenus complets jusqu’à <b>${R.mLong(cu)}</b>${D.coverage.partialUntil && D.coverage.partialUntil > cu ? `, ${R.mLong(D.coverage.partialUntil)} partiel (sans Spotify, Deezer, Qobuz)` : ''}, mois suivants en attente du relevé (hachurés)` : '';
     const port = D.projects.filter((p) => p.marketing > 0);
 
     app.innerHTML = `
       <div class="brand"><a href="/">ERA · Internal</a><span>/</span><span>Royalties</span></div>
+      ${R.nav('macro')}
       <div class="top">
         <div>
           <h1>Cockpit <b>royalties</b></h1>
-          <p class="sub">Base ERA Reporting &amp; Royalties · générée ${R.esc(R.dateTime(D.generatedAt))} · ${cov}${cu ? ` · mois après ${R.mLong(cu)} = partiels (hachurés)` : ''}</p>
+          <p class="sub">Base ERA Reporting &amp; Royalties · générée ${R.esc(R.dateTime(D.generatedAt))} · ${cov}</p>
         </div>
         <div class="actions">
           <button class="btn" id="refresh">↻ Rafraîchir</button>
@@ -108,7 +109,7 @@
     seg('seg-heat', 'heat', drawHeat);
 
     V.line(document.getElementById('c-cash'), {
-      months: M, h: 250, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur, shadeFrom: cu,
+      months: M, h: 250, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur, shadeFrom: cu, shadeLabel: 'partiel · attendu',
       label: 'Cash déployé et cash récupéré cumulés par mois',
       series: [
         { name: 'Cash déployé (cumul)', color: C.orange, values: cat.map((c) => c.deployedCum) },
@@ -128,7 +129,9 @@
   function checksBanner() {
     if (!D.checks || !D.checks.length) return '';
     return `<div class="banner"><b>${D.checks.length} écart(s)</b> entre les lignes mensuelles et les rollups Airtable : les courbes de ces titres ne retombent pas exactement sur leurs totaux. Les KPI, eux, viennent des rollups.
-      <details><summary>Détail</summary><ul>${D.checks.map((c) => `<li>${R.esc(c.project)} · ${R.esc(c.field)} : lignes ${R.eur(c.lines, 2)} vs rollup ${R.eur(c.rollup, 2)}</li>`).join('')}</ul></details></div>`;
+      <details><summary>Détail</summary><ul>${D.checks.map((c) => c.field === 'status'
+        ? `<li>${R.esc(c.project)} · statut : mois par mois ${R.esc(c.lines)}, Airtable ${R.esc(c.rollup)} (ads après recoupement comptées dans le seuil Airtable ?)</li>`
+        : `<li>${R.esc(c.project)} · ${R.esc(c.field)} : lignes ${R.eur(c.lines, 2)} vs rollup ${R.eur(c.rollup, 2)}</li>`).join('')}</ul></details></div>`;
   }
 
   function seg(id, key, redraw) {
@@ -142,7 +145,7 @@
     const cat = D.catalogue.slice(I0);
     const pf = S.monthly === 'portfolio';
     V.bars(document.getElementById('c-monthly'), {
-      months: M, h: 250, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur, shadeFrom: D.coverage && D.coverage.completeUntil,
+      months: M, h: 250, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur, shadeFrom: D.coverage && D.coverage.completeUntil, shadeLabel: 'partiel · attendu',
       label: 'Dépenses marketing et revenus par mois',
       series: [
         { name: 'Dépenses marketing', color: C.orange, values: cat.map((c) => c.marketing) },
@@ -177,7 +180,7 @@
       return { label: p.title, href: projectHref(p.id), values, total: values.reduce((a, b) => a + b, 0) };
     }).filter((r) => r.total > 0).sort((a, b) => b.total - a.total).slice(0, 15);
     V.heat(document.getElementById('c-heat'), {
-      rows, months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: D.coverage && D.coverage.completeUntil,
+      rows, months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: D.coverage && D.coverage.completeUntil, shadeLabel: 'partiel · attendu',
       fmt: k === 'streams' ? R.int : (v) => R.eur(v, 2),
       totalFmt: k === 'streams' ? R.intC : R.eurC,
     });
@@ -186,8 +189,8 @@
   function drawKanban() {
     const cols = [
       { st: 'Recouped', sort: (a, b) => b.gross - a.gross, sub: (g) => `${R.eurC(sum(g, 'gross'))} de revenus pour ${R.eurC(sum(g, 'marketing'))} dépensés` },
-      { st: 'Maturing', sort: (a, b) => (b.recoupPct || 0) - (a.recoupPct || 0), sub: (g) => `reste ${R.eurC(sum(g, 'remaining'))} à recouper · moins de 6 mois` },
-      { st: 'Impaired', sort: (a, b) => b.remaining - a.remaining, sub: (g) => `M+6 dépassé sans recoupement · reste ${R.eurC(sum(g, 'remaining'))}` },
+      { st: 'Maturing', sort: (a, b) => (b.recoupPct || 0) - (a.recoupPct || 0), sub: (g) => `reste ${R.eurC(sum(g, 'remaining'))} à recouper · moins de 6 mois de revenus complets${g.some((p) => p.lagAdjusted) ? ` (dont ${g.filter((p) => p.lagAdjusted).length} impaired au calendrier, décalage de paiement)` : ''}` },
+      { st: 'Impaired', sort: (a, b) => b.remaining - a.remaining, sub: (g) => `6 mois de revenus complets sans recoupement · reste ${R.eurC(sum(g, 'remaining'))}` },
       { st: 'No spend', sort: (a, b) => b.gross - a.gross, sub: (g) => `${R.eurC(sum(g, 'gross'))} de revenus sans marketing` },
     ];
     const LIMIT = 8;
@@ -206,7 +209,7 @@
   }
 
   function card(p) {
-    const age = p.monthsSinceRelease != null ? `M+${p.monthsSinceRelease}` : '';
+    const age = p.monthsSinceRelease != null ? `M+${p.monthsSinceRelease}${p.dataAge != null ? ` · ${p.dataAge} m. reportés` : ''}` : (p.release ? '' : 'sortie ?');
     if (p.status === 'No spend') {
       return `<a class="kc" href="${projectHref(p.id)}"><div class="kc-t">${R.esc(p.title)}</div>
         <div class="kc-m"><span><b>${R.eurC(p.gross)}</b> revenus</span><span>${R.intC(p.streams)} streams</span></div></a>`;
@@ -226,6 +229,7 @@
       { k: 'status', l: 'Statut', v: (p) => R.statusPill(p.status) },
       { k: 'release', l: 'Sortie', v: (p) => R.date(p.release) },
       { k: 'monthsSinceRelease', l: 'Âge', n: 1, v: (p) => (p.monthsSinceRelease != null ? `M+${p.monthsSinceRelease}` : '—') },
+      { k: 'dataAge', l: 'Mois reportés', n: 1, v: (p) => (p.dataAge != null ? `${p.dataAge}` : '—') },
       { k: 'marketing', l: 'Dépensé', n: 1, v: (p) => R.eur(p.marketing) },
       { k: 'gross', l: 'Revenus', n: 1, v: (p) => R.eur(p.gross) },
       { k: 'recoupPct', l: 'Recoup.', n: 1, v: (p) => R.pct(p.recoupPct) },
