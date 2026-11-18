@@ -105,6 +105,10 @@ Hors site : le dossier `jobs/` et `.github/` sont exclus du déploiement Vercel 
 - **Diagnostic** : `/api/royalties?health=1` (sans clé, aucun montant) → état du token, de la clé, nombre de projets et d'écarts.
 - **Cache** : 10 min par instance. Bouton ↻ = relecture immédiate d'Airtable.
 
+## Guideline design
+
+Toute modification d'interface suit `CLAUDE.md` : le style maison ERA (thème sombre, Space Grotesk / JetBrains Mono, règles de graphiques de `royalties/viz.js`) prime sur l'apparence ; la skill **UI/UX Pro Max** (`.claude/skills/ui-ux-pro-max/`, MIT, vendorisée depuis github.com/nextlevelbuilder/ui-ux-pro-max-skill) prime sur l'usage : accessibilité, interactions, responsive, formulaires, choix des graphiques, check-list avant livraison. Recherche : `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "<requête>" --domain ux`. Le dossier `.claude/` n'est pas publié sur Vercel.
+
 ## Notes de sécurité
 
 - Les tokens API (Apify, etc.) sont stockés en localStorage côté client — jamais commit

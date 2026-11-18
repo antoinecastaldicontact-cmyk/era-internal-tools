@@ -2,3 +2,6 @@
 jobs/
 .github/
 tools/
+# Instructions et skills Claude : jamais publiés sur le site.
+.claude/
+CLAUDE.md
