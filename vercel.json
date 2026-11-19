@@ -23,7 +23,7 @@
   ],
   "redirects": [
     {
-      "source": "/:path((?!release-form|api/release).*)",
+      "source": "/:path((?!release-form|api/release|royalties/fonts|royalties/brand).*)",
       "has": [
         {
           "type": "host",
