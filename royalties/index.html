@@ -61,7 +61,7 @@
       <div class="kpis">
         ${kpi('Cash déployé', R.eur(K.deployed), `marketing sur ${K.portfolioCount} titres`)}
         ${kpi('Cash récupéré', R.eur(K.recovered), `${R.pct(K.deployed ? K.recovered / K.deployed : null)} du cash déployé`)}
-        ${kpi('Capital à risque', R.eur(K.atRisk), `reste à recouper · ${st.Maturing.count} en maturation, ${st.Impaired.count} impaired`)}
+        ${kpi('Capital à risque', R.eur(K.atRisk), `reste à recouper · ${st.Maturing.count} en maturation, ${st.Impaired.count} perdants`)}
         ${kpi('Multiple gagnants', R.mult(K.winners && K.winners.multiple), K.winners ? `${K.winners.count} titres recoupés : ${R.eurC(K.winners.gross)} de revenus pour ${R.eurC(K.winners.marketing)} dépensés` : '')}
         ${kpi('Multiple portefeuille', R.mult(K.multiple), `les ${K.portfolioCount} titres avec dépense, gagnants et perdants : ${R.eurC(K.grossPortfolio)} ÷ ${R.eurC(K.deployed)}`)}
         ${kpi('Revenus catalogue', R.eur(K.grossCatalogue), `${D.projects.length} lignes projet, avec et sans dépense`)}
@@ -187,8 +187,8 @@
   function drawKanban() {
     const cols = [
       { st: 'Recouped', sort: (a, b) => b.gross - a.gross, sub: (g) => `${R.eurC(sum(g, 'gross'))} de revenus pour ${R.eurC(sum(g, 'marketing'))} dépensés` },
-      { st: 'Maturing', sort: (a, b) => (b.recoupPct || 0) - (a.recoupPct || 0), sub: (g) => `reste ${R.eurC(sum(g, 'remaining'))} à recouper · moins de 6 mois de revenus complets${g.some((p) => p.lagAdjusted) ? ` (dont ${g.filter((p) => p.lagAdjusted).length} impaired au calendrier, décalage de paiement)` : ''}` },
-      { st: 'Impaired', sort: (a, b) => b.remaining - a.remaining, sub: (g) => `6 mois de revenus complets sans recoupement · reste ${R.eurC(sum(g, 'remaining'))}` },
+      { st: 'Maturing', sort: (a, b) => (b.recoupPct || 0) - (a.recoupPct || 0), sub: (g) => `reste ${R.eurC(sum(g, 'remaining'))} à recouper · recoupe en moins de 18 mois au rythme actuel, ou en lancement` },
+      { st: 'Impaired', sort: (a, b) => b.remaining - a.remaining, sub: (g) => `au rythme actuel, ne recoupe pas en 18 mois · reste ${R.eurC(sum(g, 'remaining'))}` },
       { st: 'No spend', sort: (a, b) => b.gross - a.gross, sub: (g) => `${R.eurC(sum(g, 'gross'))} de revenus sans marketing` },
     ];
     const LIMIT = 8;
@@ -215,7 +215,7 @@
     const w = Math.min(100, (p.recoupPct || 0) * 100);
     return `<a class="kc" href="${projectHref(p.id)}"><div class="kc-t">${R.esc(p.title)}</div>
       <div class="kc-bar" title="Recoupement ${R.pct(p.recoupPct)}"><span style="width:${w}%"></span></div>
-      <div class="kc-m"><span><b>${R.pct(p.recoupPct)}</b> recoupé</span><span>${age}</span></div>
+      <div class="kc-m"><span><b>${R.pct(p.recoupPct)}</b> recoupé</span><span>${p.speed ? R.esc(R.speedText(p)) : age}</span></div>
       <div class="kc-m"><span>${R.eurC(p.marketing)} dépensés</span><span>${p.remaining > 0 ? `reste <b>${R.eurC(p.remaining)}</b>` : `<b>${R.mult(p.recoupPct)}</b>`}</span></div></a>`;
   }
 
@@ -232,12 +232,15 @@
       { k: 'gross', l: 'Revenus', n: 1, v: (p) => R.eur(p.gross) },
       { k: 'recoupPct', l: 'Recoup.', n: 1, v: (p) => R.pct(p.recoupPct) },
       { k: 'remaining', l: 'Reste', n: 1, v: (p) => (p.remaining > 0 ? R.eur(p.remaining) : '—') },
+      { k: 'speedSort', l: 'Rythme', n: 1, v: (p) => R.esc(R.speedText(p) || '—') },
       { k: 'streams', l: 'Streams', n: 1, v: (p) => R.int(p.streams) },
       { k: 'distributor', l: 'Distrib.', v: (p) => R.esc((p.distributor || []).join(', ')) },
       { k: 'splitStatus', l: 'Splits', v: (p) => R.esc(R.SPLIT_ADMIN[p.splitStatus] || p.splitStatus || '—') },
     ];
     const { k, dir } = S.sort;
-    const val = (p) => { const v = p[k]; return Array.isArray(v) ? v.join(',') : v; };
+    // Rythme: launch first, then months to recoup, then losers by projection.
+    const speedSort = (p) => (!p.speed ? null : p.speed.launch ? 0 : p.speed.etaMonths != null ? p.speed.etaMonths : 1000 - (p.speed.projection || 0) * 100);
+    const val = (p) => { if (k === 'speedSort') return speedSort(p); const v = p[k]; return Array.isArray(v) ? v.join(',') : v; };
     const rows = [...D.projects].sort((a, b) => {
       const x = val(a), y = val(b);
       if (x == null && y == null) return 0;

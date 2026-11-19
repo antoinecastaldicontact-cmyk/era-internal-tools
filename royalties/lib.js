@@ -126,7 +126,7 @@
   const STATUS = {
     Recouped: { fr: 'Recoupé', icon: '✓', cls: 'good' },
     Maturing: { fr: 'En maturation', icon: '◷', cls: 'warn' },
-    Impaired: { fr: 'Impaired', icon: '✕', cls: 'crit', hint: '6 mois de revenus complets sans recoupement' },
+    Impaired: { fr: 'Perdant', icon: '✕', cls: 'crit', hint: 'au rythme actuel, ne recoupe pas en 18 mois' },
     'No spend': { fr: 'Sans dépense', icon: '○', cls: 'muted' },
   };
   const statusPill = (st) => {
@@ -204,7 +204,18 @@
   // Titles without a split stay in the list, flagged as missing a recipient.
   const statementEligible = (p) => !/residual/i.test(p.title) && !(p.dealType || '').startsWith('Cover buyout');
 
+  // Speed note for a title still recouping: launch, months to recoup, or 18-month projection.
+  const speedText = (p) => {
+    const sp = p.speed;
+    if (!sp) return '';
+    if (sp.launch) return 'en lancement';
+    if (sp.etaMonths != null) return `recoupe en ≈ ${sp.etaMonths} mois`;
+    if (sp.projection != null) return `${pct(sp.projection)} à 18 mois`;
+    return '';
+  };
+
   window.R = {
+    speedText,
     statusEn, statementBody, mailto, recipients, statementEligible,
     STATE, stateText, stateChip, dayMonth, nav,
     eur, eurC, int, intC, pct, mult, mShort, mLong, date, dateTime, esc, qs,

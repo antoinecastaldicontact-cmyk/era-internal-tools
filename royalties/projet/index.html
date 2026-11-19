@@ -55,7 +55,8 @@
           <div class="meta">${R.statusPill(p.status)}
             <span>Sortie ${R.date(p.release)}</span>
             ${p.monthsSinceRelease != null ? `<span class="sep">·</span><span>M+${p.monthsSinceRelease}${p.dataAge != null ? ` · ${p.dataAge} mois de revenus complets` : ''}</span>` : (p.release ? '' : '<span class="sep">·</span><span class="flag">⚑ date de sortie manquante</span>')}
-            ${p.lagAdjusted ? `<span class="sep">·</span><span title="Airtable compte les mois depuis la sortie ; les revenus arrivent deux à trois mois après les écoutes.">Airtable : ${R.esc(p.statusAirtable)} au calendrier</span>` : ''}
+            ${p.speed ? `<span class="sep">·</span><span title="Rythme des derniers mois complets, revenus jamais projetés à la hausse, horizon 18 mois.">${R.esc(R.speedText(p))}${p.speed.decay != null ? ` · ${p.speed.decay >= 1 ? '+' : ''}${R.pct(p.speed.decay - 1)} / mois` : ''}</span>` : ''}
+            ${p.statusAirtable && p.statusAirtable !== p.status ? `<span class="sep">·</span><span title="Le champ Status d'Airtable compte la durée depuis la sortie, pas le rythme.">Airtable : ${R.esc(p.statusAirtable)}</span>` : ''}
             ${p.distributor && p.distributor.length ? `<span class="sep">·</span><span>${R.esc(p.distributor.join(', '))}</span>` : ''}
             ${p.kind ? `<span class="sep">·</span><span>${R.esc(p.kind)}</span>` : ''}
           </div>

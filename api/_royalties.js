@@ -50,7 +50,41 @@ const STRUCTURE_COSTS = 3482;
 // Wiseband: Spotify, Deezer and Qobuz land one month after the other stores, so the
 // latest usage month of an export is always partial (skill rule 0.2).
 const WISEBAND = 'Wiseband';
-const MIN_DATA_MONTHS = 6; // verdict « Impaired » after 6 complete months of revenue
+// Speed verdict (Antoine, 19/11/2026): a title still recouping is « Maturing » if, at the
+// pace of its latest complete months, it recoups within 18 months (or it is launching);
+// otherwise it is « Impaired » (perdant). No floor on the % already recouped.
+const HORIZON = 18;
+
+// Pace of a title from its complete months of revenue. decay = monthly change of revenue
+// (mean of the last 3 months vs the 3 before, cube root; geometric between first and last
+// below 6 months). Revenue is never projected to grow: decay is capped at 1.
+export function speedOf(p) {
+  const thr = p.threshold, total = p.gross;
+  if (!(thr > 0)) return null;
+  if (total >= thr - 1e-9) return { verdict: 'Recouped' };
+  const s = p.series.filter((x) => x.state === 'complete' && x.gross > 0.5).map((x) => x.gross);
+  // A first month lower than the next one is a partial launch month.
+  const t = s.length >= 2 && s[0] < s[1] ? s.slice(1) : s;
+  let decay = null;
+  if (t.length >= 6) {
+    const a = (t.at(-1) + t.at(-2) + t.at(-3)) / 3, b = (t.at(-4) + t.at(-5) + t.at(-6)) / 3;
+    decay = b > 0 ? (a / b) ** (1 / 3) : null;
+  } else if (t.length >= 2) decay = t[0] > 0 ? (t.at(-1) / t[0]) ** (1 / (t.length - 1)) : null;
+  const rising = s.length >= 2 && s.at(-1) >= s.at(-2);
+  const completeMonths = s.length;
+  if (s.length < 3 && (decay == null || rising)) return { verdict: 'Maturing', launch: true, decay, completeMonths };
+  if (decay == null) return { verdict: 'Maturing', launch: true, decay, completeMonths };
+  const dd = Math.min(decay, 1), last = s.at(-1);
+  let proj = 0;
+  for (let k = 1; k <= HORIZON; k++) proj += last * dd ** k;
+  const projection = (total + proj) / thr;
+  if (projection >= 1) {
+    let acc = 0, k = 0;
+    while (acc < thr - total && k < 120) { k += 1; acc += last * dd ** k; }
+    return { verdict: 'Maturing', decay, projection, etaMonths: k, completeMonths };
+  }
+  return { verdict: 'Impaired', decay, projection, completeMonths };
+}
 
 const MARKETING = 'Marketing (from gross)';
 const ARTIST = 'Artist account (from artist share)';
@@ -326,12 +360,22 @@ export function buildModel(raw, opts = {}) {
     const rel = ym(p.release);
     p.dataAge = rel && p.completeThrough ? Math.max(0, monthsBetween(rel, p.completeThrough)) : null;
     p.statusAirtable = p.status;
-    if (p.status === 'Impaired' && p.dataAge != null && p.dataAge < MIN_DATA_MONTHS) {
-      p.status = 'Maturing';
-      p.lagAdjusted = true;
-    }
     p.threshold = p.fixed != null ? p.fixed : p.marketing;
     p.recoupPct = p.threshold > 0 ? p.gross / p.threshold : null;
+    // Speed verdict for titles still recouping (the Airtable Status stays as statusAirtable).
+    p.speed = null;
+    if (p.status === 'Maturing' || p.status === 'Impaired') {
+      const sp = speedOf(p);
+      if (sp) {
+        p.speed = sp.verdict === 'Recouped' ? null : {
+          launch: !!sp.launch, completeMonths: sp.completeMonths,
+          decay: sp.decay == null ? null : Math.round(sp.decay * 1000) / 1000,
+          projection: sp.projection == null ? null : Math.round(sp.projection * 1000) / 1000,
+          etaMonths: sp.etaMonths ?? null,
+        };
+        p.status = sp.verdict;
+      }
+    }
     // Consistency against the Airtable rollups (the money source of truth).
     if (Math.abs(cg - p.gross) > 0.5) checks.push({ project: p.title, field: 'gross', lines: r2(cg), rollup: r2(p.gross) });
     if (Math.abs(cm - p.marketing) > 0.5) checks.push({ project: p.title, field: 'marketing', lines: r2(cm), rollup: r2(p.marketing) });
@@ -462,7 +506,7 @@ export function buildModel(raw, opts = {}) {
       grossCatalogue: sum(projects, 'gross'),
       streamsCatalogue: projects.reduce((s, p) => s + p.streams, 0),
       portfolioCount: port.length,
-      lagAdjusted: projects.filter((p) => p.lagAdjusted).length,
+      horizon: HORIZON,
       byStatus: ['Recouped', 'Maturing', 'Impaired', 'No spend'].map((st) => {
         const g = projects.filter((p) => p.status === st);
         return { status: st, count: g.length, marketing: sum(g, 'marketing'), gross: sum(g, 'gross'), remaining: sum(g, 'remaining') };
