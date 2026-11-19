@@ -9,6 +9,8 @@
  *
  * Setup (once, signed in as acastaldi@eramusic.io):
  *   1. script.google.com > New project > paste this file and appsscript.json (Project settings > show manifest).
+ *      The manifest enables the Drive advanced service: that is what switches on the Drive API in the script's
+ *      Google Cloud project (without it: 403 "Google Drive API has not been used in project …").
  *   2. Run setup() once, accept the permissions. The log prints RELEASE_APPS_SCRIPT_SECRET and the folder link.
  *   3. Deploy > New deployment > Web app — Execute as: Me ; Who has access: Anyone.
  *   4. Give the /exec URL and the secret to Claude (Vercel env RELEASE_APPS_SCRIPT_URL / RELEASE_APPS_SCRIPT_SECRET).
