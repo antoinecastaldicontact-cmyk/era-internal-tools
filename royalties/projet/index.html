@@ -62,6 +62,7 @@
         </div>
         <div class="actions">
           <button class="btn primary" id="artist">Copier le lien artiste</button>
+          ${emailButton(p)}
           <button class="btn" id="refresh">↻</button>
         </div>
       </div>
@@ -210,6 +211,18 @@
       ${p.expenses.map((e) => `<tr><td>${R.mShort(e.month)}</td><td class="t">${R.esc(e.name)}${e.notes ? `<div style="color:var(--muted);font-size:11px;margin-top:2px">${R.esc(e.notes)}</div>` : ''}</td><td>${R.esc(e.type || '—')}</td><td>${R.esc(R.BUCKET[e.bucket] || e.bucket || '—')}</td><td class="n">${R.eur(e.amount, 2)}</td><td>${R.esc(e.source || '—')}</td><td>${e.toVerify ? '<span class="flag" title="À vérifier">⚑</span>' : ''}</td></tr>`).join('')}
       ${Object.entries(by).map(([b, v]) => `<tr><td></td><td class="t" style="color:var(--text2)">Total ${R.esc(R.BUCKET[b] || b)}</td><td></td><td></td><td class="n">${R.eur(v, 2)}</td><td></td><td></td></tr>`).join('')}
       </tbody></table></div>`;
+  }
+
+  // mailto with the statement link for every payee of the track who has an email in Airtable.
+  function emailButton(p) {
+    const rec = p.artistPath ? R.recipients([p]) : [];
+    if (!rec.length) {
+      const why = !p.splits.length ? 'Aucun split renseigné' : !p.artistPath ? 'Lien artiste indisponible' : 'Aucun e-mail de payee dans Airtable';
+      return `<span class="btn" aria-disabled="true" title="${R.esc(why)}">Email statement artiste</span>`;
+    }
+    const names = rec.map((r) => r.name).join(' & ');
+    const href = R.mailto(rec.map((r) => r.email), R.statementBody(names, [p]));
+    return `<a class="btn" href="${R.esc(href)}" title="Ouvre ton client mail, message prêt, sans objet. Destinataires : ${R.esc(rec.map((r) => r.email).join(', '))}">Email statement artiste</a>`;
   }
 
   const kpi = (l, v, s) => `<div class="kpi"><div class="kpi-l">${R.esc(l)}</div><div class="kpi-v">${v}</div><div class="kpi-s">${s}</div></div>`;

@@ -1,124 +1,184 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
-<title>ERA Music · Relevé artiste</title>
+<title>ERA Music · Royalty statement</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/royalties/style.css">
-<style>.wrap{max-width:980px}.lead{font-size:15px;color:var(--ink2);line-height:1.6;margin:18px 0 26px;max-width:680px}.lead .ic{font-size:14px;margin-right:4px}</style>
+<style>
+  .wrap{max-width:980px}
+  .ahead{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}
+  .mark{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.32em;color:var(--ink)}
+  .official{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);border:.5px solid var(--border2);border-radius:999px;padding:5px 12px 5px 10px}
+  .official .seal{color:var(--good)}
+  .titlerow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 28px}
+  .titlerow .pill{font-size:13px;padding:5px 14px 5px 11px}
+  .cert{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 20px;margin-top:14px}
+  .cert div{font-size:12.5px;color:var(--ink2)}
+  .cert b{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);font-weight:400;margin-bottom:4px}
+  .cert code{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)}
+  /* charts are drawn in pixels: before printing they are redrawn at A4 width (182 mm ≈ 688 px) */
+  body.printing .wrap{max-width:688px;padding-left:0;padding-right:0}
+  @media print{
+    @page{size:A4;margin:14mm}
+    :root{--bg:#fff;--bg2:#fff;--bg3:#f4f4f2;--border:#dcdcd6;--border2:#cfcfc8;--text:#111;--text2:#555;--text3:#888;--ink:#111;--ink2:#333;--muted:#666;--grid:#e6e6e3;--axis:#bdbdb8}
+    body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .wrap{padding:0;max-width:688px}
+    .no-print,.viz-tip{display:none!important}
+    .card,.kpi{break-inside:avoid}
+    .chart svg{max-width:100%;height:auto}
+    .chart svg line[stroke="#2c2c2a"]{stroke:#e6e6e3}
+    .chart svg line[stroke="#383835"]{stroke:#bdbdb8}
+  }
+</style>
 </head>
 <body>
-<div class="wrap" id="app"><div class="loading">Chargement…</div></div>
+<main class="wrap" id="app"><div class="loading">Loading…</div></main>
 <script src="/royalties/lib.js"></script>
 <script src="/royalties/viz.js"></script>
 <script>
 (function () {
   const app = document.getElementById('app');
   const { C } = V;
-  const SPLIT_ARTIST = {
-    'Not recouped': 'Ta part sera versée une fois le titre recoupé.',
-    'Due: activate on Wiseband': 'Titre recoupé : l’activation de ta part sur Wiseband est en cours.',
-    'Active on Wiseband': 'Ta part t’est versée directement par Wiseband.',
-    'Due: ERA pays artist (ADA)': 'Titre recoupé : ERA te verse ta part.',
-    'Paid by ERA (ADA)': 'Ta part t’est versée par ERA.',
-    'Artist advance not recouped': 'Ton avance est en cours de recoupement sur ta part.',
+  const esc = R.esc;
+
+  // ---- English formatting: the statement is 100 % English ----
+  const nf0 = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
+  const nf1 = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
+  const eur = (v, d = 0) => (v == null || !isFinite(v) ? '—' : new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR', minimumFractionDigits: d, maximumFractionDigits: d }).format(v));
+  const eurC = (v) => (Math.abs(v) >= 1e3 ? `€${nf1.format(v / 1e3)}k` : eur(v));
+  const int = (v) => (v == null || !isFinite(v) ? '—' : nf0.format(v));
+  const intC = (v) => (v >= 1e6 ? `${nf1.format(v / 1e6)}M` : v >= 1e3 ? `${nf1.format(v / 1e3)}k` : nf0.format(v));
+  const pct = (v) => (v == null || !isFinite(v) ? '—' : `${Math.floor(v * 100)}%`);
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const MONL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const mShort = (m) => `${MON[+m.slice(5, 7) - 1]} ${m.slice(2, 4)}`;
+  const mLong = (m) => (m ? `${MONL[+m.slice(5, 7) - 1]} ${m.slice(0, 4)}` : '—');
+  const dateEn = (iso) => { const d = new Date(iso); return `${d.getUTCDate()} ${MONL[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+
+  const PAYMENT = {
+    'Not recouped': 'Your share starts once the track is recouped.',
+    'Due: activate on Wiseband': 'Track recouped: your share is being activated on Wiseband.',
+    'Active on Wiseband': 'Your share is paid to you directly by Wiseband.',
+    'Due: ERA pays artist (ADA)': 'Track recouped: ERA Music pays your share.',
+    'Paid by ERA (ADA)': 'Your share is paid by ERA Music.',
+    'Artist advance not recouped': 'Your advance is being recouped from your share.',
+  };
+  const ERR = {
+    bad_link: 'This link is not valid. Ask ERA Music for a new one.',
+    not_found: 'Track not found.',
+    not_configured: 'This statement is not available yet.',
+    network: 'Network unavailable. Try again.',
   };
 
+  const P = R.qs('p') || '', SIG = R.qs('s') || '';
+
   async function start() {
-    const p = R.qs('p') || '', s = R.qs('s') || '';
     try {
-      const d = await R.getJSON(`/api/royalties-artist?p=${encodeURIComponent(p)}&s=${encodeURIComponent(s)}`);
-      render(d);
+      render(await R.getJSON(`/api/royalties-artist?p=${encodeURIComponent(P)}&s=${encodeURIComponent(SIG)}`));
     } catch (e) {
-      app.innerHTML = `<div class="err"><b>Relevé indisponible.</b><br>${R.esc(R.errorText(e.code))}</div>`;
+      app.innerHTML = `<div class="err"><b>Statement unavailable.</b><br>${esc(ERR[e.code] || 'Something went wrong. Try again later.')}</div>`;
     }
   }
 
   function render(d) {
-    document.title = `ERA Music · ${d.title}`;
+    document.title = `ERA Music · Royalty statement · ${d.title}`;
     let j0 = d.series.findIndex((s) => s.gross > 0 || s.marketing > 0 || s.streams > 0);
     if (j0 < 0) j0 = Math.max(0, d.series.length - 1);
     const S = d.series.slice(j0);
     const M = S.map((s) => s.m);
     const recouped = d.status === 'Recouped' || !!d.recoupedIn;
     const noSpend = !(d.marketing > 0) && d.fixed == null;
-    const cross = d.recoupedIn ? { m: d.recoupedIn } : null;
-
-    const lead = noSpend
-      ? `Aucun investissement marketing à recouper sur ce titre.`
+    const done = Math.min(d.recoupPct || 0, 0.99);
+    const chip = noSpend
+      ? '<span class="pill muted"><span class="pill-ic" aria-hidden="true">○</span>No marketing to recoup</span>'
       : recouped
-        ? `<span class="ic good">✓</span>Titre <b>recoupé</b>${cross ? ` en ${R.mLong(cross.m)}` : ''} : l’investissement marketing est remboursé.`
-        : `<span class="ic warn">◷</span>Titre <b>recoupé à ${R.pct(d.recoupPct)}</b> : il reste ${R.eur(d.remaining)} à rembourser par les revenus du titre${d.fixed != null ? ` (seuil prévu au contrat : ${R.eur(d.fixed)})` : ''}.`;
+        ? '<span class="pill good"><span class="pill-ic" aria-hidden="true">✓</span>Recouped</span>'
+        : `<span class="pill warn"><span class="pill-ic" aria-hidden="true">◷</span>Not recouped yet · ${pct(done)}</span>`;
+    const statementId = `ERA-${P.slice(-6).toUpperCase()}-${(d.completeThrough || '').replace('-', '')}`;
+    const note = (s) => (s.state === 'partial' ? '<div class="tip-note">Partial month: Spotify, Deezer and Qobuz arrive the following month.</div>' : s.state === 'pending' ? '<div class="tip-note">Not reported by the distributor yet.</div>' : '');
 
     app.innerHTML = `
-      <div class="brand"><span>ERA Music</span><span>·</span><span>Relevé artiste</span></div>
-      <h1>${R.esc(d.title)}</h1>
-      <p class="sub">Sortie ${R.date(d.release)} · mis à jour ${R.esc(R.date(d.generatedAt))} · chiffres actualisés chaque mois, autour du 15${d.completeThrough ? ` · revenus complets jusqu’à ${R.mLong(d.completeThrough)}` : ''}</p>
-      <p class="lead">${lead}</p>
+      <div class="ahead">
+        <span class="mark">ERA MUSIC</span>
+        <button type="button" class="btn primary no-print" id="pdf">Download PDF</button>
+      </div>
+      <span class="official"><span class="seal" aria-hidden="true">✓</span>Official royalty statement · certified by ERA Music</span>
+      <h1 style="margin-top:16px">${esc(d.title)}</h1>
+      <div class="titlerow">${chip}</div>
 
       <div class="kpis">
-        ${kpi('Streams', R.int(d.streams), 'écoutes audio, toutes plateformes')}
-        ${kpi('Revenus générés', R.eur(d.gross), 'revenus bruts du titre')}
-        ${noSpend ? '' : kpi('Investissement marketing', R.eur(d.marketing), 'avancé par ERA')}
-        ${noSpend ? '' : kpi(recouped ? 'Recoupement' : 'Reste à recouper', recouped ? '100 %' : R.eur(d.remaining), recouped ? 'marketing remboursé' : `${R.pct(d.recoupPct)} déjà remboursé`)}
+        ${kpi('Total streams', int(d.streams), d.ugc > 0 ? `+${intC(d.ugc)} UGC views, excluded from recoupment` : 'audio streams, all platforms')}
+        ${kpi('Revenue generated', eur(d.gross), 'gross track revenue')}
+        ${noSpend ? '' : kpi('Marketing investment', eur(d.marketing), 'advanced by ERA Music')}
+        ${noSpend ? '' : kpi('Recoupment', recouped ? '100%' : pct(done), recouped ? 'marketing fully repaid' : `${eur(d.remaining)} left to recoup${d.fixed != null ? ` · contract threshold ${eur(d.fixed)}` : ''}`)}
       </div>
 
-      ${noSpend ? '' : `<div class="card">
-        <div class="card-t">Recoupement</div>
-        <div class="card-d">Revenus cumulés du titre face à l’investissement marketing. Quand la ligne bleue dépasse l’orange, le titre est recoupé.</div>
-        <div class="chart" id="c-recoup"></div>
-      </div>`}
+      <div class="card">
+        <div class="card-t">${noSpend ? 'Track streaming revenue per month' : 'Marketing investment and track streaming revenue per month'}</div>
+        <div class="chart" id="c-money"></div>
+      </div>
 
       <div class="card">
-        <div class="card-t">Streams par mois</div>
-        <div class="card-d">Écoutes audio par mois d’écoute.</div>
+        <div class="card-t">Streams per month</div>
         <div class="chart" id="c-streams"></div>
       </div>
 
-      ${splits(d)}
+      ${share(d)}
 
-      <div class="foot"><span>ERA Music</span><span>Relevé personnel : merci de ne pas partager ce lien.</span></div>`;
+      <div class="card">
+        <div class="card-t">Certification</div>
+        <p class="card-d" style="max-width:none">This official statement is issued and certified by ERA Music from the reports of our distributors. Revenue is gross track revenue, before the artist split.</p>
+        <div class="cert">
+          <div><b>Statement ID</b><code>${esc(statementId)}</code></div>
+          <div><b>Issued on</b>${esc(dateEn(d.generatedAt))}</div>
+          <div><b>Complete data through</b>${esc(mLong(d.completeThrough))}</div>
+          <div><b>Distributor</b>${esc(d.distributor || '—')}</div>
+        </div>
+      </div>
 
-    const common = {
-      months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: d.completeThrough || d.dataUntil, shadeLabel: 'pas encore complet',
-      note: (i) => (S[i].state === 'partial' ? '<div class="tip-note">Mois partiel : Spotify, Deezer et Qobuz arrivent le mois suivant.</div>' : S[i].state === 'pending' ? '<div class="tip-note">Pas encore reporté par le distributeur.</div>' : ''),
-    };
-    if (!noSpend) {
-      V.line(document.getElementById('c-recoup'), {
-        ...common, h: 250, yFmt: R.eurC, yTip: R.eur, label: 'Courbe de recoupement',
-        markers: cross ? [{ m: cross.m, label: 'recoupé' }] : [],
-        series: [
-          { name: 'Investissement marketing (cumul)', color: C.orange, values: S.map((s) => s.cumMarketing) },
-          { name: 'Revenus du titre (cumul)', color: C.blue, values: S.map((s) => s.cumGross) },
-          ...(d.fixed != null ? [{ name: `Seuil prévu au contrat (${R.eur(d.fixed)})`, color: C.ink2, dash: '4 4', values: S.map(() => d.fixed) }] : []),
+      <div class="foot"><span>ERA Music</span><span class="no-print">Personal statement. Please do not share this link.</span></div>`;
+
+    document.getElementById('pdf').onclick = () => window.print();
+    window.addEventListener('beforeprint', () => { document.body.classList.add('printing'); V.redraw(); });
+    window.addEventListener('afterprint', () => { document.body.classList.remove('printing'); V.redraw(); });
+
+    const common = { months: M, xFmt: mShort, tipFmt: mLong, shadeFrom: d.completeThrough || d.dataUntil, shadeLabel: 'not complete yet', note: (i) => note(S[i]) };
+    V.bars(document.getElementById('c-money'), {
+      ...common, h: 240, yFmt: eurC, yTip: (v) => eur(v, 2), label: 'Marketing investment and track streaming revenue per month',
+      series: noSpend
+        ? [{ name: 'Track streaming revenue', color: C.blue, values: S.map((s) => s.gross) }]
+        : [
+          { name: 'Marketing investment', color: C.orange, values: S.map((s) => s.marketing) },
+          { name: 'Track streaming revenue', color: C.blue, values: S.map((s) => s.gross) },
         ],
-      });
-    }
+    });
     V.bars(document.getElementById('c-streams'), {
-      ...common, h: 200, yFmt: R.intC, yTip: R.int, label: 'Streams par mois',
+      ...common, h: 200, yFmt: intC, yTip: int, label: 'Streams per month',
       series: [{ name: 'Streams', color: C.aqua, values: S.map((s) => s.streams) }],
     });
   }
 
-  function splits(d) {
-    const status = SPLIT_ARTIST[d.splitStatus];
-    if (d.artistShare == null && !d.splits.length && !status) return '';
+  function share(d) {
+    const pay = PAYMENT[d.splitStatus];
+    if (d.artistShare == null && !d.splits.length && !pay) return '';
+    const p1 = (v) => (v == null ? '—' : `${Math.round(v * 1000) / 10}%`);
     return `<div class="card">
-      <div class="card-t">Ta part</div>
+      <div class="card-t">Your share</div>
       <dl class="kv">
-        ${d.artistShare != null ? `<dt>Part artiste</dt><dd>${R.pct(d.artistShare, 1)} des revenus du titre, après recoupement</dd>` : ''}
-        ${status ? `<dt>Versement</dt><dd>${R.esc(status)}</dd>` : ''}
+        ${d.artistShare != null ? `<dt>Artist share</dt><dd>${p1(d.artistShare)} of track revenue, after recoupment</dd>` : ''}
+        ${pay ? `<dt>Payment</dt><dd>${esc(pay)}</dd>` : ''}
       </dl>
-      ${d.splits.length ? `<div class="tbl-wrap" style="margin-top:14px"><table class="tbl"><thead><tr><th>Ayant droit</th><th class="n">Part côté artiste</th></tr></thead><tbody>
-        ${d.splits.map((s) => `<tr><td class="t">${R.esc(s.payee || '—')}</td><td class="n">${R.pct(s.share, 1)}</td></tr>`).join('')}
+      ${d.splits.length ? `<div class="tbl-wrap" style="margin-top:14px"><table class="tbl"><thead><tr><th>Rights holder</th><th class="n">Share of the artist side</th></tr></thead><tbody>
+        ${d.splits.map((s) => `<tr><td class="t">${esc(s.payee || '—')}</td><td class="n">${p1(s.share)}</td></tr>`).join('')}
       </tbody></table></div>` : ''}
     </div>`;
   }
 
-  const kpi = (l, v, s) => `<div class="kpi"><div class="kpi-l">${R.esc(l)}</div><div class="kpi-v">${v}</div><div class="kpi-s">${s}</div></div>`;
+  const kpi = (l, v, s) => `<div class="kpi"><div class="kpi-l">${esc(l)}</div><div class="kpi-v">${v}</div><div class="kpi-s">${esc(s)}</div></div>`;
 
   start();
 })();

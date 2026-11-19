@@ -47,7 +47,11 @@ export default async function handler(req, res) {
 
   try {
     const model = await getModel(AIRTABLE_TOKEN, { refresh: !!req.query.refresh });
-    return res.status(200).json(model);
+    // Signed artist links for the admin pages (email buttons). The cached model stays untouched.
+    const projects = model.projects.map((p) => ({
+      ...p, artistPath: `/royalties/artiste/?p=${p.id}&s=${signArtist(ROYALTIES_ADMIN_KEY, p.id)}`,
+    }));
+    return res.status(200).json({ ...model, projects });
   } catch (err) {
     const status = err.status === 403 || err.status === 404 ? 'no_access_to_base' : 'airtable_error';
     return res.status(502).json({ error: status, detail: String(err.message) });

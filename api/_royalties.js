@@ -41,7 +41,7 @@ const F = {
     notes: 'fldlYVG7ndqgPhwqC',
   },
   s: { share: 'fldxtVyfxX5bAwTFW', source: 'fld7MmQ7Uxuz6ImQK', project: 'fldtlO6vgWN1XSX5U', payee: 'fldY6miy1xVnUo4Ik' },
-  y: { name: 'fldUrvSKgOVv3gyou' },
+  y: { name: 'fldUrvSKgOVv3gyou', email: 'fldMoLHfJUy9bUaJD' },
   per: { name: 'flde4PhoOljBRnT0j', received: 'fldSCMAMtwnY0twHy', csvTotal: 'fldwQu37tYZqHYIu8' },
 };
 
@@ -163,6 +163,9 @@ const ZERO = () => ({ gross: 0, revenue: 0, dues: 0, streams: 0, ugc: 0, marketi
 export function buildModel(raw, opts = {}) {
   const now = opts.now || nowMonth();
   const payeeName = new Map(raw.payees.map((p) => [p.id, p.fields[F.y.name] || '']));
+  // Admin model only: artistView never carries emails.
+  const payeeEmail = new Map(raw.payees.map((p) => [p.id, (p.fields[F.y.email] || '').trim()]));
+  const periodName = new Map(raw.periods.map((r) => [r.id, r.fields[F.per.name] || '']));
 
   const P = new Map();
   for (const rec of raw.projects) {
@@ -209,12 +212,13 @@ export function buildModel(raw, opts = {}) {
     const m = ym(f[F.l.usage]);
     const g = num(f[F.l.gross]);
     const rev = num(f[F.l.revenue]);
+    const p = P.get(one(f[F.l.project]));
     for (const pid of f[F.l.period] || []) {
-      const a = byPeriod.get(pid) || { revenue: 0, gross: 0, usage: new Set() };
+      const a = byPeriod.get(pid) || { revenue: 0, gross: 0, usage: new Set(), projects: new Set() };
       a.revenue += rev; a.gross += g; if (m) a.usage.add(m);
+      if (p) { a.projects.add(p.id); (p.periods ||= new Set()).add(periodName.get(pid) || pid); }
       byPeriod.set(pid, a);
     }
-    const p = P.get(one(f[F.l.project]));
     if (!p || !m) continue;
     const src = sel(f[F.l.source]) || 'Autre';
     const b = bucket(p, m);
@@ -257,8 +261,9 @@ export function buildModel(raw, opts = {}) {
     const f = rec.fields;
     const p = P.get(one(f[F.s.project]));
     if (!p) continue;
+    const pid = one(f[F.s.payee]);
     p.splits.push({
-      payee: payeeName.get(one(f[F.s.payee])) || '', share: f[F.s.share] ?? null, source: sel(f[F.s.source]),
+      payee: payeeName.get(pid) || '', email: payeeEmail.get(pid) || '', share: f[F.s.share] ?? null, source: sel(f[F.s.source]),
     });
   }
 
@@ -312,6 +317,8 @@ export function buildModel(raw, opts = {}) {
     delete p.monthly;
     const srcs = [...(p.sources || [])];
     p.sources = srcs;
+    p.periods = [...(p.periods || [])].sort();
+    p.ugc = p.series.reduce((a, s) => a + s.ugc, 0);
     // Last month with any data, and last month with all stores reported, for this project.
     p.dataUntil = maxOf(srcs.map((x) => lastBySource[x]));
     p.completeThrough = minOf(srcs.map((x) => completeBySource[x]));
@@ -342,6 +349,8 @@ export function buildModel(raw, opts = {}) {
   const grossPort = sum(port, 'gross');
   const recovered = r2(port.reduce((s, p) => s + Math.min(p.gross, p.marketing), 0));
   const atRisk = r2(port.filter((p) => p.status !== 'Recouped').reduce((s, p) => s + p.remaining, 0));
+  const winners = port.filter((p) => p.status === 'Recouped');
+  const winGross = sum(winners, 'gross'), winMkt = sum(winners, 'marketing');
 
   const catalogue = axis.map((m, i) => {
     let marketing = 0, grossP = 0, recov = 0, cumM = 0, gross = 0, streams = 0, ugc = 0;
@@ -364,12 +373,13 @@ export function buildModel(raw, opts = {}) {
   const statementByMonth = {};
   const statements = raw.periods.map((rec) => {
     const f = rec.fields;
-    const a = byPeriod.get(rec.id) || { revenue: 0, gross: 0, usage: new Set() };
+    const a = byPeriod.get(rec.id) || { revenue: 0, gross: 0, usage: new Set(), projects: new Set() };
     const usage = [...a.usage].sort();
     const name = f[F.per.name] || '';
     const st = {
       name, received: f[F.per.received] || null, newMoney: num(f[F.per.csvTotal]),
       linesRevenue: r2(a.revenue), usageFrom: usage[0] || null, usageTo: usage[usage.length - 1] || null, usageMonths: usage.length,
+      projects: [...a.projects],
     };
     if (/^\d{4}-\d{2}$/.test(name)) statementByMonth[name] = (statementByMonth[name] || 0) + st.newMoney;
     return st;
@@ -448,6 +458,7 @@ export function buildModel(raw, opts = {}) {
     kpis: {
       deployed, recovered, atRisk, grossPortfolio: grossPort,
       multiple: deployed > 0 ? grossPort / deployed : null,
+      winners: { count: winners.length, gross: winGross, marketing: winMkt, multiple: winMkt > 0 ? winGross / winMkt : null },
       grossCatalogue: sum(projects, 'gross'),
       streamsCatalogue: projects.reduce((s, p) => s + p.streams, 0),
       portfolioCount: port.length,
@@ -484,6 +495,7 @@ export function artistView(model, id) {
     fixed: p.fixed,
     recoupedIn: p.recoupedIn || null,
     streams: p.streams,
+    ugc: p.ugc,
     dataUntil: p.dataUntil,
     completeThrough: p.completeThrough,
     artistShare: p.labelCut == null ? null : 1 - p.labelCut,

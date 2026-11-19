@@ -62,7 +62,8 @@
         ${kpi('Cash déployé', R.eur(K.deployed), `marketing sur ${K.portfolioCount} titres`)}
         ${kpi('Cash récupéré', R.eur(K.recovered), `${R.pct(K.deployed ? K.recovered / K.deployed : null)} du cash déployé`)}
         ${kpi('Capital à risque', R.eur(K.atRisk), `reste à recouper · ${st.Maturing.count} en maturation, ${st.Impaired.count} impaired`)}
-        ${kpi('Multiple portefeuille', R.mult(K.multiple), `revenus ${R.eurC(K.grossPortfolio)} ÷ dépenses ${R.eurC(K.deployed)}`)}
+        ${kpi('Multiple gagnants', R.mult(K.winners && K.winners.multiple), K.winners ? `${K.winners.count} titres recoupés : ${R.eurC(K.winners.gross)} de revenus pour ${R.eurC(K.winners.marketing)} dépensés` : '')}
+        ${kpi('Multiple portefeuille', R.mult(K.multiple), `les ${K.portfolioCount} titres avec dépense, gagnants et perdants : ${R.eurC(K.grossPortfolio)} ÷ ${R.eurC(K.deployed)}`)}
         ${kpi('Revenus catalogue', R.eur(K.grossCatalogue), `${D.projects.length} lignes projet, avec et sans dépense`)}
         ${kpi('Streams audio', R.intC(K.streamsCatalogue), 'catalogue entier, hors UGC')}
       </div>
@@ -75,9 +76,8 @@
           <div class="chart" id="c-cash"></div>
         </div>
         <div class="card">
-          <div class="card-h"><div><div class="card-t">Dépenses vs revenus par mois</div>
-          <div class="card-d">Marketing engagé et revenus bruts du mois d’écoute.</div></div>
-          <div class="seg" id="seg-monthly"><button data-v="portfolio">Titres avec dépense</button><button data-v="catalogue">Catalogue</button></div></div>
+          <div class="card-h"><div><div class="card-t">Dépenses vs revenus des titres investis</div>
+          <div class="card-d">Par mois d’écoute : le marketing engagé et les revenus bruts des seuls titres qui ont reçu du marketing. Le catalogue sans dépense est dans la répartition mensuelle.</div></div></div>
           <div class="chart" id="c-monthly"></div>
         </div>
       </div>
@@ -90,7 +90,7 @@
 
       <div class="card">
         <div class="card-h"><div><div class="card-t">Top 15 titres · mensuel</div>
-        <div class="card-d">Classement sur le total de la période. Une ligne par titre, une case par mois d’écoute.</div></div>
+        <div class="card-d">Les 15 titres qui totalisent le plus sur la période, mois par mois. Les 3 premiers sont en couleur, les autres en gris.</div></div>
         <div class="seg" id="seg-heat"><button data-v="streams">Streams</button><button data-v="gross">Revenus</button></div></div>
         <div class="chart" id="c-heat"></div>
       </div>
@@ -105,7 +105,6 @@
 
     document.getElementById('refresh').onclick = () => start(true);
     document.getElementById('logout').onclick = () => { R.resetKey(); start(); };
-    seg('seg-monthly', 'monthly', drawMonthly);
     seg('seg-heat', 'heat', drawHeat);
 
     V.line(document.getElementById('c-cash'), {
@@ -143,15 +142,13 @@
 
   function drawMonthly() {
     const cat = D.catalogue.slice(I0);
-    const pf = S.monthly === 'portfolio';
     V.bars(document.getElementById('c-monthly'), {
       months: M, h: 250, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur, shadeFrom: D.coverage && D.coverage.completeUntil, shadeLabel: 'partiel · attendu',
-      label: 'Dépenses marketing et revenus par mois',
+      label: 'Dépenses marketing et revenus des titres investis, par mois',
       series: [
         { name: 'Dépenses marketing', color: C.orange, values: cat.map((c) => c.marketing) },
-        { name: pf ? 'Revenus (titres avec dépense)' : 'Revenus (catalogue)', color: C.blue, values: cat.map((c) => (pf ? c.grossPortfolio : c.gross)) },
+        { name: 'Revenus des titres investis', color: C.blue, values: cat.map((c) => c.grossPortfolio) },
       ],
-      extra: (i) => `<div class="tip-note">Streams audio du catalogue : ${R.int(cat[i].streams)}</div>`,
     });
   }
 
@@ -179,9 +176,10 @@
       const values = p.series.slice(I0).map((s) => s[k]);
       return { label: p.title, href: projectHref(p.id), values, total: values.reduce((a, b) => a + b, 0) };
     }).filter((r) => r.total > 0).sort((a, b) => b.total - a.total).slice(0, 15);
-    V.heat(document.getElementById('c-heat'), {
-      rows, months: M, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: D.coverage && D.coverage.completeUntil, shadeLabel: 'partiel · attendu',
-      fmt: k === 'streams' ? R.int : (v) => R.eur(v, 2),
+    V.lines(document.getElementById('c-heat'), {
+      rows, months: M, h: 300, xFmt: R.mShort, tipFmt: R.mLong, shadeFrom: D.coverage && D.coverage.completeUntil, shadeLabel: 'partiel · attendu',
+      label: 'Top 15 des titres, performance mensuelle',
+      yFmt: k === 'streams' ? R.intC : R.eurC, yTip: k === 'streams' ? R.int : (v) => R.eur(v, 2),
       totalFmt: k === 'streams' ? R.intC : R.eurC,
     });
   }

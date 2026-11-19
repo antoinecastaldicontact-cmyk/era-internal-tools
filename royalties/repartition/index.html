@@ -55,8 +55,9 @@
           <p class="sub">Un tableau à deux vitesses. <b>Vitesse 1</b> : ce qu’on dépense dans le mois, connu le jour même. <b>Vitesse 2</b> : ce que rapportent les écoutes du mois, connu deux à trois mois plus tard (relevé Wiseband du 15 : le mois M arrive partiel à M+2, sans Spotify, Deezer ni Qobuz, puis complet à M+3).<br>
           Revenus complets jusqu’à <b>${R.mLong(cu)}</b> · ${R.mLong(D.coverage.partialUntil)} partiel · générée ${R.esc(R.dateTime(D.generatedAt))}</p>
         </div>
-        <div class="actions"><button class="btn" id="refresh">↻ Rafraîchir</button></div>
+        <div class="actions"><button class="btn primary" id="mailbtn" aria-expanded="false">Email les statements</button><button class="btn" id="refresh">↻ Rafraîchir</button></div>
       </div>
+      <div id="mailpanel"></div>
       ${D.checks && D.checks.length ? `<div class="banner"><b>${D.checks.length} écart(s)</b> entre les lignes mensuelles et Airtable : voir le bandeau de la vue macro.</div>` : ''}
 
       <div class="kpis">
@@ -105,6 +106,12 @@
       <div class="foot"><span>ERA · Cockpit royalties · répartition</span><span>Données : Airtable appBvSWFIA6P36nXu</span></div>`;
 
     document.getElementById('refresh').onclick = () => start(true);
+    document.getElementById('mailbtn').onclick = (ev) => {
+      const el = document.getElementById('mailpanel');
+      const open = !el.innerHTML;
+      el.innerHTML = open ? mailPanel() : '';
+      ev.currentTarget.setAttribute('aria-expanded', String(open));
+    };
     const seg = document.getElementById('seg-all');
     const sync = () => seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', (b.dataset.v === 'all') === S.all));
     seg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.all = b.dataset.v === 'all'; sync(); drawTable(); }));
@@ -184,6 +191,31 @@
       <div class="dcol"><h4>Recoupées · marge nette</h4>${recRows ? `<table class="dl"><tr><th class="t"></th><th>Part ERA</th><th>Royalties</th><th>Dépenses</th><th>Marge</th></tr>${recRows}<tr><td class="t" style="color:var(--text2)">Total</td><td>${R.eur(r.recouped.revenue)}</td><td>${R.eur(r.recouped.dues)}</td><td>${R.eur(r.recouped.spend)}</td><td><b>${R.eur(r.recouped.margin)}</b></td></tr></table>` : '<div class="empty">Aucun titre recoupé actif ce mois.</div>'}</div>
       <div class="dcol"><h4>Non recoupées · récupéré vs investi</h4>${ingRows ? `<table class="dl"><tr><th class="t"></th><th>Récupéré</th><th>Investi</th></tr>${ingRows}<tr><td class="t" style="color:var(--text2)">Total</td><td>${R.eur(r.recouping.recovered)}</td><td>${R.eur(r.recouping.invested)}</td></tr></table>` : '<div class="empty">Rien ce mois.</div>'}</div>
       <div class="dcol"><h4>Catalogue sans investissement</h4>${nsRows ? `<table class="dl"><tr><th class="t"></th><th>Part ERA</th></tr>${nsRows}</table>` : '<div class="empty">Rien ce mois.</div>'}</div>
+    </div>`;
+  }
+
+  // The statement batch = the latest statement(s) received, never the archive. Only the
+  // releases present in it (Warner titles only when a Warner statement came in).
+  function mailPanel() {
+    const dated = D.statements.filter((st) => st.received && !/^ARCHIVE/i.test(st.name));
+    if (!dated.length) return '<div class="mailp"><h3>Aucun relevé à envoyer</h3><p>Pas encore de relevé mensuel dans Airtable.</p></div>';
+    const month = dated[0].received.slice(0, 7);
+    const batch = dated.filter((st) => st.received.slice(0, 7) === month);
+    const ids = new Set(batch.flatMap((st) => st.projects || []));
+    const projects = D.projects.filter((p) => ids.has(p.id) && R.statementEligible(p) && p.artistPath);
+    const rec = R.recipients(projects);
+    const covered = new Set(rec.flatMap((r) => r.projects.map((p) => p.id)));
+    const missing = projects.filter((p) => !covered.has(p.id));
+    const rows = rec.map((r) => `<div class="row">
+        <div class="who">${R.esc(r.name)}<span>${R.esc(r.email)}</span></div>
+        <div class="what">${r.projects.map((p) => `${R.esc(p.title)} · ${R.esc(R.statusEn(p))}`).join('<br>')}</div>
+        <a class="btn" href="${R.esc(R.mailto([r.email], R.statementBody(r.name, r.projects)))}">Ouvrir l’e-mail</a>
+      </div>`).join('');
+    return `<div class="mailp">
+      <h3>Statements du relevé ${R.esc(batch.map((st) => st.name).join(' + '))} · reçu le ${R.esc(R.date(dated[0].received))}</h3>
+      <p>${projects.length} titre(s) présents dans ce relevé, ${rec.length} destinataire(s). Chaque bouton ouvre ton client mail avec le message prêt, en anglais, sans objet. Rien ne part tant que tu ne cliques pas sur Envoyer.</p>
+      <div class="rows">${rows || '<p>Aucun payee avec e-mail sur ces titres.</p>'}</div>
+      ${missing.length ? `<p class="miss">Sans e-mail de payee dans Airtable : ${missing.map((p) => R.esc(p.title)).join(', ')}.</p>` : ''}
     </div>`;
   }
 

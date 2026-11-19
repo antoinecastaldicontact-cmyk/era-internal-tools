@@ -239,6 +239,80 @@
     });
   }
 
+  // ---------- many lines, focus + context ----------
+  // Every row is drawn thin and grey; up to 3 selected rows take the first three
+  // categorical slots (the only ones that stay distinct all-pairs). Hover a line or a
+  // name to read it. o: { months, rows:[{label, values, total, href}], yFmt, yTip, xFmt,
+  // tipFmt, totalFmt, h, shadeFrom, shadeLabel, selected:[i] }
+  const PICK = [C.blue, C.orange, C.aqua];
+  function lines(el, o) {
+    let sel = (o.selected || [0, 1, 2]).filter((i) => i < o.rows.length).slice(0, 3);
+    let hot = -1;
+    const colorOf = (i) => { const k = sel.indexOf(i); return k >= 0 ? PICK[k] : null; };
+    el.innerHTML = `<div class="ml"><div class="ml-chart"></div><ol class="ml-list"></ol></div>
+      <p class="ml-hint">Clique un titre pour le mettre en couleur (3 au maximum). Survole une courbe pour la lire.</p>`;
+    const box = el.querySelector('.ml-chart'), list = el.querySelector('.ml-list');
+    const drawList = () => {
+      list.innerHTML = o.rows.map((r, i) => {
+        const c = colorOf(i);
+        return `<li><button type="button" data-i="${i}" class="${c ? 'on' : ''}${hot === i ? ' hot' : ''}" aria-pressed="${!!c}">
+          <span class="ml-rank">${i + 1}</span><span class="sw ln" style="background:${c || C.muted}"></span>
+          <span class="ml-t">${esc(r.label)}</span><span class="ml-v">${esc(o.totalFmt(r.total))}</span></button></li>`;
+      }).join('');
+      list.querySelectorAll('button').forEach((b) => {
+        const i = +b.dataset.i;
+        b.addEventListener('click', () => {
+          if (sel.includes(i)) sel = sel.filter((x) => x !== i);
+          else { sel.push(i); if (sel.length > 3) sel.shift(); }
+          drawList(); draw();
+        });
+        b.addEventListener('mouseenter', () => { hot = i; draw(); });
+        b.addEventListener('mouseleave', () => { hot = -1; draw(); });
+      });
+    };
+    const draw = () => {
+      const n = o.months.length;
+      const sc = niceScale(Math.max(0, ...o.rows.flatMap((r) => r.values)));
+      const f = frame(box, o, sc);
+      const step = n > 1 ? f.iw / (n - 1) : f.iw;
+      const xAt = (i) => f.m.l + (n > 1 ? i * step : f.iw / 2);
+      shade(f, o.months, o.shadeFrom, step, xAt, o.shadeLabel);
+      const path = (r) => r.values.map((v, i) => `${i ? 'L' : 'M'}${xAt(i).toFixed(1)},${f.y(v).toFixed(1)}`).join('');
+      // grey context first, then the selected and hovered rows on top
+      o.rows.forEach((r, i) => {
+        if (colorOf(i) || i === hot) return;
+        svg('path', { d: path(r), fill: 'none', stroke: C.muted, 'stroke-opacity': hot >= 0 ? 0.18 : 0.35, 'stroke-width': 1.25, 'stroke-linejoin': 'round' }, f.s);
+      });
+      sel.forEach((i) => svg('path', { d: path(o.rows[i]), fill: 'none', stroke: colorOf(i), 'stroke-width': 2.25, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, f.s));
+      if (hot >= 0 && !colorOf(hot)) svg('path', { d: path(o.rows[hot]), fill: 'none', stroke: C.ink, 'stroke-width': 2, 'stroke-linejoin': 'round' }, f.s);
+      xLabels(f, o.months, xAt, o.xFmt);
+      const g = svg('g', { style: 'pointer-events:none', opacity: 0 }, f.s);
+      const vline = svg('line', { y1: f.m.t, y2: f.m.t + f.ih, stroke: C.muted, 'stroke-width': 1 }, g);
+      const dot = svg('circle', { r: 4.5, fill: C.ink, stroke: C.surface, 'stroke-width': 2 }, g);
+      const hit = svg('rect', { x: f.m.l - step / 2, y: f.m.t, width: f.iw + step, height: f.ih, fill: 'transparent' }, f.s);
+      hit.addEventListener('pointermove', (ev) => {
+        const r = f.s.getBoundingClientRect();
+        const mx = (ev.clientX - r.left) * (f.W / r.width), my = (ev.clientY - r.top) * (f.H / r.height);
+        const i = Math.max(0, Math.min(n - 1, Math.round((mx - f.m.l) / (step || 1))));
+        // nearest line to the pointer at this month
+        let best = 0, bd = Infinity;
+        o.rows.forEach((row, k) => { const d = Math.abs(f.y(row.values[i]) - my); if (d < bd) { bd = d; best = k; } });
+        g.setAttribute('opacity', 1);
+        vline.setAttribute('x1', xAt(i)); vline.setAttribute('x2', xAt(i));
+        dot.setAttribute('cx', xAt(i)); dot.setAttribute('cy', f.y(o.rows[best].values[i]));
+        dot.setAttribute('fill', colorOf(best) || C.ink);
+        const others = sel.filter((k) => k !== best).map((k) => tipRow(colorOf(k), o.rows[k].label, (o.yTip || o.yFmt)(o.rows[k].values[i]), 'ln')).join('');
+        const partial = o.shadeFrom && o.months[i] > o.shadeFrom ? `<div class="tip-note">${esc(o.shadeLabel || 'partiel')}</div>` : '';
+        tipShow(`<div class="tip-h">${esc(o.tipFmt ? o.tipFmt(o.months[i]) : o.months[i])}</div>${tipRow(colorOf(best) || C.ink, o.rows[best].label, (o.yTip || o.yFmt)(o.rows[best].values[i]), 'ln')}${others}${partial}`, ev.clientX, ev.clientY);
+      });
+      hit.addEventListener('pointerleave', () => { g.setAttribute('opacity', 0); tipHide(); });
+      box.innerHTML = '';
+      box.appendChild(f.s);
+    };
+    drawList();
+    mount(box, draw);
+  }
+
   // Redraw on resize (charts are measured in pixels).
   const mounted = new Map();
   function mount(el, draw) { mounted.set(el, draw); draw(); }
@@ -248,5 +322,8 @@
     rt = setTimeout(() => { for (const [el, draw] of mounted) { if (document.body.contains(el)) draw(); else mounted.delete(el); } }, 150);
   });
 
-  window.V = { C, line, bars, pairs, heat, legend, tipShow, tipHide };
+  // Synchronous redraw of every chart, e.g. at print width before printing.
+  function redraw() { for (const [el, draw] of mounted) { if (document.body.contains(el)) draw(); else mounted.delete(el); } }
+
+  window.V = { C, line, bars, pairs, heat, lines, legend, redraw, tipShow, tipHide };
 })();

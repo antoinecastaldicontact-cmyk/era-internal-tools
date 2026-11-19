@@ -176,7 +176,35 @@
       <a href="/royalties/repartition/" ${active === 'repartition' ? 'aria-current="page"' : ''}>Répartition mensuelle</a>
     </nav>`;
 
+  // ---- artist statement emails ----
+  // A mailto opens Antoine's mail app with the message ready (no subject: his rule).
+  // Nothing is sent until he clicks Send himself.
+  const pctEn = (v) => `${Math.floor(Math.max(0, v) * 100)}%`;
+  const statusEn = (p) => (p.status === 'Recouped' ? 'Recouped' : p.recoupPct != null && p.threshold > 0 ? `${pctEn(Math.min(p.recoupPct, 0.99))} recouped` : 'No marketing to recoup');
+  function statementBody(name, projects) {
+    const items = projects.map((p) => `${p.title} — ${statusEn(p)}\n${location.origin}${p.artistPath}`).join('\n\n');
+    return `Hi ${name},\n\nYour royalty statement is ready.\n\n${items}\n\nThis is your official statement, certified by ERA Music from our distributor reports. You can download it as a PDF from the page.\n\nAntoine\nERA Music`;
+  }
+  const mailto = (emails, body) => `mailto:${emails.join(',')}?body=${encodeURIComponent(body)}`;
+  // Payees of a list of projects, grouped by email.
+  function recipients(projects) {
+    const by = new Map();
+    for (const p of projects) {
+      for (const sp of p.splits || []) {
+        if (!sp.email) continue;
+        const k = sp.email.toLowerCase();
+        const r = by.get(k) || { email: sp.email, name: sp.payee, projects: [] };
+        if (!r.projects.includes(p)) r.projects.push(p);
+        by.set(k, r);
+      }
+    }
+    return [...by.values()];
+  }
+  // Projects that get a statement: in the given statement, with an artist side.
+  const statementEligible = (p) => !/residual/i.test(p.title) && !(p.dealType || '').startsWith('Cover buyout') && (p.splits || []).length > 0;
+
   window.R = {
+    statusEn, statementBody, mailto, recipients, statementEligible,
     STATE, stateText, stateChip, dayMonth, nav,
     eur, eurC, int, intC, pct, mult, mShort, mLong, date, dateTime, esc, qs,
     admin, getJSON, model, lock, resetKey, errorText, STATUS, statusPill, SPLIT_ADMIN, BUCKET, store,

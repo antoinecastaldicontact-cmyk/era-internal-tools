@@ -213,3 +213,29 @@ tr[aria-expanded="true"] .rp-chev{transform:rotate(90deg)}
 .defs ul{margin:10px 0 0 18px}
 .defs li{margin-bottom:6px}
 .defs b{color:var(--ink);font-weight:500}
+
+/* many-lines chart */
+.ml{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start;margin-top:8px}
+@media (max-width:900px){.ml{grid-template-columns:1fr}}
+.ml-chart{min-width:0}
+.ml-list{list-style:none;display:flex;flex-direction:column;gap:1px;max-height:300px;overflow:auto}
+.ml-list button{width:100%;display:grid;grid-template-columns:18px 14px minmax(0,1fr) auto;gap:8px;align-items:center;background:none;border:0;border-radius:6px;padding:5px 6px;color:var(--ink2);font:inherit;font-size:12px;text-align:left;cursor:pointer}
+.ml-list button:hover,.ml-list button.hot{background:var(--bg3)}
+.ml-list button.on{color:var(--ink)}
+.ml-list button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ml-rank{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+.ml-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ml-v{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted)}
+.ml-hint{font-size:11px;color:var(--muted);margin-top:8px}
+/* statement emails */
+.mailp{border:.5px solid var(--border2);border-left:3px solid var(--accent);background:var(--bg2);border-radius:10px;padding:16px 18px;margin-bottom:20px}
+.mailp h3{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:4px}
+.mailp p{font-size:12px;color:var(--text2);line-height:1.55}
+.mailp .rows{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.mailp .row{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--bg3);border-radius:8px;padding:9px 12px}
+@media (max-width:700px){.mailp .row{grid-template-columns:1fr}}
+.mailp .who{font-size:12.5px;color:var(--ink)}
+.mailp .who span{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:2px}
+.mailp .what{font-size:12px;color:var(--ink2);line-height:1.5}
+.mailp .miss{font-size:11.5px;color:var(--muted);margin-top:10px}
+.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
