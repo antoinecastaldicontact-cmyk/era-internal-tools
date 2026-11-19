@@ -201,7 +201,8 @@
     return [...by.values()];
   }
   // Projects that get a statement: in the given statement, with an artist side.
-  const statementEligible = (p) => !/residual/i.test(p.title) && !(p.dealType || '').startsWith('Cover buyout') && (p.splits || []).length > 0;
+  // Titles without a split stay in the list, flagged as missing a recipient.
+  const statementEligible = (p) => !/residual/i.test(p.title) && !(p.dealType || '').startsWith('Cover buyout');
 
   window.R = {
     statusEn, statementBody, mailto, recipients, statementEligible,

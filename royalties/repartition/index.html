@@ -206,6 +206,7 @@
     const rec = R.recipients(projects);
     const covered = new Set(rec.flatMap((r) => r.projects.map((p) => p.id)));
     const missing = projects.filter((p) => !covered.has(p.id));
+    const noSplit = missing.filter((p) => !(p.splits || []).length), noMail = missing.filter((p) => (p.splits || []).length);
     const rows = rec.map((r) => `<div class="row">
         <div class="who">${R.esc(r.name)}<span>${R.esc(r.email)}</span></div>
         <div class="what">${r.projects.map((p) => `${R.esc(p.title)} · ${R.esc(R.statusEn(p))}`).join('<br>')}</div>
@@ -215,7 +216,8 @@
       <h3>Statements du relevé ${R.esc(batch.map((st) => st.name).join(' + '))} · reçu le ${R.esc(R.date(dated[0].received))}</h3>
       <p>${projects.length} titre(s) présents dans ce relevé, ${rec.length} destinataire(s). Chaque bouton ouvre ton client mail avec le message prêt, en anglais, sans objet. Rien ne part tant que tu ne cliques pas sur Envoyer.</p>
       <div class="rows">${rows || '<p>Aucun payee avec e-mail sur ces titres.</p>'}</div>
-      ${missing.length ? `<p class="miss">Sans e-mail de payee dans Airtable : ${missing.map((p) => R.esc(p.title)).join(', ')}.</p>` : ''}
+      ${noMail.length ? `<p class="miss">Payee sans e-mail dans Airtable : ${noMail.map((p) => R.esc(p.title)).join(', ')}.</p>` : ''}
+      ${noSplit.length ? `<details class="miss"><summary>${noSplit.length} titre(s) du relevé sans split dans Airtable, donc sans destinataire</summary>${noSplit.map((p) => R.esc(p.title)).join(', ')}.</details>` : ''}
     </div>`;
   }
 

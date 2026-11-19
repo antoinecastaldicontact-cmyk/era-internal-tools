@@ -237,5 +237,6 @@ tr[aria-expanded="true"] .rp-chev{transform:rotate(90deg)}
 .mailp .who{font-size:12.5px;color:var(--ink)}
 .mailp .who span{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:2px}
 .mailp .what{font-size:12px;color:var(--ink2);line-height:1.5}
-.mailp .miss{font-size:11.5px;color:var(--muted);margin-top:10px}
+.mailp .miss{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.55}
+.mailp details.miss summary{cursor:pointer;color:var(--text2)}
 .btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
