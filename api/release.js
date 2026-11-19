@@ -475,7 +475,26 @@ async function submit(req, res) {
 
 // ---------- router ----------
 
+// Status only, no data: is Airtable reachable, can the server write to Drive (Apps Script token,
+// Drive API, root folder)? Safe to call from anywhere.
+async function health(req, res) {
+  const out = { airtable: 'error', drive: driveConfigured() ? 'error' : 'not_configured' };
+  try { await find(T.tracks, 'TRUE()', { maxRecords: 1, fields: [F.track.name] }); out.airtable = 'ok'; } catch { /* stays error */ }
+  if (driveConfigured()) {
+    try {
+      const info = await folderInfo(await rootFolderId());
+      out.drive = info.trashed ? 'root_in_trash' : 'ok';
+      out.root = info.name;
+    } catch (e) {
+      out.driveError = String(e.message || e).replace(/https?:\/\/\S+/g, '[url]').slice(0, 160);
+    }
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  return res.status(200).json(out);
+}
+
 const ROUTES = {
+  health: ['GET', health],
   mint: ['GET', mint],
   config: ['GET', config],
   save: ['POST', save],
