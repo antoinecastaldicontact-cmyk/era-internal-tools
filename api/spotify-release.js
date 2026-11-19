@@ -2,7 +2,7 @@
 // Pas d'API Web Spotify (Premium exigé depuis février 2026) : on lit la page embed
 // (__NEXT_DATA__), puis les balises og: de la page publique, puis l'oEmbed, dans cet ordre.
 // /api/spotify-release?artwork=<url i.scdn.co>&name=<fichier> — renvoie la pochette en
-// téléchargement avec le bon nom de fichier (hôte limité à i.scdn.co : pas de proxy ouvert).
+// téléchargement avec le bon nom de fichier (hôtes limités aux CDN Spotify : pas de proxy ouvert).
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36';
 const ID_RE = /^[A-Za-z0-9]{22}$/;
@@ -96,8 +96,15 @@ async function fromEmbed(type, id) {
     releaseDate: toIsoDate(e.releaseDate || e.release_date),
     artworkUrl: artwork,
     trackCount: Array.isArray(e.trackList) ? e.trackList.length : null,
+    firstTrackId: firstTrackId(e.trackList),
     source: 'embed',
   };
+}
+
+function firstTrackId(list) {
+  if (!Array.isArray(list) || !list.length) return '';
+  const m = JSON.stringify(list[0]).match(/spotify:track:([A-Za-z0-9]{22})/);
+  return m ? m[1] : '';
 }
 
 // Source 2 : balises og: de la page publique
@@ -105,11 +112,13 @@ async function fromOpenGraph(type, id) {
   const { status, text } = await fetchText(`https://open.spotify.com/${type}/${id}`);
   if (status === 404) return { notFound: true };
   if (!text) return null;
-  const meta = (key) => {
-    const re = new RegExp(`<meta[^>]+(?:property|name)="${key.replace(/[:.]/g, '\\$&')}"[^>]+content="([^"]*)"`, 'i');
-    const mm = text.match(re);
-    return mm ? decodeEntities(mm[1]) : '';
-  };
+  const tags = {};
+  for (const tag of text.match(/<meta\b[^>]*>/gi) || []) {
+    const key = (tag.match(/\b(?:property|name)="([^"]+)"/i) || [])[1];
+    const content = (tag.match(/\bcontent="([^"]*)"/i) || [])[1];
+    if (key && content !== undefined && !(key in tags)) tags[key.toLowerCase()] = decodeEntities(content);
+  }
+  const meta = (key) => tags[key] || '';
   const title = meta('og:title');
   if (!title) return null;
   // og:description : « Artiste · Song · 2026 » ou « Artiste · Single · 2026 »
@@ -175,7 +184,8 @@ function releaseTypeFrom(type, info) {
 async function serveArtwork(req, res) {
   let u;
   try { u = new URL(String(req.query.artwork)); } catch { return res.status(400).json({ error: 'bad_artwork_url' }); }
-  if (u.protocol !== 'https:' || u.hostname !== 'i.scdn.co') return res.status(400).json({ error: 'artwork_host_not_allowed' });
+  const okHost = u.hostname === 'i.scdn.co' || u.hostname.endsWith('.spotifycdn.com');
+  if (u.protocol !== 'https:' || !okHost) return res.status(400).json({ error: 'artwork_host_not_allowed' });
   const name = String(req.query.name || 'artwork.jpg').toLowerCase().replace(/[^a-z0-9._-]/g, '-').slice(0, 120) || 'artwork.jpg';
   const r = await fetch(u.href, { headers: { 'User-Agent': UA } });
   if (!r.ok) return res.status(502).json({ error: 'artwork_fetch_failed', status: r.status });
@@ -216,6 +226,12 @@ export default async function handler(req, res) {
     }
 
     if (!info) return res.status(notFound ? 404 : 502).json({ ok: false, error: notFound ? 'not_found' : 'parse_failed' });
+
+    // L'embed album ne porte pas la date : on la prend sur le premier titre.
+    if (!info.releaseDate && ref.type === 'album' && info.firstTrackId) {
+      const t = await fromEmbed('track', info.firstTrackId).catch(() => null);
+      if (t && t.releaseDate) info.releaseDate = t.releaseDate;
+    }
 
     const names = splitArtists(info.title, info.artists);
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
