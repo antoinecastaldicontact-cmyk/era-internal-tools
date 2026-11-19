@@ -41,6 +41,7 @@ Remplace le Fillout « 3 - Master Catalog (Artist Version) ». Page artiste : `/
 | `RELEASE_SIGNING_SECRET` | oui | ≥ 32 caractères, signe liens artiste et jetons d'upload |
 | `RELEASE_APPS_SCRIPT_URL` | oui | URL `/exec` du web app Apps Script |
 | `RELEASE_APPS_SCRIPT_SECRET` | oui | Secret loggé par `setup()` dans l'Apps Script |
+| `RELEASE_DRIVE_PARENT_FOLDER_ID` | non | Dossier Drive racine (« RELEASES ») ; les fichiers vont dans `RELEASES / AAAA - ERA Music / Artiste - Titre` (année de la date de sortie, sinon année en cours). Prioritaire sur la racine de l'Apps Script |
 | `RELEASE_NOTIFY_EMAILS` | non | Destinataires du mail interne (défaut : acastaldi@eramusic.io) |
 | `RELEASE_PUBLIC_BASE` | non | Domaine des liens artiste si différent de l'hôte appelé |
 

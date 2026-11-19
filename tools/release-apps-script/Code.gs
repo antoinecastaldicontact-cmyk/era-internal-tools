@@ -4,14 +4,14 @@
  * Gives era-internal-tools what it needs to drop release files into Google Drive,
  * without a Google Cloud project or a service account (same mechanism as 129 Onboarding Drive):
  *   - a short-lived Drive token for the server (never sent to the artist's browser),
- *   - the ID of the root folder « ERA — Releases », created in the Drive of the script owner,
+ *   - the ID of the root folder « RELEASES » (ROOT_ID below; empty = a folder « ERA — Releases » is created),
  *   - the internal mail « Release form submitted » (action « mail », MailApp).
  *
  * Setup (once, signed in as acastaldi@eramusic.io):
  *   1. script.google.com > New project > paste this file and appsscript.json (Project settings > show manifest).
  *      The manifest enables the Drive advanced service: that is what switches on the Drive API in the script's
  *      Google Cloud project (without it: 403 "Google Drive API has not been used in project …").
- *   2. Run setup() once, accept the permissions. The log prints RELEASE_APPS_SCRIPT_SECRET and the folder link.
+ *   2. Run setup() once, accept the permissions. The log prints RELEASE_APPS_SCRIPT_SECRET and « Root folder OK ».
  *   3. Deploy > New deployment > Web app — Execute as: Me ; Who has access: Anyone.
  *   4. Give the /exec URL and the secret to Claude (Vercel env RELEASE_APPS_SCRIPT_URL / RELEASE_APPS_SCRIPT_SECRET).
  * The root folder can be moved anywhere in your Drive: its ID does not change.
@@ -21,7 +21,7 @@
  */
 
 const ROOT_NAME = 'ERA — Releases';
-const ROOT_ID = ''; // empty = folder created by setup()
+const ROOT_ID = '1PLmI5py-sf-V-n4x7tRfVrbI1tcsYAEw'; // Drive « RELEASES » (year folders « 2026 - ERA Music » inside)
 
 function setup() {
   const props = PropertiesService.getScriptProperties();
@@ -29,8 +29,12 @@ function setup() {
     props.setProperty('SECRET', (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''));
   }
   const root = rootFolder_();
+  // Real call to the Drive API with the script's token: fails here if the Drive service is missing.
+  const res = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + root + '?fields=id,name&supportsAllDrives=true', {
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
+  });
   Logger.log('RELEASE_APPS_SCRIPT_SECRET = ' + props.getProperty('SECRET'));
-  Logger.log('Root folder: https://drive.google.com/drive/folders/' + root);
+  Logger.log('Root folder OK: « ' + JSON.parse(res.getContentText()).name + ' » https://drive.google.com/drive/folders/' + root);
 }
 
 function doPost(e) {

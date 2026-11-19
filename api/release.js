@@ -173,8 +173,14 @@ async function trackFolder(track) {
       if (!info.trashed) return { id: info.id, url: info.webViewLink || f[F.track.driveFolder] };
     } catch { /* folder gone: create a new one */ }
   }
-  const name = `${parisDate()} - ${clean(f[F.track.name], 150) || track.id}`.replace(/[\\/]/g, '-');
-  const folder = await ensureFolder(name, await rootFolderId());
+  // RELEASES / « 2026 - ERA Music » / « Artist - Title » — same layout as the folders made by hand.
+  // Year = year of the planned release date, else the current year (Paris). An existing folder with
+  // the same name is reused, so files land next to what is already there.
+  const rd = String(f[F.track.releaseDate] || '');
+  const year = /^\d{4}-/.test(rd) ? rd.slice(0, 4) : parisDate().slice(0, 4);
+  const yearFolder = await ensureFolder(`${year} - ERA Music`, await rootFolderId());
+  const name = (clean(f[F.track.name], 150) || track.id).replace(/[\\/]/g, '-');
+  const folder = await ensureFolder(name, yearFolder.id);
   await update(T.tracks, track.id, { [F.track.gdriveFolderId]: folder.id, [F.track.driveFolder]: folder.webViewLink });
   return { id: folder.id, url: folder.webViewLink };
 }
