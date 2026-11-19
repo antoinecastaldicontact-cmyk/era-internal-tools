@@ -212,6 +212,12 @@
       return `<a class="kc" href="${projectHref(p.id)}"><div class="kc-t">${R.esc(p.title)}</div>
         <div class="kc-m"><span><b>${R.eurC(p.gross)}</b> revenus</span><span>${R.intC(p.streams)} streams</span></div></a>`;
     }
+    if (p.confirmed && !(p.marketing > 0)) {
+      return `<a class="kc" href="${projectHref(p.id)}"><div class="kc-t">${R.esc(p.title)}</div>
+        <div class="kc-bar" title="Recoupé, confirmé"><span style="width:100%"></span></div>
+        <div class="kc-m"><span><b>confirmé</b> · splits actifs</span><span>${age}</span></div>
+        <div class="kc-m"><span><b>${R.eurC(p.gross)}</b> revenus</span><span>dépense hors base</span></div></a>`;
+    }
     const w = Math.min(100, (p.recoupPct || 0) * 100);
     return `<a class="kc" href="${projectHref(p.id)}"><div class="kc-t">${R.esc(p.title)}</div>
       <div class="kc-bar" title="Recoupement ${R.pct(p.recoupPct)}"><span style="width:${w}%"></span></div>

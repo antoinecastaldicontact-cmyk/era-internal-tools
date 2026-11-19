@@ -1,0 +1,99 @@
+/* ERA Music design system, light theme (brand sheet #e1e1e1 / #000000).
+   Source of truth: the "ERA Music" design system in Claude. Used by pages artists see
+   (royalty statement); the internal cockpit keeps style.css. N27: atipo web licence, Nov 2026. */
+@font-face{font-family:"N27";src:url("/royalties/fonts/N27-Light.woff") format("woff");font-weight:300;font-display:swap}
+@font-face{font-family:"N27";src:url("/royalties/fonts/N27-Regular.woff") format("woff");font-weight:400;font-display:swap}
+@font-face{font-family:"N27";src:url("/royalties/fonts/N27-Medium.woff") format("woff");font-weight:500;font-display:swap}
+@font-face{font-family:"N27";src:url("/royalties/fonts/N27-Bold.woff") format("woff");font-weight:700;font-display:swap}
+
+:root{
+  --ground:#e1e1e1;--ink:#000000;--ink-muted:#5c5c5c;--surface:#ebebeb;
+  --line:rgba(0,0,0,.14);--line-strong:rgba(0,0,0,.55);
+  --action:#000000;--on-action:#e1e1e1;--chart-spend:#7a7a7a;
+  --font-sans:"N27",system-ui,sans-serif;
+  --space-2:8px;--space-3:12px;--space-5:20px;--space-6:24px;--space-7:28px;--space-10:40px;
+  --radius-md:12px;--radius-lg:14px;--radius-pill:999px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--ground);color:var(--ink);font-family:var(--font-sans);font-weight:300;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh}
+.wrap{max-width:980px;margin:0 auto;padding:40px var(--space-6) 72px}
+.loading{color:var(--ink-muted);padding:80px 0;text-align:center}
+.err{max-width:520px;margin:80px auto;border:1px solid var(--line-strong);border-radius:var(--radius-md);padding:var(--space-5);line-height:1.6}
+
+/* header */
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-10)}
+.wordmark{font-weight:500;font-size:13px;letter-spacing:.32em;text-transform:uppercase}
+.logo{display:block;width:96px;height:auto}
+.act{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:0 var(--space-6);border:0;border-radius:var(--radius-lg);background:var(--action);color:var(--on-action);font:inherit;font-size:16px;font-weight:500;letter-spacing:.01em;cursor:pointer;transition:transform .1s ease-out}
+.act:active{transform:scale(.97)}
+.act:focus-visible,.seal:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.seal{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-strong);border-radius:var(--radius-pill);padding:5px 14px 5px 11px;font-size:11px;font-weight:400;letter-spacing:.12em;text-transform:uppercase}
+
+/* title */
+h1{font-size:40px;line-height:1.05;font-weight:700;letter-spacing:0;margin-top:var(--space-5)}
+.titlerow{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin:var(--space-3) 0 var(--space-7)}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:var(--radius-pill);padding:5px 14px;font-size:13px;font-weight:500;line-height:1.3;white-space:nowrap}
+.chip.done{background:var(--action);color:var(--on-action)}
+.chip.open{border:1px solid var(--line-strong)}
+.chip.none{border:1px solid var(--line);color:var(--ink-muted)}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-3);margin-bottom:var(--space-3)}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:var(--space-5);display:grid;gap:var(--space-2);align-content:start}
+.lab{color:var(--ink-muted);font-size:12px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;line-height:1.5}
+.fig{font-size:32px;font-weight:500;letter-spacing:-.01em;line-height:1.1;font-variant-numeric:tabular-nums}
+.note{color:var(--ink-muted);font-size:12px;line-height:1.5}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-md);padding:var(--space-5);margin-top:var(--space-3)}
+.panel-t{font-size:15px;font-weight:500;line-height:1.4}
+.chart{width:100%;min-height:60px;margin-top:var(--space-2)}
+.chart svg{display:block;max-width:100%}
+.ax{font-family:var(--font-sans);font-size:11px;font-weight:400;fill:var(--ink-muted)}
+.ax.ink{fill:var(--ink)}
+.legend{display:flex;gap:var(--space-5);flex-wrap:wrap;font-size:12px;color:var(--ink-muted);margin:6px 0 2px}
+.lg{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;flex:none}
+.sw.ln{height:2px;width:14px;border-radius:1px}
+.viz-tip{position:fixed;z-index:50;display:none;pointer-events:none;background:var(--ink);color:var(--on-action);border-radius:8px;padding:9px 11px;font-size:12px;min-width:160px;max-width:300px}
+.tip-h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;opacity:.8}
+.tip-row{display:flex;align-items:center;gap:7px;line-height:1.7}
+.tip-row .sw{outline:1px solid rgba(225,225,225,.5)}
+.tip-name{flex:1;opacity:.85}
+.tip-val{font-variant-numeric:tabular-nums;font-weight:500}
+.tip-note{font-size:11px;opacity:.75;margin-top:5px;border-top:1px solid rgba(225,225,225,.25);padding-top:5px}
+
+/* share and certification */
+.kv{display:grid;grid-template-columns:170px minmax(0,1fr);gap:8px 16px;margin-top:var(--space-3)}
+.kv dt{color:var(--ink-muted)}
+.tbl{width:100%;border-collapse:collapse;margin-top:var(--space-5)}
+.tbl th{text-align:left;font-size:11px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-muted);padding:0 0 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 0;border-bottom:1px solid var(--line)}
+.tbl .n{text-align:right;font-variant-numeric:tabular-nums}
+.cert{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-3);margin-top:var(--space-5);border-top:1px solid var(--line);padding-top:var(--space-5)}
+.cert b{display:block;color:var(--ink-muted);font-size:11px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;margin-bottom:4px}
+.panel-d{color:var(--ink-muted);margin-top:4px}
+.foot{display:flex;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap;margin-top:var(--space-10);padding-top:var(--space-5);border-top:1px solid var(--line);font-size:12px;color:var(--ink-muted)}
+
+@media (max-width:760px){
+  .wrap{padding:28px var(--space-5) 56px}
+  h1{font-size:28px}
+  .tiles,.cert{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fig{font-size:26px}
+  .kv{grid-template-columns:1fr;gap:2px}
+  .kv dd{margin-bottom:8px}
+  .act{height:56px}
+}
+@media (prefers-reduced-motion:reduce){.act{transition:none}}
+
+/* print: the page is already light; charts are redrawn at A4 width before printing */
+body.printing .wrap{max-width:688px;padding-left:0;padding-right:0}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wrap{padding:0;max-width:688px}
+  .no-print,.viz-tip{display:none!important}
+  .tile,.panel{break-inside:avoid}
+  .chart svg{max-width:100%;height:auto}
+}

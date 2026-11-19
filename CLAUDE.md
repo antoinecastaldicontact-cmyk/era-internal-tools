@@ -4,7 +4,9 @@ Internal tools of ERA Music. Vanilla HTML/CSS/JS, no build step, Vercel serverle
 
 ## Design guideline (UI/UX)
 
-Any change to how a page looks, reads or behaves follows two layers, in this order of precedence:
+Pages artists or partners see (the royalty statement under `royalties/artiste/`) follow the **ERA Music design system** in Claude (light theme: `#e1e1e1` ground, `#000000` ink, N27, monochrome charts and status chips), mirrored in `royalties/era.css` with the N27 web fonts in `royalties/fonts/` (atipo web licence, Nov 2026). Internal tools keep the house style below.
+
+Any change to how an internal page looks, reads or behaves follows two layers, in this order of precedence:
 
 1. **ERA house style (wins on look):**
    - Theme: dark. `--bg #050507`, `--bg2 #0c0c10`, `--bg3 #13131a`, `--border #1e1e2a`, `--text #e8e8f0`, `--text2 #7878a0`, `--accent #6c63ff`.

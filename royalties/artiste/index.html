@@ -6,34 +6,9 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>ERA Music · Royalty statement</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/royalties/style.css">
-<style>
-  .wrap{max-width:980px}
-  .ahead{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}
-  .mark{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.32em;color:var(--ink)}
-  .official{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);border:.5px solid var(--border2);border-radius:999px;padding:5px 12px 5px 10px}
-  .official .seal{color:var(--good)}
-  .titlerow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 28px}
-  .titlerow .pill{font-size:13px;padding:5px 14px 5px 11px}
-  .cert{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 20px;margin-top:14px}
-  .cert div{font-size:12.5px;color:var(--ink2)}
-  .cert b{display:block;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);font-weight:400;margin-bottom:4px}
-  .cert code{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink)}
-  /* charts are drawn in pixels: before printing they are redrawn at A4 width (182 mm ≈ 688 px) */
-  body.printing .wrap{max-width:688px;padding-left:0;padding-right:0}
-  @media print{
-    @page{size:A4;margin:14mm}
-    :root{--bg:#fff;--bg2:#fff;--bg3:#f4f4f2;--border:#dcdcd6;--border2:#cfcfc8;--text:#111;--text2:#555;--text3:#888;--ink:#111;--ink2:#333;--muted:#666;--grid:#e6e6e3;--axis:#bdbdb8}
-    body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .wrap{padding:0;max-width:688px}
-    .no-print,.viz-tip{display:none!important}
-    .card,.kpi{break-inside:avoid}
-    .chart svg{max-width:100%;height:auto}
-    .chart svg line[stroke="#2c2c2a"]{stroke:#e6e6e3}
-    .chart svg line[stroke="#383835"]{stroke:#bdbdb8}
-  }
-</style>
+<link rel="preload" href="/royalties/fonts/N27-Light.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="/royalties/fonts/N27-Medium.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="/royalties/era.css">
 </head>
 <body>
 <main class="wrap" id="app"><div class="loading">Loading…</div></main>
@@ -42,10 +17,12 @@
 <script>
 (function () {
   const app = document.getElementById('app');
-  const { C } = V;
   const esc = R.esc;
+  // Charts in the ERA light theme: monochrome, revenue in ink, spend in grey (design system).
+  Object.assign(V.C, { ink: '#000000', ink2: '#000000', muted: '#5c5c5c', grid: 'rgba(0,0,0,0.12)', axis: 'rgba(0,0,0,0.4)', surface: '#ebebeb' });
+  const INK = '#000000', SPEND = '#7a7a7a';
 
-  // ---- English formatting: the statement is 100 % English ----
+  // English formats (the statement is 100 % English)
   const nf0 = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 });
   const nf1 = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
   const eur = (v, d = 0) => (v == null || !isFinite(v) ? '—' : new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR', minimumFractionDigits: d, maximumFractionDigits: d }).format(v));
@@ -90,57 +67,58 @@
     if (j0 < 0) j0 = Math.max(0, d.series.length - 1);
     const S = d.series.slice(j0);
     const M = S.map((s) => s.m);
-    const recouped = d.status === 'Recouped' || !!d.recoupedIn;
+    const recouped = d.status === 'Recouped' || !!d.recoupedIn || !!d.confirmed;
+    // No marketing to show: a title without spend, or one confirmed recouped whose spend sits outside the base.
     const noSpend = !(d.marketing > 0) && d.fixed == null;
     const done = Math.min(d.recoupPct || 0, 0.99);
-    const chip = noSpend
-      ? '<span class="pill muted"><span class="pill-ic" aria-hidden="true">○</span>No marketing to recoup</span>'
-      : recouped
-        ? '<span class="pill good"><span class="pill-ic" aria-hidden="true">✓</span>Recouped</span>'
-        : `<span class="pill warn"><span class="pill-ic" aria-hidden="true">◷</span>Not recouped yet · ${pct(done)}</span>`;
+    const chip = recouped
+      ? '<span class="chip done"><span aria-hidden="true">✓</span>Recouped</span>'
+      : noSpend
+        ? '<span class="chip none"><span aria-hidden="true">○</span>No marketing to recoup</span>'
+        : `<span class="chip open"><span aria-hidden="true">◷</span>Not recouped yet · ${pct(done)}</span>`;
     const statementId = `ERA-${P.slice(-6).toUpperCase()}-${(d.completeThrough || '').replace('-', '')}`;
     const note = (s) => (s.state === 'partial' ? '<div class="tip-note">Partial month: Spotify, Deezer and Qobuz arrive the following month.</div>' : s.state === 'pending' ? '<div class="tip-note">Not reported by the distributor yet.</div>' : '');
 
     app.innerHTML = `
-      <div class="ahead">
-        <span class="mark">ERA MUSIC</span>
-        <button type="button" class="btn primary no-print" id="pdf">Download PDF</button>
-      </div>
-      <span class="official"><span class="seal" aria-hidden="true">✓</span>Official royalty statement · certified by ERA Music</span>
-      <h1 style="margin-top:16px">${esc(d.title)}</h1>
+      <header class="hdr">
+        <span class="wordmark" aria-label="ERA Music">ERA Music</span>
+        <button type="button" class="act no-print" id="pdf">Download PDF</button>
+      </header>
+      <span class="seal"><span aria-hidden="true">✓</span>Official royalty statement · certified by ERA Music</span>
+      <h1>${esc(d.title)}</h1>
       <div class="titlerow">${chip}</div>
 
-      <div class="kpis">
-        ${kpi('Total streams', int(d.streams), d.ugc > 0 ? `+${intC(d.ugc)} UGC views, excluded from recoupment` : 'audio streams, all platforms')}
-        ${kpi('Revenue generated', eur(d.gross), 'gross track revenue')}
-        ${noSpend ? '' : kpi('Marketing investment', eur(d.marketing), 'advanced by ERA Music')}
-        ${noSpend ? '' : kpi('Recoupment', recouped ? '100%' : pct(done), recouped ? 'marketing fully repaid' : `${eur(d.remaining)} left to recoup${d.fixed != null ? ` · contract threshold ${eur(d.fixed)}` : ''}`)}
-      </div>
+      <section class="tiles" aria-label="Key figures">
+        ${tile('Total streams', int(d.streams), d.ugc > 0 ? `+${intC(d.ugc)} UGC views, excluded from recoupment` : 'audio streams, all platforms')}
+        ${tile('Revenue generated', eur(d.gross), 'gross track revenue')}
+        ${noSpend ? '' : tile('Marketing investment', eur(d.marketing), 'advanced by ERA Music')}
+        ${noSpend ? '' : tile('Recoupment', recouped ? '100%' : pct(done), recouped ? 'marketing fully repaid' : `${eur(d.remaining)} left to recoup${d.fixed != null ? ` · contract threshold ${eur(d.fixed)}` : ''}`)}
+      </section>
 
-      <div class="card">
-        <div class="card-t">${noSpend ? 'Track streaming revenue per month' : 'Marketing investment and track streaming revenue per month'}</div>
+      <section class="panel">
+        <div class="panel-t">${noSpend ? 'Track streaming revenue per month' : 'Marketing investment and track streaming revenue per month'}</div>
         <div class="chart" id="c-money"></div>
-      </div>
+      </section>
 
-      <div class="card">
-        <div class="card-t">Streams per month</div>
+      <section class="panel">
+        <div class="panel-t">Streams per month</div>
         <div class="chart" id="c-streams"></div>
-      </div>
+      </section>
 
       ${share(d)}
 
-      <div class="card">
-        <div class="card-t">Certification</div>
-        <p class="card-d" style="max-width:none">This official statement is issued and certified by ERA Music from the reports of our distributors. Revenue is gross track revenue, before the artist split.</p>
+      <section class="panel">
+        <div class="panel-t">Certification</div>
+        <p class="panel-d">This official statement is issued and certified by ERA Music from the reports of our distributors. Revenue is gross track revenue, before the artist split.</p>
         <div class="cert">
-          <div><b>Statement ID</b><code>${esc(statementId)}</code></div>
+          <div><b>Statement ID</b>${esc(statementId)}</div>
           <div><b>Issued on</b>${esc(dateEn(d.generatedAt))}</div>
           <div><b>Complete data through</b>${esc(mLong(d.completeThrough))}</div>
           <div><b>Distributor</b>${esc(d.distributor || '—')}</div>
         </div>
-      </div>
+      </section>
 
-      <div class="foot"><span>ERA Music</span><span class="no-print">Personal statement. Please do not share this link.</span></div>`;
+      <footer class="foot"><span>ERA Music · Becoming has a sound</span><span class="no-print">Personal statement. Please do not share this link.</span></footer>`;
 
     document.getElementById('pdf').onclick = () => window.print();
     window.addEventListener('beforeprint', () => { document.body.classList.add('printing'); V.redraw(); });
@@ -150,15 +128,15 @@
     V.bars(document.getElementById('c-money'), {
       ...common, h: 240, yFmt: eurC, yTip: (v) => eur(v, 2), label: 'Marketing investment and track streaming revenue per month',
       series: noSpend
-        ? [{ name: 'Track streaming revenue', color: C.blue, values: S.map((s) => s.gross) }]
+        ? [{ name: 'Track streaming revenue', color: INK, values: S.map((s) => s.gross) }]
         : [
-          { name: 'Marketing investment', color: C.orange, values: S.map((s) => s.marketing) },
-          { name: 'Track streaming revenue', color: C.blue, values: S.map((s) => s.gross) },
+          { name: 'Track streaming revenue', color: INK, values: S.map((s) => s.gross) },
+          { name: 'Marketing investment', color: SPEND, values: S.map((s) => s.marketing) },
         ],
     });
     V.bars(document.getElementById('c-streams'), {
       ...common, h: 200, yFmt: intC, yTip: int, label: 'Streams per month',
-      series: [{ name: 'Streams', color: C.aqua, values: S.map((s) => s.streams) }],
+      series: [{ name: 'Streams', color: INK, values: S.map((s) => s.streams) }],
     });
   }
 
@@ -166,19 +144,19 @@
     const pay = PAYMENT[d.splitStatus];
     if (d.artistShare == null && !d.splits.length && !pay) return '';
     const p1 = (v) => (v == null ? '—' : `${Math.round(v * 1000) / 10}%`);
-    return `<div class="card">
-      <div class="card-t">Your share</div>
+    return `<section class="panel">
+      <div class="panel-t">Your share</div>
       <dl class="kv">
         ${d.artistShare != null ? `<dt>Artist share</dt><dd>${p1(d.artistShare)} of track revenue, after recoupment</dd>` : ''}
         ${pay ? `<dt>Payment</dt><dd>${esc(pay)}</dd>` : ''}
       </dl>
-      ${d.splits.length ? `<div class="tbl-wrap" style="margin-top:14px"><table class="tbl"><thead><tr><th>Rights holder</th><th class="n">Share of the artist side</th></tr></thead><tbody>
-        ${d.splits.map((s) => `<tr><td class="t">${esc(s.payee || '—')}</td><td class="n">${p1(s.share)}</td></tr>`).join('')}
-      </tbody></table></div>` : ''}
-    </div>`;
+      ${d.splits.length ? `<table class="tbl"><thead><tr><th>Rights holder</th><th class="n">Share of the artist side</th></tr></thead><tbody>
+        ${d.splits.map((s) => `<tr><td>${esc(s.payee || '—')}</td><td class="n">${p1(s.share)}</td></tr>`).join('')}
+      </tbody></table>` : ''}
+    </section>`;
   }
 
-  const kpi = (l, v, s) => `<div class="kpi"><div class="kpi-l">${esc(l)}</div><div class="kpi-v">${v}</div><div class="kpi-s">${esc(s)}</div></div>`;
+  const tile = (l, v, s) => `<div class="tile"><div class="lab">${esc(l)}</div><div class="fig">${v}</div><div class="note">${esc(s)}</div></div>`;
 
   start();
 })();

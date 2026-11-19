@@ -27,7 +27,7 @@ const F = {
     marketing: 'fldCsMAYQdNN0wl7v', artistCosts: 'fldV5tLe0PpL7974R', toVerify: 'fldGDSMb1fQFCmuik',
     remaining: 'fldYO2LnzIbwW5k6i', months: 'fldlr7IvA6K6SN5fI', dealType: 'fldYjwCXX9Uu3gbVz',
     splitStatus: 'fldQjydY4pf1gqMII', streams: 'fldW0LOKjEjDBJ1yj', kind: 'fldKT8Lsk6gkOtYZl',
-    fixed: 'fld3CfCk406SyU1Mt',
+    fixed: 'fld3CfCk406SyU1Mt', confirmed: 'fldZv7EYxA42xmncM',
   },
   l: {
     project: 'fldBztldhipxySrdN', usage: 'fldgMHZdqxzrpdjAR', streams: 'fldpr7pV8lKnAK1NA',
@@ -226,6 +226,8 @@ export function buildModel(raw, opts = {}) {
       toVerify: num(f[F.p.toVerify]),
       remaining: num(f[F.p.remaining]),
       fixed: num(f[F.p.fixed]) > 0 ? num(f[F.p.fixed]) : null,
+      // Recouped (confirmed): already recouped and shared on Wiseband, historical spend not in Expenses.
+      confirmed: !!f[F.p.confirmed],
       streams: Math.round(num(f[F.p.streams])),
       // No artist royalty on a cover buyout: ERA keeps 100 %.
       buyout: !!dealType && dealType.startsWith('Cover buyout'),
@@ -318,8 +320,9 @@ export function buildModel(raw, opts = {}) {
   const checks = [];
 
   for (const p of projects) {
-    let cg = 0, cm = 0, ca = 0, recouped = false;
-    const invested = p.marketing > 0 || p.fixed != null;
+    // A confirmed title is recouped from its first month: its revenue is in the recouped pocket.
+    let cg = 0, cm = 0, ca = 0, recouped = p.confirmed;
+    const invested = p.marketing > 0 || p.fixed != null || p.confirmed;
     p.raw = []; // unrounded monthly values for the catalogue sums (dropped below)
     p.series = axis.map((m) => {
       const b = p.monthly[m] || ZERO();
@@ -537,6 +540,7 @@ export function artistView(model, id) {
     remaining: p.remaining,
     recoupPct: p.recoupPct,
     fixed: p.fixed,
+    confirmed: p.confirmed,
     recoupedIn: p.recoupedIn || null,
     streams: p.streams,
     ugc: p.ugc,
