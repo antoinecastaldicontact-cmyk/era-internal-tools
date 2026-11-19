@@ -13,7 +13,7 @@ Hub des outils internes ERA Music. Hébergé sur Vercel, déployé automatiqueme
 
 ## Formulaire de release (artiste)
 
-Remplace le Fillout « 3 - Master Catalog (Artist Version) ». Page artiste : `/release-form/?t=<lien signé>` (non listée dans le hub, noindex).
+Remplace le Fillout « 3 - Master Catalog (Artist Version) ». Page artiste : `https://release.eramusic.io/release-form/?t=<lien signé>` (non listée dans le hub, noindex). Sur `release.eramusic.io`, toute autre page redirige vers eramusic.io ; état du service : `/api/release/?action=health`.
 
 **Flux**
 
