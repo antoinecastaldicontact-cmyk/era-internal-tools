@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ERA Fan Link Generator — v2.1</title>
+<title>ERA Fan Link Generator — v2.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -77,18 +77,53 @@ select{cursor:pointer;-webkit-appearance:none;background-image:url("data:image/s
 .migrate-btn{width:100%;padding:10px;font-size:12px;font-weight:500;letter-spacing:.04em;cursor:pointer;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-3);font-family:var(--font);transition:all .15s;margin-top:10px}
 .migrate-btn:hover{border-color:var(--border-hover);color:var(--text)}
 .divider{height:1px;background:var(--border);margin:2.5rem 0}
+
+/* Spotify autofill */
+.sp-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px}
+.sp-box label.fl .opt{color:var(--text-3);font-weight:400;text-transform:none;letter-spacing:0}
+.sp-row{display:flex;gap:8px}
+.sp-row input{flex:1;min-width:0;font-family:var(--mono);font-size:12px;background:var(--bg)}
+.sp-btn{font-size:12px;font-weight:600;padding:9px 16px;min-height:38px;background:var(--accent);border:none;border-radius:6px;color:var(--bg);cursor:pointer;font-family:var(--font);white-space:nowrap;transition:opacity .15s}
+.sp-btn:hover{opacity:.85}
+.sp-btn:disabled{opacity:.35;cursor:wait}
+.sp-status{font-family:var(--mono);font-size:11px;line-height:1.6;margin-top:8px;color:var(--text-3)}
+.sp-status:empty{display:none}
+.sp-status.ok{color:var(--green)}
+.sp-status.err{color:var(--red)}
+.sp-art{display:flex;align-items:center;gap:12px;margin-top:12px}
+.sp-art[hidden]{display:none}
+.sp-art img{width:56px;height:56px;border-radius:4px;border:1px solid var(--border);object-fit:cover;flex-shrink:0}
+.sp-art-dl{font-family:var(--mono);font-size:11px;color:var(--text);text-decoration:none;border:1px solid var(--border);border-radius:4px;padding:6px 10px;transition:border-color .15s}
+.sp-art-dl:hover{border-color:var(--border-hover)}
+.sp-art-name{font-family:var(--mono);font-size:10px;color:var(--text-3);word-break:break-all}
+input.sp-filled{border-color:rgba(74,222,128,.45)}
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <span class="header-badge">v16</span>
+    <span class="header-badge">v17</span>
     <h1>ERA Fan Link Generator</h1>
   </div>
 
   <!-- RELEASE INFO -->
   <div class="section">
     <div class="section-title">Release info</div>
+    <div class="sp-box">
+      <label class="fl" for="spotify-link">Lien Spotify <span class="opt">— optionnel, remplit les infos release (sinon tout à la main)</span></label>
+      <div class="sp-row">
+        <input id="spotify-link" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://open.spotify.com/track/…" />
+        <button class="sp-btn" id="spotify-fill-btn" type="button">Remplir</button>
+      </div>
+      <div class="sp-status" id="spotify-status" role="status" aria-live="polite"></div>
+      <div class="sp-art" id="spotify-art" hidden>
+        <img id="spotify-art-img" alt="Pochette de la release" />
+        <div>
+          <a id="spotify-art-dl" class="sp-art-dl" href="#">Télécharger l'artwork</a>
+          <div class="sp-art-name" id="spotify-art-name"></div>
+        </div>
+      </div>
+    </div>
     <div class="row2 field">
       <div><label class="fl">Artist <span class="req">*</span></label><input id="artist" placeholder="Artist name" /></div>
       <div><label class="fl">Track / Release title <span class="req">*</span></label><input id="title" placeholder="Track Title" /></div>
@@ -370,7 +405,95 @@ function updateSlug(){
   document.getElementById("artwork").value = currentArtwork;
   document.getElementById("artwork-display").textContent = currentArtwork || "-";
   updateUTMPreviews();
+  updateArtworkDownload();
 }
+
+/* ── Spotify autofill ── */
+var spotifyArtworkUrl = "";
+var SPOTIFY_ERRORS = {
+  bad_url:      "Lien non reconnu (attendu : lien track ou album open.spotify.com)",
+  not_found:    "Release introuvable sur Spotify (pas encore sortie ?)",
+  parse_failed: "Spotify n'a pas renvoyé les infos",
+  internal:     "Erreur serveur"
+};
+
+function setSpotifyStatus(kind, msg){
+  var el = document.getElementById("spotify-status");
+  el.className = "sp-status" + (kind ? " "+kind : "");
+  el.textContent = msg || "";
+}
+
+function setFilled(id, value){
+  var el = document.getElementById(id);
+  if(!el) return false;
+  el.value = value;
+  el.classList.add("sp-filled");
+  return true;
+}
+
+/* Le nom de fichier suit le slug ; une pochette Spotify est toujours un JPEG. */
+function updateArtworkDownload(){
+  var wrap = document.getElementById("spotify-art");
+  if(!wrap || !spotifyArtworkUrl){ if(wrap) wrap.hidden = true; return; }
+  var name = (currentBaseSlug || "artwork") + ".jpg";
+  document.getElementById("spotify-art-img").src = spotifyArtworkUrl;
+  document.getElementById("spotify-art-dl").href = "/api/spotify-release?artwork="+encodeURIComponent(spotifyArtworkUrl)+"&name="+encodeURIComponent(name);
+  document.getElementById("spotify-art-name").textContent = "→ public/artworks/" + name;
+  wrap.hidden = false;
+}
+
+function fillSpotifyDsp(url){
+  if(!url) return false;
+  var row = dsps.find(function(d){ return d.preset === "Spotify"; });
+  if(!row){ addDSP("Spotify"); row = dsps[dsps.length-1]; }
+  var input = document.querySelector('.dsp-url[data-id="'+row.id+'"]');
+  if(!input || input.value.trim()) return false;
+  input.value = url;
+  input.classList.add("sp-filled");
+  return true;
+}
+
+var spotifyBusy = false;
+function fillFromSpotify(){
+  var raw = getVal("spotify-link");
+  if(!raw || spotifyBusy) return;
+  var btn = document.getElementById("spotify-fill-btn");
+  spotifyBusy = true; btn.disabled = true;
+  setSpotifyStatus("", "Lecture du lien Spotify…");
+  fetch("/api/spotify-release?url="+encodeURIComponent(raw))
+    .then(function(r){ return r.json().catch(function(){ return { ok:false, error:"internal" }; }); })
+    .then(function(d){
+      if(!d || !d.ok) throw new Error(SPOTIFY_ERRORS[d && d.error] || "Lecture impossible");
+      var got = [];
+      if(d.artist && setFilled("artist", d.artist)) got.push("artiste");
+      if(d.title && setFilled("title", d.title)) got.push("titre");
+      setFilled("feat", d.feat || "");
+      if(d.feat) got.push("feat.");
+      if(d.releaseDate && setFilled("release-date", d.releaseDate)) got.push("date");
+      if(d.releaseType && setFilled("rtype", d.releaseType)) got.push("type");
+      if(d.artworkUrl){
+        spotifyArtworkUrl = d.artworkUrl;
+        document.getElementById("artwork-ext").value = ".jpg";
+        got.push("artwork");
+      }
+      if(fillSpotifyDsp(d.spotifyUrl)) got.push("lien Spotify");
+      updateSlug();
+      validateAll();
+      var missing = [];
+      if(!d.artist) missing.push("artiste");
+      if(!d.releaseDate) missing.push("date");
+      setSpotifyStatus("ok", "Rempli : " + got.join(", ") + "." + (missing.length ? " À compléter : "+missing.join(", ")+"." : "") + " Vérifie artiste / feat. avant de générer.");
+    })
+    .catch(function(e){ setSpotifyStatus("err", e.message + " — remplis à la main."); })
+    .then(function(){ spotifyBusy = false; btn.disabled = false; });
+}
+
+document.getElementById("spotify-fill-btn").addEventListener("click", fillFromSpotify);
+document.getElementById("spotify-link").addEventListener("keydown", function(e){ if(e.key === "Enter"){ e.preventDefault(); fillFromSpotify(); } });
+document.getElementById("spotify-link").addEventListener("paste", function(){ setTimeout(fillFromSpotify, 0); });
+["artist","title","feat","release-date","rtype"].forEach(function(id){
+  document.getElementById(id).addEventListener("input", function(){ this.classList.remove("sp-filled"); });
+});
 
 /* ── custom selects ── */
 function bindCustomSelect(selectId, customId){
