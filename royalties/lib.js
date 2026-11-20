@@ -202,7 +202,7 @@
   }
   // Projects that get a statement: in the given statement, with an artist side.
   // Titles without a split stay in the list, flagged as missing a recipient.
-  const statementEligible = (p) => !/residual/i.test(p.title) && !(p.dealType || '').startsWith('Cover buyout');
+  const statementEligible = (p) => !/residual/i.test(p.title) && !/^(Cover buyout|Playpack)/.test(p.dealType || '');
 
   // Speed note for a title still recouping: launch, months to recoup, or 18-month projection.
   const speedText = (p) => {

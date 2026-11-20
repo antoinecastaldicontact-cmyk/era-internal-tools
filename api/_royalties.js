@@ -229,8 +229,9 @@ export function buildModel(raw, opts = {}) {
       // Recouped (confirmed): already recouped and shared on Wiseband, historical spend not in Expenses.
       confirmed: !!f[F.p.confirmed],
       streams: Math.round(num(f[F.p.streams])),
-      // No artist royalty on a cover buyout: ERA keeps 100 %.
-      buyout: !!dealType && dealType.startsWith('Cover buyout'),
+      // No artist royalty on a cover buyout or on the Playpack catalogue (excluded by Antoine,
+      // 20/11/2026: no artist contract): ERA keeps 100 %.
+      buyout: /^(Cover buyout|Playpack)/.test(dealType || ''),
       monthly: {}, // ym -> ZERO()
       expenses: [],
       splits: [],
