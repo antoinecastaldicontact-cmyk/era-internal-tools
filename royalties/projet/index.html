@@ -195,14 +195,23 @@
     return out;
   }
 
+  // Two bases per payee: share of the artist side (the split sheet) and share of the whole
+  // deal (artist side × artist share), next to ERA's label cut, so the line adds up to 100 %.
   function payees(p) {
     if (!p.splits.length) return '<div class="empty">Aucun split renseigné.</div>';
     const total = p.splits.reduce((a, s) => a + (s.share || 0), 0);
     const off = Math.abs(total - 1) > 0.001;
-    return `<div class="tbl-wrap" style="margin-top:14px"><table class="tbl"><thead><tr><th>Payee</th><th class="n">Part côté artiste</th><th>Source</th></tr></thead><tbody>
-      ${p.splits.map((s) => `<tr><td class="t">${R.esc(s.payee || '—')}</td><td class="n">${R.pct(s.share, 1)}</td><td>${R.esc(s.source || '—')}</td></tr>`).join('')}
-      <tr><td class="t" style="color:var(--text2)">Total</td><td class="n">${off ? `<span class="flag">⚑ ${R.pct(total, 1)}</span>` : R.pct(total, 1)}</td><td></td></tr>
-      </tbody></table></div>`;
+    const lc = p.labelCut;
+    const art = lc != null ? 1 - lc : null;
+    const deal = (s) => (art != null && s.share != null ? R.pct(s.share * art, 1) : '—');
+    const dealTotal = art != null ? total * art + lc : null;
+    const recoupFirst = /^Royalty split/.test(p.dealType || '');
+    return `<div class="tbl-wrap" style="margin-top:14px"><table class="tbl splits"><thead><tr><th>Payee</th><th class="n">Base 100 % artiste</th><th class="n">Base 100 % deal</th><th>Source</th></tr></thead><tbody>
+      ${p.splits.map((s) => `<tr><td class="t">${R.esc(s.payee || '—')}</td><td class="n">${R.pct(s.share, 1)}</td><td class="n">${deal(s)}</td><td>${R.esc(s.source || '—')}</td></tr>`).join('')}
+      <tr><td class="t">ERA Music · part label</td><td class="n" style="color:var(--text3)">—</td><td class="n">${lc != null ? R.pct(lc, 1) : '<span class="flag">⚑ manquant</span>'}</td><td></td></tr>
+      <tr><td class="t" style="color:var(--text2)">Total</td><td class="n">${off ? `<span class="flag">⚑ ${R.pct(total, 1)}</span>` : R.pct(total, 1)}</td><td class="n">${dealTotal == null ? '—' : Math.abs(dealTotal - 1) > 0.001 ? `<span class="flag">⚑ ${R.pct(dealTotal, 1)}</span>` : R.pct(dealTotal, 1)}</td><td></td></tr>
+      </tbody></table></div>
+      ${art != null ? `<p class="splits-note">Base 100 % deal = part côté artiste × ${R.pct(art, 1)} de part artiste.${recoupFirst ? ' S’applique une fois le titre recoupé : avant, ERA garde 100 % du brut jusqu’au remboursement du marketing.' : ''}</p>` : ''}`;
   }
 
   function expenses(p) {
