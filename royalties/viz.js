@@ -142,7 +142,8 @@
   }
 
   // ---------- grouped bars per month ----------
-  // o: { months, series:[{name,color,values}], yFmt, xFmt, h, shadeFrom, shadeLabel }
+  // o: { months, series:[{name,color,values}], yFmt, xFmt, h, shadeFrom, shadeLabel,
+  //      onPick(i) (click a month), picked (index of the month kept highlighted) }
   function bars(el, o) {
     const draw = () => {
       const n = o.months.length, k = o.series.length;
@@ -154,6 +155,10 @@
       const groupW = k * bw + (k - 1) * 2;
       const xAt = (i) => f.m.l + band * i + band / 2;
       shade(f, o.months, o.shadeFrom, band, xAt, o.shadeLabel);
+      if (o.picked != null && o.picked >= 0) {
+        svg('rect', { x: f.m.l + band * o.picked + 1, y: f.m.t, width: band - 2, height: f.ih, rx: 4, fill: '#ffffff', opacity: 0.06 }, f.s);
+        svg('rect', { x: xAt(o.picked) - groupW / 2, y: f.m.t + f.ih + 3, width: groupW, height: 2, rx: 1, fill: C.ink2 }, f.s);
+      }
       const base = f.y(0);
       o.series.forEach((s, j) => {
         s.values.forEach((v, i) => {
@@ -172,16 +177,21 @@
       xLabels(f, o.months, xAt, o.xFmt);
       const hl = svg('rect', { y: f.m.t, height: f.ih, width: band, fill: '#ffffff', opacity: 0, style: 'pointer-events:none' }, f.s);
       f.s.insertBefore(hl, f.s.firstChild.nextSibling);
-      const hit = svg('rect', { x: f.m.l, y: f.m.t, width: f.iw, height: f.ih, fill: 'transparent' }, f.s);
-      hit.addEventListener('pointermove', (ev) => {
+      const hit = svg('rect', { x: f.m.l, y: f.m.t, width: f.iw, height: f.ih, fill: 'transparent', style: o.onPick ? 'cursor:pointer' : '' }, f.s);
+      const at = (ev) => {
         const r = f.s.getBoundingClientRect();
         const mx = (ev.clientX - r.left) * (f.W / r.width);
-        const i = Math.max(0, Math.min(n - 1, Math.floor((mx - f.m.l) / band)));
+        return Math.max(0, Math.min(n - 1, Math.floor((mx - f.m.l) / band)));
+      };
+      hit.addEventListener('pointermove', (ev) => {
+        const i = at(ev);
         hl.setAttribute('x', f.m.l + band * i); hl.setAttribute('opacity', 0.04);
         const partial = o.note ? o.note(i) : o.shadeFrom && o.months[i] > o.shadeFrom ? `<div class="tip-note">${esc(o.shadeLabel || 'partiel')}</div>` : '';
-        tipShow(`<div class="tip-h">${esc(o.tipFmt ? o.tipFmt(o.months[i]) : o.months[i])}</div>${o.series.map((s) => tipRow(s.color, s.name, o.yTip ? o.yTip(s.values[i]) : o.yFmt(s.values[i]))).join('')}${o.extra ? o.extra(i) : ''}${partial}`, ev.clientX, ev.clientY);
+        const hint = o.onPick && o.hint ? `<div class="tip-note">${esc(o.hint)}</div>` : '';
+        tipShow(`<div class="tip-h">${esc(o.tipFmt ? o.tipFmt(o.months[i]) : o.months[i])}</div>${o.series.map((s) => tipRow(s.color, s.name, o.yTip ? o.yTip(s.values[i]) : o.yFmt(s.values[i]))).join('')}${o.extra ? o.extra(i) : ''}${partial}${hint}`, ev.clientX, ev.clientY);
       });
       hit.addEventListener('pointerleave', () => { hl.setAttribute('opacity', 0); tipHide(); });
+      if (o.onPick) hit.addEventListener('click', (ev) => { tipHide(); o.onPick(at(ev)); });
       el.innerHTML = (k > 1 ? legend(o.series) : '');
       el.appendChild(f.s);
     };
@@ -206,6 +216,37 @@
       const r = o.rows[+node.dataset.i];
       node.addEventListener('pointermove', (ev) => tipShow(`<div class="tip-h">${esc(r.label)}</div>${tipRow(o.a.color, o.a.name, o.fmt(r.a))}${tipRow(o.b.color, o.b.name, o.fmt(r.b))}${r.note ? `<div class="tip-note">${esc(r.note)}</div>` : ''}`, ev.clientX, ev.clientY));
       node.addEventListener('pointerleave', tipHide);
+    });
+  }
+
+  // ---------- ranked horizontal bars: one row per title, zero line, negatives to the left ----------
+  // Label and value on top, bar underneath (long titles stay readable in narrow columns).
+  // o: { rows:[{label, value, href, tag, muted, tip}], color, name, fmt, span, empty, label }
+  // span (optional): € width shared by sibling panels, so bar lengths compare across them;
+  // each panel keeps its own zero (at the left edge when it has no negative value).
+  function ranked(el, o) {
+    if (!o.rows.length) { el.innerHTML = `<div class="empty">${esc(o.empty || '—')}</div>`; return; }
+    const vals = o.rows.map((r) => r.value);
+    const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+    const span = Math.max(o.span || 0, hi - lo) || 1;
+    const z = (-lo / span) * 100;
+    el.innerHTML = `<ol class="rk" aria-label="${esc(o.label || '')}">${o.rows.map((r, i) => {
+      const w = r.value ? Math.max(0.8, (Math.abs(r.value) / span) * 100) : 0;
+      const left = r.value < 0 ? z - w : z;
+      const tag = r.href ? 'a' : 'div';
+      return `<li><${tag} class="rk-r${r.muted ? ' mu' : ''}" ${r.href ? `href="${esc(r.href)}"` : 'tabindex="0"'} data-i="${i}">
+        <span class="rk-top"><span class="rk-l">${esc(r.label)}</span>${r.tag ? `<span class="tag">${esc(r.tag)}</span>` : ''}<span class="rk-v">${esc(o.fmt(r.value))}</span></span>
+        <span class="rk-track" aria-hidden="true"><span class="rk-zero" style="left:${z.toFixed(2)}%"></span><span class="rk-bar${r.value < 0 ? ' neg' : ''}" style="left:${left.toFixed(2)}%;width:${w.toFixed(2)}%;background:${r.muted ? C.muted : o.color}"></span></span>
+      </${tag}></li>`;
+    }).join('')}</ol>`;
+    el.querySelectorAll('.rk-r').forEach((node) => {
+      const r = o.rows[+node.dataset.i];
+      const html = () => `<div class="tip-h">${esc(r.label)}</div>${r.tip || tipRow(r.muted ? C.muted : o.color, o.name || '', o.fmt(r.value))}`;
+      node.addEventListener('pointermove', (ev) => tipShow(html(), ev.clientX, ev.clientY));
+      node.addEventListener('pointerleave', tipHide);
+      // Keyboard: the same detail on focus, anchored under the row.
+      node.addEventListener('focus', () => { const b = node.getBoundingClientRect(); tipShow(html(), b.left + Math.min(b.width - 20, 200), b.bottom - 4); });
+      node.addEventListener('blur', tipHide);
     });
   }
 
@@ -325,5 +366,5 @@
   // Synchronous redraw of every chart, e.g. at print width before printing.
   function redraw() { for (const [el, draw] of mounted) { if (document.body.contains(el)) draw(); else mounted.delete(el); } }
 
-  window.V = { C, line, bars, pairs, heat, lines, legend, redraw, tipShow, tipHide };
+  window.V = { C, line, bars, pairs, ranked, heat, lines, legend, redraw, tipShow, tipHide, tipRow };
 })();

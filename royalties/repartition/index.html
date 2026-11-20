@@ -17,7 +17,8 @@
   const app = document.getElementById('app');
   const { C } = V;
   const projectHref = (id) => `/royalties/projet/?id=${encodeURIComponent(id)}`;
-  const S = { all: false, open: {} };
+  // pk: month shown in the per-title breakdown · mail: selected recipient and e-mails opened this session
+  const S = { all: false, open: {}, pk: null, mailSel: 0, opened: new Set() };
   let D;
 
   async function start(refresh) {
@@ -45,6 +46,12 @@
     const last = row(cu);
     const stm = D.statements.find((s) => s.received) || D.statements[0];
     const lastRun = D.statements.find((s) => /^\d{4}-\d{2}$/.test(s.name));
+    // Breakdown month: kept across refreshes, else the last complete month, else the latest with revenue.
+    const win = chartRows();
+    if (!win.some((r) => r.m === S.pk)) {
+      const pool = [win.filter((r) => r.state === 'complete'), win.filter((r) => r.state !== 'pending'), win].find((a) => a.length) || [];
+      S.pk = pool.length ? pool[pool.length - 1].m : null;
+    }
 
     app.innerHTML = `
       <div class="brand"><a href="/">ERA · Internal</a><span>/</span><a href="/royalties/">Royalties</a><span>/</span><span>Répartition</span></div>
@@ -55,9 +62,8 @@
           <p class="sub">Un tableau à deux vitesses. <b>Vitesse 1</b> : ce qu’on dépense dans le mois, connu le jour même. <b>Vitesse 2</b> : ce que rapportent les écoutes du mois, connu deux à trois mois plus tard (relevé Wiseband du 15 : le mois M arrive partiel à M+2, sans Spotify, Deezer ni Qobuz, puis complet à M+3).<br>
           Revenus complets jusqu’à <b>${R.mLong(cu)}</b> · ${R.mLong(D.coverage.partialUntil)} partiel · générée ${R.esc(R.dateTime(D.generatedAt))}</p>
         </div>
-        <div class="actions"><button class="btn primary" id="mailbtn" aria-expanded="false">Email les statements</button><button class="btn" id="refresh">↻ Rafraîchir</button></div>
+        <div class="actions"><button class="btn primary" id="mailbtn" aria-haspopup="dialog">Email les statements</button><button class="btn" id="refresh">↻ Rafraîchir</button></div>
       </div>
-      <div id="mailpanel"></div>
       ${D.checks && D.checks.length ? `<div class="banner"><b>${D.checks.length} écart(s)</b> entre les lignes mensuelles et Airtable : voir le bandeau de la vue macro.</div>` : ''}
 
       <div class="kpis">
@@ -73,6 +79,13 @@
         <div class="card-h"><div><div class="card-t">Les trois poches, mois d’écoute par mois d’écoute</div>
         <div class="card-d">Marge nette des titres recoupés (nette de royalties et de leurs dépenses), revenus qui remboursent les titres non recoupés, et ce qu’on y a investi. Barres pâles et zone hachurée : revenus partiels ou pas encore reportés.</div></div></div>
         <div class="chart" id="c-pockets"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><div><div class="card-t">Les trois poches titre par titre · <span id="pk-m"></span></div>
+        <div class="card-d">De quels titres viennent la marge nette, le récupéré et l’investi du mois. Clique une barre du graphique au-dessus ou choisis un mois. Clic sur un titre : sa fiche.</div></div>
+        <label class="pick">Mois <select id="pk-sel">${pickOptions()}</select></label></div>
+        <div class="pk-grid" id="pk"></div>
       </div>
 
       <div class="card">
@@ -106,28 +119,29 @@
       <div class="foot"><span>ERA · Cockpit royalties · répartition</span><span>Données : Airtable appBvSWFIA6P36nXu</span></div>`;
 
     document.getElementById('refresh').onclick = () => start(true);
-    document.getElementById('mailbtn').onclick = (ev) => {
-      const el = document.getElementById('mailpanel');
-      const open = !el.innerHTML;
-      el.innerHTML = open ? mailPanel() : '';
-      ev.currentTarget.setAttribute('aria-expanded', String(open));
-    };
+    document.getElementById('mailbtn').onclick = openMail;
+    document.getElementById('pk-sel').addEventListener('change', (ev) => { S.pk = ev.target.value; drawChart(); drawPockets(); });
     const seg = document.getElementById('seg-all');
     const sync = () => seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', (b.dataset.v === 'all') === S.all));
     seg.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { S.all = b.dataset.v === 'all'; sync(); drawTable(); }));
     sync();
     drawChart();
+    drawPockets();
     drawTable();
   }
 
+  const chartRows = () => D.repartition.slice(-14);
+
   function drawChart() {
-    const rows = D.repartition.slice(-14);
+    const rows = chartRows();
     const months = rows.map((r) => r.m);
     const dim = (i) => rows[i].state !== 'complete';
     V.bars(document.getElementById('c-pockets'), {
       months, h: 270, xFmt: R.mShort, tipFmt: R.mLong, yFmt: R.eurC, yTip: R.eur,
       shadeFrom: D.coverage.completeUntil, shadeLabel: 'partiel · attendu',
       label: 'Marge nette des titres recoupés, récupéré et investi sur les titres non recoupés, par mois',
+      picked: months.indexOf(S.pk), hint: 'Clic : le détail par titre',
+      onPick: (i) => { S.pk = months[i]; drawChart(); drawPockets(); },
       series: [
         { name: 'Marge nette (recoupées)', color: C.blue, values: rows.map((r) => r.recouped.margin), dim },
         { name: 'Récupéré (non recoupées)', color: C.aqua, values: rows.map((r) => r.recouping.recovered), dim },
@@ -135,6 +149,84 @@
       ],
       note: (i) => `<div class="tip-note">${R.esc(R.stateText(rows[i].state, rows[i].expected))}</div>`,
     });
+  }
+
+  // ---- the three pockets, title by title, for one month ----
+  function pickOptions() {
+    return [...chartRows()].reverse().map((r) => `<option value="${r.m}"${r.m === S.pk ? ' selected' : ''}>${R.esc(R.mLong(r.m))} · ${R.esc(R.STATE[r.state].fr)}</option>`).join('');
+  }
+
+  const TOP = 8;
+  const tr = (name, val, color) => V.tipRow(color || 'transparent', name, val);
+  const tnote = (t) => `<div class="tip-note">${R.esc(t)}</div>`;
+  // Top N titles, the rest folded into one grey row (never a ninth colour).
+  function fold(rows, color, what) {
+    rows.sort((a, b) => b.value - a.value);
+    if (rows.length <= TOP + 1) return rows;
+    const rest = rows.slice(TOP);
+    const sum = rest.reduce((a, r) => a + r.value, 0);
+    const list = rest.slice(0, 12).map((r) => tr(r.label, R.eur(r.value))).join('') + (rest.length > 12 ? tnote(`et ${rest.length - 12} autres`) : '');
+    return [...rows.slice(0, TOP), { label: `${rest.length} autres titres`, value: sum, muted: true, tip: `${tr(what, R.eur(sum), V.C.muted)}${list}` }];
+  }
+
+  function drawPockets() {
+    const el = document.getElementById('pk');
+    const r = row(S.pk);
+    if (!r) { el.innerHTML = '<div class="empty">Pas encore de mois à détailler.</div>'; return; }
+    document.getElementById('pk-m').textContent = R.mLong(r.m);
+    const sel = document.getElementById('pk-sel');
+    if (sel.value !== r.m) sel.value = r.m;
+    const pend = r.state === 'pending';
+    const href = (p) => projectHref(p.id);
+
+    const mRaw = r.projects.filter((p) => p.margin != null && (p.pocket === 'recouped' || p.crossing)).map((p) => ({
+      label: p.title, value: p.margin, href: href(p), tag: p.crossing ? 'bascule' : '',
+      tip: p.crossing
+        ? `${tr('Marge nette', R.eur(p.margin), V.C.blue)}${tnote('Mois de bascule : les revenus jusqu’au seuil remboursent le titre, seul l’excédent (net de royalties) compte en marge.')}`
+        : `${tr('Part ERA', R.eur(p.revenue))}${tr('Royalties artistes', '− ' + R.eur(p.dues))}${tr('Dépenses du mois', '− ' + R.eur(p.spend))}${tr('Marge nette', R.eur(p.margin), V.C.blue)}`,
+    }));
+    const rRaw = r.projects.filter((p) => (p.pocket === 'recouping' || p.pocket === 'crossing') && p.recovered > 0).map((p) => ({
+      label: p.title, value: p.recovered, href: href(p), tag: p.crossing ? 'bascule' : '',
+      tip: `${tr('Brut du mois', R.eur(p.gross))}${tr('Récupéré', R.eur(p.recovered), V.C.aqua)}${p.crossing ? tnote('Mois de bascule : l’excédent au-delà du seuil part en marge nette.') : ''}`,
+    }));
+    const iRaw = r.projects.filter((p) => (p.pocket === 'recouping' || p.pocket === 'crossing') && p.spend > 0).map((p) => ({
+      label: p.title, value: p.spend, href: href(p), tag: p.crossing ? 'bascule' : '',
+      tip: `${tr('Investi', R.eur(p.spend), V.C.orange)}${tnote('Dépenses du mois sur un titre pas encore recoupé : marketing, avances, compte artiste.')}`,
+    }));
+    const margin = fold(mRaw, V.C.blue, 'Marge nette');
+    const recovered = fold(rRaw, V.C.aqua, 'Récupéré');
+    const invested = fold(iRaw, V.C.orange, 'Investi');
+
+    // One € width for the three panels: bar lengths compare across pockets.
+    const width = (rows) => (rows.length ? Math.max(0, ...rows.map((x) => x.value)) - Math.min(0, ...rows.map((x) => x.value)) : 0);
+    const span = Math.max(width(margin), width(pend ? [] : recovered), width(invested));
+    const nolc = r.projects.filter((p) => p.noLabelCut);
+    const state = r.state === 'partial' ? ' · revenus partiels' : '';
+    const panels = [
+      { k: 'm', name: 'Marge nette · recoupées', color: V.C.blue, rows: margin, total: pend ? null : r.recouped.margin,
+        sub: pend ? R.stateText(r.state, r.expected) : `${r.recouped.count} titre(s)${r.coverage != null ? ` · couverture ${R.pct(r.coverage)}` : ''}${state}`,
+        empty: pend ? 'Revenus du mois pas encore reportés.' : 'Aucun titre recoupé actif ce mois.',
+        foot: nolc.length ? `Hors marge, sans part label : ${nolc.map((p) => p.title).join(', ')} (${R.eur(r.recouped.noLabelCut.revenue)} de part ERA).` : '' },
+      { k: 'r', name: 'Récupéré · non recoupées', color: V.C.aqua, rows: recovered, total: pend ? null : r.recouping.recovered,
+        sub: pend ? R.stateText(r.state, r.expected) : `${rRaw.length} titre(s) remboursent leur marketing${state}`,
+        empty: pend ? 'Revenus du mois pas encore reportés.' : 'Aucun revenu sur les titres non recoupés.' },
+      { k: 'i', name: 'Investi · non recoupées', color: V.C.orange, rows: invested, total: r.recouping.invested,
+        sub: `${iRaw.length} titre(s) · capex du mois${pend ? '' : ` · variation ${signed(r.recouping.variation)}`}`,
+        empty: 'Aucune dépense sur les titres non recoupés ce mois.' },
+    ];
+    el.innerHTML = panels.map((p) => `<section class="pk-col" aria-label="${R.esc(p.name)}">
+        <div class="pk-h"><span class="sw" style="background:${p.color}"></span>${R.esc(p.name)}</div>
+        <div class="pk-v">${p.total == null ? '—' : R.eur(p.total)}</div>
+        <div class="pk-s">${R.esc(p.sub)}</div>
+        <div id="pkl-${p.k}"></div>
+        ${p.foot ? `<p class="pk-foot">${R.esc(p.foot)}</p>` : ''}
+      </section>`).join('');
+    for (const p of panels) {
+      V.ranked(document.getElementById(`pkl-${p.k}`), {
+        rows: pend && p.k !== 'i' ? [] : p.rows, color: p.color, name: p.name, fmt: R.eur, span, empty: p.empty,
+        label: `${p.name}, ${R.mLong(r.m)}, par titre`,
+      });
+    }
   }
 
   function drawTable() {
@@ -194,31 +286,141 @@
     </div>`;
   }
 
-  // The statement batch = the latest statement(s) received, never the archive. Only the
-  // releases present in it (Warner titles only when a Warner statement came in).
-  function mailPanel() {
+  // ---- statement e-mails: a dialog with every release of the batch and every e-mail ----
+  // The batch = the latest statement(s) received, never the archive. Only the releases
+  // present in it (Warner titles only when a Warner statement came in). Nothing is sent
+  // from here: each e-mail opens in Antoine's mail app (mailto, no subject: his rule).
+  function batchInfo() {
     const dated = D.statements.filter((st) => st.received && !/^ARCHIVE/i.test(st.name));
-    if (!dated.length) return '<div class="mailp"><h3>Aucun relevé à envoyer</h3><p>Pas encore de relevé mensuel dans Airtable.</p></div>';
+    if (!dated.length) return null;
     const month = dated[0].received.slice(0, 7);
     const batch = dated.filter((st) => st.received.slice(0, 7) === month);
     const ids = new Set(batch.flatMap((st) => st.projects || []));
-    const projects = D.projects.filter((p) => ids.has(p.id) && R.statementEligible(p) && p.artistPath);
-    const rec = R.recipients(projects);
-    const covered = new Set(rec.flatMap((r) => r.projects.map((p) => p.id)));
-    const missing = projects.filter((p) => !covered.has(p.id));
-    const noSplit = missing.filter((p) => !(p.splits || []).length), noMail = missing.filter((p) => (p.splits || []).length);
-    const rows = rec.map((r) => `<div class="row">
-        <div class="who">${R.esc(r.name)}<span>${R.esc(r.email)}</span></div>
-        <div class="what">${r.projects.map((p) => `${R.esc(p.title)} · ${R.esc(R.statusEn(p))}`).join('<br>')}</div>
-        <a class="btn" href="${R.esc(R.mailto([r.email], R.statementBody(r.name, r.projects)))}">Ouvrir l’e-mail</a>
-      </div>`).join('');
-    return `<div class="mailp">
-      <h3>Statements du relevé ${R.esc(batch.map((st) => st.name).join(' + '))} · reçu le ${R.esc(R.date(dated[0].received))}</h3>
-      <p>${projects.length} titre(s) présents dans ce relevé, ${rec.length} destinataire(s). Chaque bouton ouvre ton client mail avec le message prêt, en anglais, sans objet. Rien ne part tant que tu ne cliques pas sur Envoyer.</p>
-      <div class="rows">${rows || '<p>Aucun payee avec e-mail sur ces titres.</p>'}</div>
-      ${noMail.length ? `<p class="miss">Payee sans e-mail dans Airtable : ${noMail.map((p) => R.esc(p.title)).join(', ')}.</p>` : ''}
-      ${noSplit.length ? `<details class="miss"><summary>${noSplit.length} titre(s) du relevé sans split dans Airtable, donc sans destinataire</summary>${noSplit.map((p) => R.esc(p.title)).join(', ')}.</details>` : ''}
+    const inBatch = D.projects.filter((p) => ids.has(p.id));
+    const byTitle = (a, b) => a.title.localeCompare(b.title, 'fr');
+    const projects = inBatch.filter((p) => R.statementEligible(p) && p.artistPath).sort(byTitle);
+    const excluded = inBatch.filter((p) => !R.statementEligible(p)).sort(byTitle);
+    const rec = R.recipients(projects).sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    return { dated, batch, projects, excluded, rec };
+  }
+
+  const link = (u) => `${location.origin}${u}`;
+  // Body as text, with the statement links clickable (they are our own signed links).
+  const bodyHtml = (txt) => R.esc(txt).replace(/https?:\/\/[^\s<]+/g, (u) => `<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+
+  function recipientsCell(p) {
+    const sp = p.splits || [];
+    if (!sp.length) return '<span class="pill warn"><span class="pill-ic" aria-hidden="true">!</span>sans split</span>';
+    return sp.map((s) => s.email ? R.esc(s.payee) : `<span class="flag">${R.esc(s.payee)} · sans e-mail</span>`).join('<br>');
+  }
+
+  function mailDialog(B) {
+    if (!B) {
+      return `<div class="mdlg-in"><header class="mdlg-h"><div><h2 id="mdlg-h">Aucun relevé à envoyer</h2><p>Pas encore de relevé mensuel dans Airtable.</p></div>
+        <button class="mdlg-x" type="button" aria-label="Fermer">✕</button></header></div>`;
+    }
+    const { dated, batch, projects, excluded, rec } = B;
+    const missing = projects.filter((p) => !rec.some((r) => r.projects.includes(p)));
+    const titles = projects.map((p) => `<tr>
+        <td class="t">${R.esc(p.title)}</td>
+        <td data-l="Statut"><span>${R.statusPill(p.status)}<span class="mdlg-en">${R.esc(R.statusEn(p))}</span></span></td>
+        <td data-l="Destinataires"><span>${recipientsCell(p)}</span></td>
+        <td data-l="Statement"><a class="btn" href="${R.esc(p.artistPath)}" target="_blank" rel="noopener">Voir le statement ↗</a></td>
+      </tr>`).join('');
+    const list = rec.map((r, i) => `<li><button type="button" class="mx-b" data-i="${i}" aria-current="${i === S.mailSel}">
+        <span class="mx-n">${R.esc(r.name)}</span>${S.opened.has(r.email.toLowerCase()) ? '<span class="mx-st"><span aria-hidden="true">✓</span> ouvert</span>' : ''}
+        <span class="mx-e">${R.esc(r.email)} · ${r.projects.length} titre${r.projects.length > 1 ? 's' : ''}</span></button></li>`).join('');
+    const opts = rec.map((r, i) => `<option value="${i}"${i === S.mailSel ? ' selected' : ''}>${R.esc(r.name)} · ${r.projects.length} titre${r.projects.length > 1 ? 's' : ''}${S.opened.has(r.email.toLowerCase()) ? ' · ouvert' : ''}</option>`).join('');
+    const counts = [`${projects.length} titre${projects.length > 1 ? 's' : ''}`, `${rec.length} e-mail${rec.length > 1 ? 's' : ''}`];
+    if (missing.length) counts.push(`${missing.length} titre${missing.length > 1 ? 's' : ''} sans destinataire`);
+    return `<div class="mdlg-in">
+      <header class="mdlg-h">
+        <div><h2 id="mdlg-h">Statements du relevé ${R.esc(batch.map((st) => st.name).join(' + '))}</h2>
+        <p>Reçu le ${R.esc(R.date(dated[0].received))} · ${counts.join(' · ')}</p></div>
+        <button class="mdlg-x" type="button" aria-label="Fermer">✕</button>
+      </header>
+      <div class="mdlg-b">
+        <section aria-labelledby="mdlg-t1">
+          <h3 class="mdlg-s" id="mdlg-t1">Titres du relevé <span>${projects.length}</span></h3>
+          <div class="tbl-wrap"><table class="tbl mdlg-tbl"><thead><tr><th>Titre</th><th>Statut dans l’e-mail</th><th>Destinataires</th><th>Statement</th></tr></thead><tbody>${titles}</tbody></table></div>
+          ${excluded.length ? `<details class="mdlg-miss"><summary>${excluded.length} titre${excluded.length > 1 ? 's' : ''} du relevé sans statement (rachat de cover, catalogue Playpack, résiduel)</summary>${excluded.map((p) => R.esc(p.title)).join(', ')}.</details>` : ''}
+        </section>
+        <section aria-labelledby="mdlg-t2">
+          <h3 class="mdlg-s" id="mdlg-t2">E-mails <span>${rec.length}</span></h3>
+          <p class="mdlg-note">Pas de pièce jointe : chaque e-mail contient le lien signé vers le statement de chaque titre, téléchargeable en PDF depuis la page. Rien ne part tant que tu ne cliques pas sur Envoyer dans ton client mail.</p>
+          ${rec.length ? `<div class="mx">
+            <ul class="mx-list">${list}</ul>
+            <label class="pick mx-sel">Destinataire <select id="mx-sel">${opts}</select></label>
+            <div class="mx-prev" id="mx-prev">${preview(rec[S.mailSel] || rec[0])}</div>
+          </div>` : '<p class="empty">Aucun payee avec e-mail sur ces titres.</p>'}
+        </section>
+      </div>
     </div>`;
+  }
+
+  function preview(r) {
+    const body = R.statementBody(r.name, r.projects);
+    return `<article class="em" aria-label="Aperçu de l’e-mail à ${R.esc(r.name)}">
+      <div class="em-h">
+        <div class="em-row"><span>À</span><span><b>${R.esc(r.name)}</b> &lt;${R.esc(r.email)}&gt;</span></div>
+        <div class="em-row"><span>Objet</span><span class="em-mu">vide (tu le mets dans ton client mail)</span></div>
+        <div class="em-row"><span>Liens</span><span class="em-att">${r.projects.map((p) => `<a href="${R.esc(p.artistPath)}" target="_blank" rel="noopener">${R.esc(p.title)} <span aria-hidden="true">↗</span></a>`).join('')}</span></div>
+      </div>
+      <div class="em-body">${bodyHtml(body)}</div>
+      <div class="em-act">
+        <a class="btn primary" id="em-open" href="${R.esc(R.mailto([r.email], body))}">Ouvrir dans le mail</a>
+        <button class="btn" type="button" id="em-copy">Copier le texte</button>
+        <span class="em-ok" id="em-ok" role="status" aria-live="polite"></span>
+      </div>
+    </article>`;
+  }
+
+  async function copyText(text, host) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fall back below */ }
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    host.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
+  function openMail() {
+    let dlg = document.getElementById('maildlg');
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.id = 'maildlg'; dlg.className = 'mdlg'; dlg.setAttribute('aria-labelledby', 'mdlg-h');
+      document.body.appendChild(dlg);
+      dlg.addEventListener('close', () => document.documentElement.classList.remove('noscroll'));
+      // Click on the backdrop closes (the inner wrapper fills the dialog box).
+      dlg.addEventListener('click', (ev) => { if (ev.target === dlg) dlg.close(); });
+    }
+    const B = batchInfo();
+    if (B && S.mailSel >= B.rec.length) S.mailSel = 0;
+    const paint = () => {
+      dlg.innerHTML = mailDialog(B);
+      dlg.querySelector('.mdlg-x').addEventListener('click', () => dlg.close());
+      if (!B || !B.rec.length) return;
+      const pick = (i) => { S.mailSel = i; paint(); const b = dlg.querySelector(`.mx-b[data-i="${i}"]`); if (b && getComputedStyle(b).display !== 'none') b.focus(); };
+      dlg.querySelectorAll('.mx-b').forEach((b) => b.addEventListener('click', () => pick(+b.dataset.i)));
+      dlg.querySelector('#mx-sel').addEventListener('change', (ev) => { S.mailSel = +ev.target.value; paint(); dlg.querySelector('#mx-sel').focus(); });
+      const r = B.rec[S.mailSel];
+      dlg.querySelector('#em-open').addEventListener('click', () => {
+        S.opened.add(r.email.toLowerCase());
+        // Repaint after the mail app has taken the link, keeping the same recipient on screen.
+        setTimeout(() => { const top = dlg.querySelector('.mdlg-b').scrollTop; paint(); dlg.querySelector('.mdlg-b').scrollTop = top; }, 300);
+      });
+      dlg.querySelector('#em-copy').addEventListener('click', async () => {
+        const ok = await copyText(R.statementBody(r.name, r.projects), dlg);
+        const out = dlg.querySelector('#em-ok');
+        out.textContent = ok ? '✓ copié' : 'copie impossible : sélectionne le texte';
+        setTimeout(() => { if (out.isConnected) out.textContent = ''; }, 2500);
+      });
+    };
+    paint();
+    dlg.showModal();
+    document.documentElement.classList.add('noscroll');
   }
 
   function statementsTable() {

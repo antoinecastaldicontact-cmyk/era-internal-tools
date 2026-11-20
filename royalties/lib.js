@@ -5,7 +5,9 @@
   const nf1 = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 });
   const nf2 = new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const eur = (v, d = 0) => (v == null || !isFinite(v) ? '—' : (d ? nf2 : nf0).format(v) + ' €');
+  // A value that rounds to zero prints 0, never -0.
+  const nz = (v, step) => (Math.abs(v) < step / 2 ? 0 : v);
+  const eur = (v, d = 0) => (v == null || !isFinite(v) ? '—' : (d ? nf2 : nf0).format(nz(v, d ? 0.01 : 1)) + ' €');
   const eurC = (v) => {
     if (v == null || !isFinite(v)) return '—';
     const a = Math.abs(v);
@@ -21,7 +23,7 @@
     if (a >= 1e3) return nf1.format(v / 1e3) + ' k';
     return nf0.format(v);
   };
-  const pct = (v, d = 0) => (v == null || !isFinite(v) ? '—' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: d }).format(v * 100) + ' %');
+  const pct = (v, d = 0) => (v == null || !isFinite(v) ? '—' : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: d }).format(nz(v * 100, Math.pow(10, -d))) + ' %');
   const mult = (v) => (v == null || !isFinite(v) ? '—' : nf2.format(v) + '×');
 
   const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
