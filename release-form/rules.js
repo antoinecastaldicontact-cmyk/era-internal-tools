@@ -65,7 +65,6 @@ export function emptyData() {
     publishing: { applicable: '', rows: [] },
     pitch: { story: '', mood: '', references: '', supports: '', markets: '' },
     promoLinks: '',
-    contact: { name: '', email: '' },
     confirm: false,
   };
 }
@@ -75,24 +74,27 @@ export function isInstrumental(data) {
 }
 
 // What a rightholder must have on file for the contract ({{CompoundInfos}}): legal name,
-// full postal address, email. Nationality feeds the base. PRO / publisher are optional.
+// postal address, email. Nationality feeds the base. PRO / publisher are optional.
+// owned: a record ERA links to the release's main artists, shown in full and edited like a new one.
+// existing (not owned): ERA keeps the details private; only what the server reported missing is asked.
+export const hasAddress = (p) => str(p?.address).length >= 8 || Boolean(str(p?.street) && str(p?.city) && str(p?.country));
 export function personMissing(p) {
   const miss = [];
   if (!p) return ['details'];
-  if (p.existing) {
-    // Person already in ERA's base: only what the server reported missing, unless now provided.
+  if (p.existing && !p.owned) {
     for (const k of p.missing || []) {
       if (k === 'email' && !isEmail(p.email)) miss.push('email');
-      if (k === 'address' && !(str(p.street) && str(p.postcode) && str(p.city) && str(p.country))) miss.push('postal address');
+      if (k === 'address' && !hasAddress(p)) miss.push('postal address');
       if (k === 'nationality' && !str(p.nationality)) miss.push('nationality');
     }
+    if (str(p.email) && !isEmail(p.email)) miss.push('a valid email');
     return miss;
   }
   if (!str(p.legalName)) miss.push('legal name');
   if (!isEmail(p.email)) miss.push('email');
-  if (!(str(p.street) && str(p.postcode) && str(p.city) && str(p.country))) miss.push('postal address');
+  if (!hasAddress(p)) miss.push('postal address');
   if (!str(p.nationality)) miss.push('nationality');
-  if (p.pro === 'yes' && !str(p.proName)) miss.push('PRO name');
+  if (p.pro === 'yes' && !str(p.proName)) miss.push('collecting society');
   if (p.publisher === 'yes' && !str(p.publisherInfo)) miss.push('publisher details');
   return miss;
 }
@@ -129,6 +131,9 @@ export function validate(data, ctx = {}) {
     warnings.push({ step: 'release', label: 'The title contains "feat.": add featured artists in the Featured field, not in the title' });
   }
   if (str(r.bpm) && !(num(r.bpm) >= 40 && num(r.bpm) <= 250)) warnings.push({ step: 'release', label: 'BPM looks wrong' });
+  for (const a of r.mainArtists || []) {
+    if (!str(a.spotify)) warnings.push({ step: 'release', label: `No Spotify link for ${str(a.name)}: the release could land on the wrong artist profile` });
+  }
 
   // Audio & artwork
   const files = d.files || [];
@@ -185,8 +190,6 @@ export function validate(data, ctx = {}) {
   need(str(pt.story).length >= 150, 'promo', 'The story of the track (150 characters minimum)');
   need(str(pt.mood), 'promo', 'Mood and emotion');
   if (!ctx.photosOnFile) need(done('photo').length >= 1, 'promo', 'At least one artist photo');
-  need(str(d.contact?.name), 'promo', 'Your name');
-  need(isEmail(d.contact?.email), 'promo', 'Your email');
 
   // Review
   need(d.confirm === true, 'review', 'Final confirmation');

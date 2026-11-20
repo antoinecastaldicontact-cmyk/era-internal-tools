@@ -60,8 +60,14 @@ export const F = {
     name: 'fldL2cFC2wBD0y3R6',            // Brand Name
     photos: 'fldMDMkHbOxaHPGNz',          // Photos Détourées
     rightholders: 'fldogiRhwGhchs5is',    // Ayant Droits
-    instagram: 'fldob8ZpsXOL1mkun',
-    spotifyId: 'fldZAGb0hP47U1ckG',
+    instagram: 'fldob8ZpsXOL1mkun',       // rich text
+    tiktok: 'fld6NZCUkUFmArvp4',          // rich text
+    spotifyId: 'fldZAGb0hP47U1ckG',       // Spotify ID (link or ID, long text)
+    apple: 'fldb3GXtUIgXXnzj3',           // Apple Music (url)
+    youtube: 'fldjUm1oiowcmb9Rl',         // YouTube (url)
+    soundcloud: 'fldgy0xgXgcpp6Jn3',      // SoundCloud (url)
+    bio: 'fld5ZmhazZseYYYGK',             // Bio Projet
+    presskit: 'fld1vu4VoMzWJaRP1',        // Presskit (attachments)
     ficheStatus: 'fldOuPEdFcc7Ewy0X',
   },
   person: {

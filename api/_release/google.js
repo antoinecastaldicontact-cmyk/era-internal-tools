@@ -107,6 +107,21 @@ export async function ensureFolder(name, parentId) {
   });
 }
 
+// Gives a person edit access to a folder (the artist keeps adding content after submitting).
+// Google accounts get no Google email (ERA sends its own); an address without a Google account
+// needs Google's invitation, so it is retried with notification on.
+export async function shareFolder(id, email) {
+  const body = { type: 'user', role: 'writer', emailAddress: email };
+  try {
+    return await drive('POST', `files/${id}/permissions`, { query: { sendNotificationEmail: 'false', fields: 'id' }, body });
+  } catch (e) {
+    return drive('POST', `files/${id}/permissions`, {
+      query: { sendNotificationEmail: 'true', emailMessage: 'ERA Music shared your release folder with you. Add photos or content for this release here at any time.', fields: 'id' },
+      body,
+    });
+  }
+}
+
 export async function folderInfo(id) {
   return drive('GET', `files/${id}`, { query: { fields: 'id,name,webViewLink,trashed' } });
 }

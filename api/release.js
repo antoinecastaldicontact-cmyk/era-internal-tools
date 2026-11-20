@@ -4,7 +4,7 @@
 //                           Writes the link into Airtable only, never returns it.
 //   GET  config&t=…         Prefill + current draft for the artist link.
 //   POST save&t=…           { data, progress } — draft, any time.
-//   POST search&t=…         { kind: 'artist'|'person', q } — read-only lookup, names only.
+//   POST search&t=…         { kind: 'artist'|'person', q } — artists: public profile; people: names only.
 //   POST upload-start&t=…   { files: [{ name, size, type, kind, label }] } — Drive sessions + upload tokens.
 //   POST chunk              raw bytes (<= 4 MB), headers X-Upload-Token / X-Chunk-Start / X-Total-Size.
 //   POST artwork&t=…        { contentType, filename, base64 } — artwork preview in Airtable (reduced JPEG).
@@ -14,7 +14,7 @@
 //      RELEASE_NOTIFY_EMAILS (optional), RELEASE_PUBLIC_BASE (optional).
 
 import { T, F, FN, PIPELINE, LOCKED, RELEASE_TYPE, PUBLISHER_CHOICE, q, find, get, create, update, uploadAttachment, recordUrl } from './_release/airtable.js';
-import { driveConfigured, rootFolderId, ensureFolder, folderInfo, startResumable, putChunk, isDriveSessionUrl, uploadSmall, sendMail } from './_release/google.js';
+import { driveConfigured, rootFolderId, ensureFolder, folderInfo, startResumable, putChunk, isDriveSessionUrl, uploadSmall, sendMail, shareFolder } from './_release/google.js';
 import { signLink, readLink, signUpload, readUpload } from './_release/token.js';
 import { validate, clampData, FILE_KINDS, MASTERING, MAX_FILE_BYTES, MAX_FILES, personName, isInstrumental } from '../release-form/rules.js';
 
@@ -81,6 +81,62 @@ function personSummary(rec) {
   return { id: rec.id, name: clean(f[F.person.name], 150), missing };
 }
 
+// Rich text from Airtable comes back as markdown with a trailing newline.
+const plain = (v) => String(v ?? '').replace(/\r/g, '').trim();
+const thumb = (att) => (att || []).find(a => /^image\//.test(a.type || ''))?.thumbnails?.large?.url || null;
+
+// Public artist profile: safe to show to anyone holding a release link, editable in the form.
+const ARTIST_PROFILE = [
+  ['spotify', 'spotifyId', 'Spotify', 300], ['apple', 'apple', 'Apple Music', 300], ['instagram', 'instagram', 'Instagram', 300],
+  ['tiktok', 'tiktok', 'TikTok', 300], ['youtube', 'youtube', 'YouTube', 300], ['soundcloud', 'soundcloud', 'SoundCloud', 300],
+  ['bio', 'bio', 'Bio', 3000],
+];
+const URL_FIELDS = new Set(['apple', 'youtube', 'soundcloud']);
+function artistProfile(rec) {
+  const f = rec.fields || {};
+  const out = { id: rec.id, name: clean(f[F.artist.name], 150) };
+  for (const [k, key, , max] of ARTIST_PROFILE) out[k] = clean(plain(f[F.artist[key]]), max);
+  out.photo = thumb(f[F.artist.photos]) || thumb(f[F.artist.presskit]);
+  return out;
+}
+// Airtable url fields: keep only something that reads as a link.
+function profileValue(k, v, max) {
+  const t = clean(v, max);
+  if (!t || !URL_FIELDS.has(k)) return t;
+  if (/^https?:\/\//i.test(t)) return t;
+  if (/^[\w-]+(\.[\w-]+)+\//.test(t)) return 'https://' + t;
+  return '';
+}
+
+// Full details, only for the people ERA already links to the release's main artists
+// (set by ERA on the Airtable record, never by the form): the artist sees and edits their own team.
+function personDetails(rec) {
+  const f = rec.fields || {};
+  const pub = f[F.person.anyPublishers];
+  const proName = clean(f[F.person.proName], 100);
+  const ipi = clean(f[F.person.ipi], 40);
+  return {
+    ...personSummary(rec), owned: true,
+    legalName: clean(f[F.person.name], 150), alias: clean(plain(f[F.person.alias]), 150),
+    email: clean(f[F.person.email], 200), phone: clean(f[F.person.phone], 40),
+    address: clean(plain(f[F.person.address]), 600), nationality: clean(f[F.person.nationality], 20),
+    pro: proName || ipi ? 'yes' : '', proName, ipi,
+    publisher: pub === PUBLISHER_CHOICE.yes ? 'yes' : pub === PUBLISHER_CHOICE.no ? 'no' : '',
+    publisherInfo: clean(plain(f[F.person.publishersInfo]), 1000),
+  };
+}
+async function ownedPeople(track) {
+  const mainIds = (track.fields?.[F.track.mainArtist] || []).slice(0, 4);
+  const mains = (await Promise.all(mainIds.map(id => get(T.artists, id).catch(() => null)))).filter(Boolean);
+  const ids = [...new Set(mains.flatMap(a => a.fields?.[F.artist.rightholders] || []))].slice(0, 12);
+  return { mains, ids: new Set(ids), people: (await Promise.all(ids.map(id => get(T.people, id).catch(() => null)))).filter(Boolean) };
+}
+const PERSON_LABELS = {
+  [F.person.name]: 'Nom légal', [F.person.email]: 'Email', [F.person.address]: 'Adresse', [F.person.nationality]: 'Nationalité',
+  [F.person.alias]: 'Alias', [F.person.phone]: 'WhatsApp', [F.person.proName]: 'Société de gestion', [F.person.ipi]: 'IPI',
+  [F.person.anyPublishers]: 'Éditeur', [F.person.publishersInfo]: 'Infos éditeur',
+};
+
 // ---------- actions ----------
 
 async function mint(req, res) {
@@ -101,12 +157,9 @@ async function mint(req, res) {
 async function config(req, res) {
   const track = await loadTrack(req.query.t);
   const f = track.fields || {};
-  const mainIds = (f[F.track.mainArtist] || []).slice(0, 4);
-  const mains = (await Promise.all(mainIds.map(id => get(T.artists, id).catch(() => null)))).filter(Boolean);
-  const mainArtists = mains.map(a => ({ id: a.id, name: clean(a.fields?.[F.artist.name], 150) }));
-  const photosOnFile = mains.some(a => (a.fields?.[F.artist.photos] || []).length > 0);
-  const peopleIds = [...new Set(mains.flatMap(a => a.fields?.[F.artist.rightholders] || []))].slice(0, 12);
-  const known = (await Promise.all(peopleIds.map(id => get(T.people, id).catch(() => null)))).filter(Boolean).map(personSummary);
+  const { mains, people } = await ownedPeople(track);
+  const mainArtists = mains.map(artistProfile);
+  const photosOnFile = mains.some(a => (a.fields?.[F.artist.photos] || []).length > 0 || (a.fields?.[F.artist.presskit] || []).length > 0);
   let data = null;
   try { data = f[F.track.formData] ? JSON.parse(f[F.track.formData]) : null; } catch { data = null; }
   const type = String(f[F.track.releaseType] || '').trim();
@@ -115,13 +168,15 @@ async function config(req, res) {
     title: titleFromProduct(f[F.track.name], mainArtists.map(a => a.name)),
     releaseDate: f[F.track.releaseDate] || null,
     releaseType: type === 'EP' ? 'EP' : 'Single',
+    artworkUrl: thumb(f[F.track.artwork]),
     mainArtists,
-    knownPeople: known,
+    knownPeople: people.map(personDetails),
     photosOnFile,
     status: f[F.track.pipeline] || '',
     locked: isLocked(track),
     correctionNote: f[F.track.pipeline] === PIPELINE.correction ? clean(f[F.track.correctionNote], 3000) : '',
     submittedAt: f[F.track.formSubmittedAt] || null,
+    driveFolder: isLocked(track) ? (f[F.track.driveFolder] || null) : null,
     data,
   });
 }
@@ -139,7 +194,6 @@ async function save(req, res) {
   };
   const st = track.fields?.[F.track.pipeline];
   if (!st || st === PIPELINE.toSend || st === PIPELINE.sent) fields[F.track.pipeline] = PIPELINE.draft;
-  if (isEmail(data?.contact?.email)) fields[F.track.formContactEmail] = clean(data.contact.email, 200);
   await update(T.tracks, track.id, fields);
   return res.status(200).json({ ok: true, savedAt: fields[F.track.formLastSaved] });
 }
@@ -150,8 +204,8 @@ async function search(req, res) {
   const term = clean(b.q, 80).toLowerCase();
   if (term.length < 3) return res.status(200).json({ results: [] });
   if (b.kind === 'artist') {
-    const rows = await find(T.artists, `SEARCH(${q(term)}, LOWER(${FN.artistName}))`, { maxRecords: 6, fields: [F.artist.name] });
-    return res.status(200).json({ results: rows.map(r => ({ id: r.id, name: clean(r.fields?.[F.artist.name], 150) })).filter(r => r.name) });
+    const rows = await find(T.artists, `SEARCH(${q(term)}, LOWER(${FN.artistName}))`, { maxRecords: 6 });
+    return res.status(200).json({ results: rows.map(artistProfile).filter(r => r.name) });
   }
   if (b.kind === 'person') {
     // Names only (or one exact email match). No email, address or ID is ever returned.
@@ -252,26 +306,42 @@ async function artwork(req, res) {
 
 // ---------- submit ----------
 
-async function resolveArtist(a, created) {
-  if (a?.id && REC.test(a.id)) {
-    try { await get(T.artists, a.id); return a.id; } catch { /* fall through: create */ }
-  }
+async function resolveArtist(a, log) {
   const name = clean(a?.name, 150);
+  let rec = null;
+  if (a?.id && REC.test(a.id)) rec = await get(T.artists, a.id).catch(() => null);
+  if (!rec && name) {
+    const same = await find(T.artists, `LOWER(${FN.artistName}) = ${q(name.toLowerCase())}`, { maxRecords: 2 });
+    if (same.length === 1) rec = same[0];
+  }
+  if (rec) {
+    // Existing artist: the profile fields the artist changed overwrite the base; an emptied field is left as it was.
+    const cur = rec.fields || {};
+    const fill = {};
+    const changes = [];
+    for (const [k, key, label, max] of ARTIST_PROFILE) {
+      const v = profileValue(k, a[k], max);
+      const was = plain(cur[F.artist[key]]);
+      if (v && v !== was) { fill[F.artist[key]] = v; changes.push(`${label} « ${was || '—'} » → « ${v} »`); }
+    }
+    if (changes.length) {
+      fill[F.artist.ficheStatus] = 'À valider';
+      await update(T.artists, rec.id, fill);
+      log.artistsChanged.push(`${clean(cur[F.artist.name], 150)} : ${changes.join(' ; ')}`);
+    }
+    return rec.id;
+  }
   if (!name) return null;
-  const same = await find(T.artists, `LOWER(${FN.artistName}) = ${q(name.toLowerCase())}`, { maxRecords: 2, fields: [F.artist.name] });
-  if (same.length === 1) return same[0].id;
-  const rec = await create(T.artists, {
-    [F.artist.name]: name,
-    [F.artist.spotifyId]: clean(a.spotify, 300),
-    [F.artist.instagram]: clean(a.instagram, 300),
-    [F.artist.ficheStatus]: 'À valider',
-  });
-  created.push(name);
-  return rec.id;
+  const fields = { [F.artist.name]: name, [F.artist.ficheStatus]: 'À valider' };
+  for (const [k, key, , max] of ARTIST_PROFILE) { const v = profileValue(k, a[k], max); if (v) fields[F.artist[key]] = v; }
+  const created = await create(T.artists, fields);
+  log.artistsCreated.push(name);
+  return created.id;
 }
 
 function personFields(p) {
-  const address = [clean(p.street, 200), [clean(p.postcode, 20), clean(p.city, 100)].filter(Boolean).join(' '), clean(p.country, 80)].filter(Boolean).join(', ');
+  // One postal address field (older drafts kept street / postcode / city / country apart).
+  const address = clean(p.address, 600) || [clean(p.street, 200), [clean(p.postcode, 20), clean(p.city, 100)].filter(Boolean).join(' '), clean(p.country, 80)].filter(Boolean).join(', ');
   return {
     [F.person.name]: clean(personName(p), 150),
     [F.person.email]: isEmail(p.email) ? clean(p.email, 200).toLowerCase() : '',
@@ -287,32 +357,38 @@ function personFields(p) {
 }
 
 // Existing record: fill empty fields only, never overwrite.
-async function completePerson(id, p, log) {
+async function updatePerson(id, p, log, owned) {
   const rec = await get(T.people, id);
   const cur = rec.fields || {};
   const wanted = personFields(p);
   const fill = {};
+  const changes = [];
   for (const [k, v] of Object.entries(wanted)) {
-    if (k === F.person.name) continue;
-    if (v && !cur[k]) fill[k] = v;
+    if (!v) continue;                                   // an emptied field is left as it was
+    if (k === F.person.name && !owned) continue;        // a legal name is only edited by the artist's own team
+    const was = plain(cur[k]);
+    if (String(v).toLowerCase() === was.toLowerCase()) continue;
+    fill[k] = v;
+    changes.push(`${PERSON_LABELS[k] || k} « ${was || '—'} » → « ${v} »`);
   }
-  if (Object.keys(fill).length) {
+  const name = clean(fill[F.person.name] || cur[F.person.name], 150) || personName(p);
+  if (changes.length) {
     fill[F.person.ficheStatus] = 'À valider';
     await update(T.people, id, fill);
-    log.completed.push(clean(cur[F.person.name], 150));
+    log.changed.push(`${clean(cur[F.person.name], 150)} : ${changes.join(' ; ')}`);
   }
-  return { id, name: clean(cur[F.person.name], 150) || personName(p) };
+  return { id, name, email: clean(fill[F.person.email] || cur[F.person.email], 200) };
 }
 
-async function resolvePerson(p, track, log) {
+async function resolvePerson(p, track, log, ownedIds) {
   if (p.id && REC.test(p.id)) {
-    try { return await completePerson(p.id, p, log); } catch { /* not found: create below */ }
+    try { return await updatePerson(p.id, p, log, ownedIds.has(p.id)); } catch { /* not found: create below */ }
   }
   if (isEmail(p.email)) {
     const byEmail = await find(T.people, `LOWER(${FN.personEmail}) = ${q(clean(p.email, 200).toLowerCase())}`, { maxRecords: 2, fields: [F.person.name] });
     if (byEmail.length === 1) {
       log.matched.push(`${personName(p)} → ${clean(byEmail[0].fields?.[F.person.name], 150)}`);
-      return completePerson(byEmail[0].id, p, log);
+      return updatePerson(byEmail[0].id, p, log, false);
     }
   }
   const name = personName(p);
@@ -323,7 +399,7 @@ async function resolvePerson(p, track, log) {
   fields[F.person.notes] = `Créé par le formulaire de release « ${clean(track.fields?.[F.track.name], 150)} » le ${parisStamp()}.`;
   const rec = await create(T.people, fields);
   log.created.push(name);
-  return { id: rec.id, name };
+  return { id: rec.id, name, email: fields[F.person.email] || '' };
 }
 
 function qcFlags(data, track, v, log) {
@@ -349,9 +425,14 @@ function qcFlags(data, track, v, log) {
   }
   if (data.release?.type === 'EP') flags.push(`Fait partie de l'EP « ${clean(data.release.epTitle, 150)} »`);
   for (const w of v.warnings) flags.push(`Formulaire : ${w.label}`);
+  const parsed = titleFromProduct(track.fields?.[F.track.name], []);
+  if (clean(data.release?.title, 200) && clean(data.release.title, 200).toLowerCase() !== clean(parsed, 200).toLowerCase()) {
+    flags.push(`Titre saisi par l'artiste : « ${clean(data.release.title, 200)} » (fiche : « ${clean(track.fields?.[F.track.name], 200)} ») — Product Name non modifié`);
+  }
   if (log.artistsCreated.length) flags.push(`Nouveaux artistes à valider : ${log.artistsCreated.join(', ')}`);
+  for (const x of log.artistsChanged) flags.push(`Profil artiste modifié — ${x}`);
   if (log.created.length) flags.push(`Nouvelles fiches ayants droits à valider : ${log.created.join(', ')}`);
-  if (log.completed.length) flags.push(`Fiches existantes complétées (champs vides seulement) : ${log.completed.join(', ')}`);
+  for (const x of log.changed) flags.push(`Fiche ayant droit modifiée — ${x}`);
   if (log.matched.length) flags.push(`Rattachés par email à une fiche existante : ${log.matched.join(' ; ')}`);
   if (log.homonyms.length) flags.push(`Homonyme déjà en base, vérifier le doublon : ${log.homonyms.join(', ')}`);
   return flags;
@@ -370,18 +451,17 @@ async function submit(req, res) {
   const b = await readJson(req);
   const data = clampData(b.data);
 
-  const mainIds = (track.fields?.[F.track.mainArtist] || []).slice(0, 4);
-  const mains = (await Promise.all(mainIds.map(id => get(T.artists, id).catch(() => null)))).filter(Boolean);
-  const photosOnFile = mains.some(a => (a.fields?.[F.artist.photos] || []).length > 0);
+  const owned = await ownedPeople(track);
+  const photosOnFile = owned.mains.some(a => (a.fields?.[F.artist.photos] || []).length > 0 || (a.fields?.[F.artist.presskit] || []).length > 0);
   const v = validate(data, { photosOnFile });
   if (v.missing.length) throw new HttpError(422, 'Some required information is missing.', { missing: v.missing });
 
-  const log = { artistsCreated: [], created: [], completed: [], matched: [], homonyms: [] };
+  const log = { artistsCreated: [], artistsChanged: [], created: [], changed: [], matched: [], homonyms: [] };
   const r = data.release;
   const mainArtistIds = [];
-  for (const a of r.mainArtists || []) { const id = await resolveArtist(a, log.artistsCreated); if (id) mainArtistIds.push(id); }
+  for (const a of r.mainArtists || []) { const id = await resolveArtist(a, log); if (id) mainArtistIds.push(id); }
   const featIds = [];
-  for (const a of r.featuredArtists || []) { const id = await resolveArtist(a, log.artistsCreated); if (id) featIds.push(id); }
+  for (const a of r.featuredArtists || []) { const id = await resolveArtist(a, log); if (id) featIds.push(id); }
 
   const people = data.people || {};
   const c = data.credits || {};
@@ -389,7 +469,7 @@ async function submit(req, res) {
   const keys = [...new Set([...(c.composers || []), ...(c.lyricists || []), ...(c.producers || []),
     ...(data.rightholders || []).map(x => x.key), ...pubRows.map(x => x.key)])].filter(k => people[k]);
   const resolved = {};
-  for (const k of keys) resolved[k] = await resolvePerson(people[k], track, log);   // sequential: dedup by email between rows
+  for (const k of keys) resolved[k] = await resolvePerson(people[k], track, log, owned.ids);   // sequential: dedup by email between rows
 
   const ids = (list) => [...new Set((list || []).map(k => resolved[k]?.id).filter(Boolean))];
   const names = (list) => (list || []).map(k => resolved[k]?.name || personName(people[k])).filter(Boolean);
@@ -429,7 +509,6 @@ async function submit(req, res) {
     [F.track.splitMaster]: splitLines(data.rightholders || []),
     [F.track.splitEdition]: data.publishing?.applicable === 'yes' ? splitLines(pubRows) : 'Publishing Not Applicable',
     [F.track.promoLinks]: clean(data.promoLinks, 5000),
-    [F.track.formContactEmail]: clean(data.contact?.email, 200),
     [F.track.formData]: JSON.stringify(data),
     [F.track.formProgress]: 1,
     [F.track.formLastSaved]: stamp,
@@ -443,26 +522,61 @@ async function submit(req, res) {
 
   // Raw archive next to the files.
   let folderUrl = track.fields?.[F.track.driveFolder] || null;
+  let folderId = null;
   try {
     if (driveConfigured()) {
       const folder = await trackFolder(track);
       folderUrl = folder.url;
+      folderId = folder.id;
       await uploadSmall({ name: `FORM - ${clean(track.fields?.[F.track.name], 150)} - ${parisDate()} ${new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' }).format(new Date()).replace(':', 'h')}.json`, mimeType: 'application/json', content: JSON.stringify(data, null, 2), parentId: folder.id });
     }
   } catch (e) { warnings.push('archive Drive: ' + e.message); }
 
-  const to = (process.env.RELEASE_NOTIFY_EMAILS || 'acastaldi@eramusic.io').split(/[\s,;]+/).filter(isEmail);
+  // The artist: rightholders of this release ERA links to a main artist; else every rightholder.
+  const mainPeople = new Set();
+  for (const id of mainArtistIds) {
+    const a = owned.mains.find(m => m.id === id) || await get(T.artists, id).catch(() => null);
+    for (const pid of a?.fields?.[F.artist.rightholders] || []) mainPeople.add(pid);
+  }
+  const holders = (data.rightholders || []).map(x => resolved[x.key]).filter(Boolean);
+  const pick = holders.filter(h => mainPeople.has(h.id));
+  const recipients = [...new Set((pick.length ? pick : holders).map(h => clean(h.email, 200).toLowerCase()).filter(isEmail))].slice(0, 5);
+
+  // Edit access to the release folder: the artist keeps adding content there after submitting.
+  const shared = [];
+  if (folderId && recipients.length) {
+    for (const email of recipients) {
+      try { await shareFolder(folderId, email); shared.push(email); } catch (e) { warnings.push(`partage Drive ${email}: ${e.message}`); }
+    }
+  }
+
   const productName = clean(track.fields?.[F.track.name], 150);
+  const title = clean(r.title, 150) || productName;
+  if (recipients.length) {
+    const body = ['Hi,', '', `ERA received the release form for ${title}.`, ''];
+    if (folderUrl && shared.length) {
+      body.push(`Your release folder: ${folderUrl}`, 'You have edit access. Add photos or content for this release there at any time: everything for the release stays in this one folder.', '');
+    }
+    body.push('Next: ERA checks every element. If something needs changing, the same form link reopens with a note.', '', 'ERA Music');
+    const sent = await sendMail({ to: recipients, subject: `ERA Music · ${title} received`, text: body.join('\n') });
+    if (!sent.ok) warnings.push('mail artiste: ' + sent.error);
+  } else {
+    warnings.push('aucun email ayant droit : pas de mail artiste ni de partage Drive');
+  }
+  if (recipients.length) await update(T.tracks, track.id, { [F.track.formContactEmail]: recipients[0] }).catch(() => {});
+
+  const to = (process.env.RELEASE_NOTIFY_EMAILS || 'acastaldi@eramusic.io').split(/[\s,;]+/).filter(isEmail);
   const lines = [
     `Formulaire de release envoyé : ${productName}`,
-    `Par : ${clean(data.contact?.name, 100)} <${clean(data.contact?.email, 150)}>`,
+    `Mail artiste : ${recipients.join(', ') || '—'}`,
+    `Accès Drive en écriture : ${shared.join(', ') || '—'}`,
     `Airtable : ${recordUrl(T.tracks, track.id)}`,
     folderUrl ? `Drive : ${folderUrl}` : '',
     '', 'Contrôles automatiques :', ...(flags.length ? flags.map(x => '• ' + x) : ['Aucune alerte.']),
     ...(warnings.length ? ['', ...warnings.map(w => '⚠ ' + w)] : []),
     '', 'Prochaine étape : QC dans Airtable (Pipeline → QC validé ou Correction demandée).',
-  ].filter(x => x !== null);
-  const mail = await sendMail({ to, subject: `Release form · ${productName}`, text: lines.join('\n'), replyTo: isEmail(data.contact?.email) ? data.contact.email : undefined });
+  ];
+  const mail = await sendMail({ to, subject: `Release form · ${productName}`, text: lines.join('\n'), replyTo: recipients[0] });
   if (!mail.ok) {
     console.error('[release submit] mail', mail.error);
     warnings.push('mail: ' + mail.error);
@@ -470,7 +584,7 @@ async function submit(req, res) {
   if (warnings.length) {
     await update(T.tracks, track.id, { [F.track.qcFlags]: `${fields[F.track.qcFlags]}\n${warnings.map(w => '⚠ ' + w).join('\n')}` }).catch(() => {});
   }
-  return res.status(200).json({ ok: true });
+  return res.status(200).json({ ok: true, emailed: recipients, folder: shared.length ? folderUrl : null });
 }
 
 // ---------- router ----------
