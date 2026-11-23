@@ -82,7 +82,8 @@ function personSummary(rec) {
 }
 
 // Rich text from Airtable comes back as markdown with a trailing newline.
-const plain = (v) => String(v ?? '').replace(/\r/g, '').trim();
+// Rich text comes back as Markdown: « laivmusic\_ » must read « laivmusic_ », or every save would log a false change.
+const plain = (v) => String(v ?? '').replace(/\r/g, '').replace(/\\([\\`*_{}[\]()#+\-.!>~|<])/g, '$1').trim();
 const thumb = (att) => (att || []).find(a => /^image\//.test(a.type || ''))?.thumbnails?.large?.url || null;
 
 // Public artist profile: safe to show to anyone holding a release link, editable in the form.
